@@ -114,7 +114,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
-            preferences, last_login AS "lastLogin", created_by AS "createdBy", 
+            last_login AS "lastLogin", created_by AS "createdBy", 
             created_at AS "createdAt", updated_at AS "updatedAt", 
             stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
           FROM users 
@@ -123,7 +123,13 @@ export class DatabaseStorage implements IStorage {
       
       if (result.rows.length === 0) return undefined;
       
-      return result.rows[0] as User;
+      const user = result.rows[0] as any;
+      // Adicionar campos vazios para propriedades que não existem no banco
+      user.preferences = {};
+      if (!user.phone) user.phone = null;
+      if (!user.profilePhoto) user.profilePhoto = null;
+      
+      return user as User;
     } catch (error) {
       console.error("Erro ao buscar usuário por ID:", error);
       return undefined;
@@ -136,7 +142,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
-            preferences, last_login AS "lastLogin", created_by AS "createdBy", 
+            last_login AS "lastLogin", created_by AS "createdBy", 
             created_at AS "createdAt", updated_at AS "updatedAt", 
             stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
           FROM users 
@@ -145,7 +151,13 @@ export class DatabaseStorage implements IStorage {
       
       if (result.rows.length === 0) return undefined;
       
-      return result.rows[0] as User;
+      const user = result.rows[0] as any;
+      // Adicionar campos vazios para propriedades que não existem no banco
+      user.preferences = {};
+      if (!user.phone) user.phone = null;
+      if (!user.profilePhoto) user.profilePhoto = null;
+      
+      return user as User;
     } catch (error) {
       console.error("Erro ao buscar usuário por email:", error);
       return undefined;
@@ -171,13 +183,21 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
-            preferences, last_login AS "lastLogin", created_by AS "createdBy", 
+            last_login AS "lastLogin", created_by AS "createdBy", 
             created_at AS "createdAt", updated_at AS "updatedAt", 
             stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
           FROM users`
       );
       
-      return result.rows as User[];
+      // Adicionar campos vazios para propriedades que não existem no banco
+      const users = result.rows.map((user: any) => {
+        user.preferences = {};
+        if (!user.phone) user.phone = null;
+        if (!user.profilePhoto) user.profilePhoto = null;
+        return user;
+      });
+      
+      return users as User[];
     } catch (error) {
       console.error("Erro ao listar usuários:", error);
       return [];

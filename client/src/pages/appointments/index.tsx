@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -21,12 +21,22 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   CalendarClock, 
   Calendar as CalendarIcon, 
@@ -67,6 +77,24 @@ const statusColors: Record<string, string> = {
   [AppointmentStatus.NO_SHOW]: "bg-amber-100 text-amber-800"
 };
 
+// Função para obter a cor correspondente ao status (formato simplificado)
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case AppointmentStatus.SCHEDULED:
+      return "bg-blue-500";
+    case AppointmentStatus.CONFIRMED:
+      return "bg-green-500";
+    case AppointmentStatus.COMPLETED:
+      return "bg-purple-500";
+    case AppointmentStatus.CANCELLED:
+      return "bg-red-500";
+    case AppointmentStatus.NO_SHOW:
+      return "bg-amber-500";
+    default:
+      return "bg-gray-500";
+  }
+};
+
 // Status display names
 const statusNames: Record<string, string> = {
   [AppointmentStatus.SCHEDULED]: "Agendado",
@@ -77,10 +105,20 @@ const statusNames: Record<string, string> = {
 };
 
 export default function Appointments() {
-  const { selectedClinic } = useAuth();
+  const { selectedClinic, user } = useAuth();
   const { hasPermission } = usePermissions();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedProfessional, setSelectedProfessional] = useState<string>("");
+  const [selectedService, setSelectedService] = useState<string>("");
+  const [appointmentDate, setAppointmentDate] = useState<string>("");
+  const [startTime, setStartTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [isCreating, setIsCreating] = useState(false);
   
   // Query to get appointments com cache otimizado
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
@@ -292,6 +330,50 @@ export default function Appointments() {
               onSelect={setSelectedDate}
               className="rounded-md border"
               locale={ptBR}
+              modifiers={{
+                booked: appointments.map(app => 
+                  app.startTime ? new Date(app.startTime) : new Date()
+                )
+              }}
+              modifiersStyles={{
+                booked: {
+                  fontWeight: 'bold',
+                  textDecoration: 'underline',
+                }
+              }}
+              components={{
+                DayContent: ({ date }) => {
+                  // Contar quantos agendamentos existem neste dia
+                  const appointmentsForDay = appointments.filter(app => {
+                    if (!app.startTime) return false;
+                    const appDate = new Date(app.startTime);
+                    return appDate.toDateString() === date.toDateString();
+                  });
+                  
+                  return (
+                    <div className="relative flex h-9 w-9 items-center justify-center">
+                      {date.getDate()}
+                      {appointmentsForDay.length > 0 && (
+                        <div className="absolute -bottom-1">
+                          <div className="flex gap-0.5">
+                            {appointmentsForDay.slice(0, 3).map((_, i) => (
+                              <div 
+                                key={i} 
+                                className={`h-1 w-1 rounded-full ${
+                                  getStatusColor(appointmentsForDay[i].status || AppointmentStatus.SCHEDULED)
+                                }`}
+                              />
+                            ))}
+                            {appointmentsForDay.length > 3 && (
+                              <div className="h-1 w-1 rounded-full bg-gray-400" />
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              }}
             />
             
             <div className="mt-4">
@@ -480,6 +562,12 @@ function AppointmentCard({
   professionalName: string;
   serviceName: string;
 }) {
+  const { selectedClinic } = useAuth();
+  const { hasPermission } = usePermissions();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
+  
   // Verificar se startTime e endTime estão definidos
   if (!appointment.startTime || !appointment.endTime) {
     return <Card><CardContent className="p-4">Dados de agendamento inválidos</CardContent></Card>;
@@ -488,6 +576,43 @@ function AppointmentCard({
   // Convertemos para Date para uso com formatTime
   const startTime = new Date(appointment.startTime);
   const endTime = new Date(appointment.endTime);
+  
+  // Mutation para atualizar o status do agendamento
+  const updateStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      const response = await apiRequest("PATCH", `/api/appointments/${appointment.id}`, {
+        status: newStatus
+      });
+      if (!response.ok) {
+        throw new Error("Erro ao atualizar status do agendamento");
+      }
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Invalidar cache para forçar recarregamento dos agendamentos
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/clinics", selectedClinic?.id, "appointments"] 
+      });
+      toast({
+        title: "Status atualizado",
+        description: "O status do agendamento foi atualizado com sucesso",
+      });
+      setIsUpdating(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao atualizar",
+        description: `Não foi possível atualizar o status: ${error.message}`,
+        variant: "destructive",
+      });
+      setIsUpdating(false);
+    }
+  });
+  
+  const handleStatusUpdate = (newStatus: string) => {
+    setIsUpdating(true);
+    updateStatusMutation.mutate(newStatus);
+  };
   
   return (
     <Card>
@@ -511,12 +636,70 @@ function AppointmentCard({
               <p className="mt-2 text-xs text-gray-500 line-clamp-2">{appointment.notes}</p>
             )}
           </div>
-          <Badge
-            variant="outline"
-            className={statusColors[appointment.status] || "bg-gray-100 text-gray-800"}
-          >
-            {statusNames[appointment.status] || appointment.status}
-          </Badge>
+          <div>
+            {hasPermission("appointments", "update") ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className={statusColors[appointment.status] || "bg-gray-100 text-gray-800"}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <span className="flex items-center">
+                        <span className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></span>
+                        Atualizando...
+                      </span>
+                    ) : (
+                      statusNames[appointment.status] || appointment.status
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Mudar status</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {appointment.status !== AppointmentStatus.SCHEDULED && (
+                    <DropdownMenuItem onClick={() => handleStatusUpdate(AppointmentStatus.SCHEDULED)}>
+                      <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                      Agendado
+                    </DropdownMenuItem>
+                  )}
+                  {appointment.status !== AppointmentStatus.CONFIRMED && (
+                    <DropdownMenuItem onClick={() => handleStatusUpdate(AppointmentStatus.CONFIRMED)}>
+                      <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                      Confirmado
+                    </DropdownMenuItem>
+                  )}
+                  {appointment.status !== AppointmentStatus.COMPLETED && (
+                    <DropdownMenuItem onClick={() => handleStatusUpdate(AppointmentStatus.COMPLETED)}>
+                      <div className="h-2 w-2 rounded-full bg-purple-500 mr-2"></div>
+                      Concluído
+                    </DropdownMenuItem>
+                  )}
+                  {appointment.status !== AppointmentStatus.CANCELLED && (
+                    <DropdownMenuItem onClick={() => handleStatusUpdate(AppointmentStatus.CANCELLED)}>
+                      <div className="h-2 w-2 rounded-full bg-red-500 mr-2"></div>
+                      Cancelado
+                    </DropdownMenuItem>
+                  )}
+                  {appointment.status !== AppointmentStatus.NO_SHOW && (
+                    <DropdownMenuItem onClick={() => handleStatusUpdate(AppointmentStatus.NO_SHOW)}>
+                      <div className="h-2 w-2 rounded-full bg-amber-500 mr-2"></div>
+                      Não compareceu
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Badge
+                variant="outline"
+                className={statusColors[appointment.status] || "bg-gray-100 text-gray-800"}
+              >
+                {statusNames[appointment.status] || appointment.status}
+              </Badge>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
