@@ -402,7 +402,7 @@ export default function Settings() {
                 <Input 
                   id="username" 
                   placeholder="Seu nome completo" 
-                  defaultValue="João Dourado"
+                  defaultValue={user?.name || ""}
                 />
               </div>
               
@@ -412,8 +412,10 @@ export default function Settings() {
                   id="email" 
                   type="email" 
                   placeholder="seu.email@exemplo.com" 
-                  defaultValue="joao.dourado@exemplo.com"
+                  defaultValue={user?.email || ""}
+                  disabled
                 />
+                <p className="text-xs text-muted-foreground">O email não pode ser alterado, pois é usado para login.</p>
               </div>
               
               <div className="space-y-2">
@@ -421,7 +423,7 @@ export default function Settings() {
                 <Input 
                   id="phone" 
                   placeholder="(XX) XXXXX-XXXX" 
-                  defaultValue="(11) 98765-4321"
+                  defaultValue=""
                 />
               </div>
               
@@ -431,7 +433,11 @@ export default function Settings() {
                 <Label htmlFor="profile-photo">Foto de Perfil</Label>
                 <div className="flex items-center space-x-4">
                   <div className="h-20 w-20 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span className="text-primary-700 font-semibold text-xl">JD</span>
+                    <span className="text-primary-700 font-semibold text-xl">
+                      {user?.name 
+                        ? user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() 
+                        : '?'}
+                    </span>
                   </div>
                   <Button variant="outline" size="sm">
                     Alterar Foto
