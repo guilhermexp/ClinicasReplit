@@ -42,11 +42,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.post("/api/auth/logout", (req: Request, res: Response) => {
+    // Verificar se o usuário está logado antes de tentar fazer logout
+    if (!req.isAuthenticated()) {
+      return res.status(200).json({ message: "Usuário já estava desconectado." });
+    }
+    
     req.logout((err) => {
       if (err) {
         return res.status(500).json({ message: "Erro ao fazer logout." });
       }
-      res.json({ message: "Logout realizado com sucesso." });
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Erro ao destruir sessão:", err);
+        }
+        res.clearCookie('connect.sid');
+        res.status(200).json({ message: "Logout realizado com sucesso." });
+      });
     });
   });
   

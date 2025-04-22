@@ -166,16 +166,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/auth/logout", {});
+      try {
+        // Limpar o cache do React Query antes da requisição
+        queryClient.setQueryData(["/api/auth/me"], null);
+        queryClient.clear();
+        
+        const response = await apiRequest("POST", "/api/auth/logout", {});
+        return response;
+      } catch (error) {
+        console.error("Erro durante logout:", error);
+        // Se ocorrer um erro, ainda precisamos garantir que o usuário seja deslogado no cliente
+        queryClient.clear();
+        return null;
+      }
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/me"], null);
       navigate("/login");
       toast({
         title: "Logout realizado",
         description: "Você saiu do sistema com sucesso.",
       });
     },
+    onError: () => {
+      // Mesmo com erro, enviamos o usuário para a tela de login
+      navigate("/login");
+      toast({
+        title: "Logout realizado",
+        description: "Você saiu do sistema.",
+      });
+    }
   });
   
   // Register mutation
