@@ -113,6 +113,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all super admin users
+  app.get("/api/users/superadmins", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Verificar se o usuário tem permissão para ver os Super Admins
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      // Buscar todos os usuários que são Super Admins
+      const allUsers = await storage.listUsers();
+      const superAdmins = allUsers.filter(u => u.role === UserRole.SUPER_ADMIN)
+        .map(admin => ({
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          isActive: admin.isActive,
+          createdAt: admin.createdAt,
+          lastLogin: admin.lastLogin
+        }));
+      
+      res.json(superAdmins);
+    } catch (error) {
+      console.error("Erro ao buscar super administradores:", error);
+      res.status(500).json({ message: "Erro ao buscar super administradores." });
+    }
+  });
+  
   app.get("/api/users/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = await storage.getUser(parseInt(req.params.id));
