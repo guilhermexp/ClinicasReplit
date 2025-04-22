@@ -95,12 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     retry: false, // Don't retry auth requests
+    staleTime: 30 * 1000, // 30 segundos
   });
   
   // Get clinics for current user
   const { data: clinics = [] } = useQuery({
     queryKey: ["/api/clinics"],
     enabled: !!userData?.user,
+    staleTime: 30 * 1000, // 30 segundos
   });
   
   // Set default selected clinic if not already set
@@ -135,7 +137,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return res.json();
     },
     onSuccess: async (data) => {
+      // Atualizar os dados do usuário no cache
       queryClient.setQueryData(["/api/auth/me"], data);
+      
+      // Pré-buscar dados de clínicas para evitar múltiplas requisições
+      queryClient.prefetchQuery({
+        queryKey: ["/api/clinics"],
+        staleTime: 5 * 60 * 1000 // 5 minutos
+      });
       
       // Verificar se o usuário já está vinculado a alguma clínica
       const clinicsRes = await apiRequest("GET", "/api/clinics");
