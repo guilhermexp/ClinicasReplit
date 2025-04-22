@@ -857,7 +857,7 @@ export class DatabaseStorage implements IStorage {
   async createClinic(clinic: InsertClinic): Promise<Clinic> {
     // Adiciona timestamps e valores padrão
     const clinicData = {
-      ...clinic,
+      name: clinic.name,
       createdAt: new Date(),
       updatedAt: new Date(),
       logo: clinic.logo ?? null,
