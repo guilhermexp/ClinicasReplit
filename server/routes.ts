@@ -314,6 +314,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get("/api/clients/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clientId = parseInt(req.params.id);
+      const client = await storage.getClient(clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Cliente não encontrado." });
+      }
+      
+      res.json(client);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar cliente." });
+    }
+  });
+  
+  app.patch("/api/clients/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clientId = parseInt(req.params.id);
+      const client = await storage.getClient(clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Cliente não encontrado." });
+      }
+      
+      // Valide apenas os campos enviados para atualização
+      const updateSchema = z.object({
+        name: z.string().min(1).optional(),
+        email: z.string().email().nullable().optional(),
+        phone: z.string().nullable().optional(),
+        address: z.string().nullable().optional(),
+        birthdate: z.string().nullable().optional(),
+      });
+      
+      const result = updateSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
+      }
+      
+      const updatedClient = await storage.updateClient(clientId, result.data);
+      
+      res.json(updatedClient);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao atualizar cliente." });
+    }
+  });
+  
   // Service routes
   app.get("/api/clinics/:clinicId/services", isAuthenticated, async (req: Request, res: Response) => {
     try {
