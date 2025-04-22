@@ -1,76 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { roleDisplayNames } from "@/lib/auth-utils";
 
-// Module definitions with available permissions
-const modules = [
-  {
-    id: "dashboard",
-    name: "Dashboard",
-    permissions: ["read"],
-  },
-  {
-    id: "clients",
-    name: "Clientes",
-    permissions: ["read", "create", "update", "delete"],
-  },
-  {
-    id: "appointments",
-    name: "Agenda",
-    permissions: ["read", "create", "update", "delete"],
-  },
-  {
-    id: "anamnesis",
-    name: "Anamnese",
-    permissions: ["read", "create", "update", "delete"],
-  },
-  {
-    id: "financial",
-    name: "Financeiro",
-    permissions: ["read", "create", "update", "delete"],
-  },
-  {
-    id: "reports",
-    name: "Relatórios",
-    permissions: ["read"],
-  },
-  {
-    id: "crm",
-    name: "CRM",
-    permissions: ["read", "create", "update", "delete"],
-  },
-  {
-    id: "whatsapp",
-    name: "WhatsApp",
-    permissions: ["read", "create", "update", "delete"],
-  },
-  {
-    id: "users",
-    name: "Usuários",
-    permissions: ["read", "create", "update", "delete"],
-  },
-  {
-    id: "settings",
-    name: "Configurações",
-    permissions: ["read", "update"],
-  },
-];
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Loader2, ShieldCheck, Save } from "lucide-react";
 
-// Permission action display names
-const permissionActions: Record<string, string> = {
-  read: "Visualizar",
-  create: "Criar",
-  update: "Editar",
-  delete: "Excluir",
-};
+interface Permission {
+  id: number;
+  clinicUserId: number;
+  module: string;
+  action: string;
+}
 
 interface UserPermissionsFormProps {
   userId: number;
@@ -78,301 +24,311 @@ interface UserPermissionsFormProps {
   userRole: string;
 }
 
+// Definição dos módulos e ações disponíveis no sistema
+const permissionModules = [
+  {
+    id: "dashboard",
+    name: "Dashboard",
+    description: "Acesso ao painel principal",
+    actions: [
+      { id: "view", name: "Visualizar" }
+    ]
+  },
+  {
+    id: "users",
+    name: "Usuários",
+    description: "Gerenciamento de usuários da clínica",
+    actions: [
+      { id: "view", name: "Visualizar" },
+      { id: "create", name: "Criar" },
+      { id: "edit", name: "Editar" },
+      { id: "delete", name: "Excluir" }
+    ]
+  },
+  {
+    id: "clients",
+    name: "Clientes",
+    description: "Cadastro e gerenciamento de clientes/pacientes",
+    actions: [
+      { id: "view", name: "Visualizar" },
+      { id: "create", name: "Criar" },
+      { id: "edit", name: "Editar" },
+      { id: "delete", name: "Excluir" }
+    ]
+  },
+  {
+    id: "appointments",
+    name: "Agendamentos",
+    description: "Controle de agendamentos e consultas",
+    actions: [
+      { id: "view", name: "Visualizar" },
+      { id: "create", name: "Criar" },
+      { id: "edit", name: "Editar" },
+      { id: "delete", name: "Excluir" }
+    ]
+  },
+  {
+    id: "financial",
+    name: "Financeiro",
+    description: "Gerenciamento financeiro e pagamentos",
+    actions: [
+      { id: "view", name: "Visualizar" },
+      { id: "create", name: "Criar" },
+      { id: "edit", name: "Editar" },
+      { id: "delete", name: "Excluir" }
+    ]
+  },
+  {
+    id: "reports",
+    name: "Relatórios",
+    description: "Relatórios e estatísticas",
+    actions: [
+      { id: "view", name: "Visualizar" },
+      { id: "export", name: "Exportar" }
+    ]
+  },
+  {
+    id: "settings",
+    name: "Configurações",
+    description: "Configurações da clínica",
+    actions: [
+      { id: "view", name: "Visualizar" },
+      { id: "edit", name: "Editar" }
+    ]
+  }
+];
+
 export function UserPermissionsForm({ userId, clinicId, userRole }: UserPermissionsFormProps) {
   const { toast } = useToast();
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
-  const [userPermissions, setUserPermissions] = useState<Record<string, string[]>>({});
-  const [clinicUserId, setClinicUserId] = useState<number | null>(null);
-  const [selectedRole, setSelectedRole] = useState(userRole);
-  
-  // Query to get clinic users
-  const { data: clinicUsers, isLoading: isLoadingClinicUsers } = useQuery({
-    queryKey: ["/api/clinics", clinicId, "users"],
-    enabled: !!clinicId,
+  const [activeModuleTab, setActiveModuleTab] = useState("dashboard");
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Buscar informações do usuário específico
+  const { data: clinicUser, isLoading: isLoadingUser } = useQuery({
+    queryKey: ["/api/clinics", clinicId, "users", userId],
+    enabled: !!userId && !!clinicId,
   });
-  
-  // Find the clinic user ID for the given user
-  useEffect(() => {
-    if (clinicUsers && userId) {
-      const clinicUser = clinicUsers.find((cu: any) => cu.userId === userId && cu.clinicId === clinicId);
-      if (clinicUser) {
-        setClinicUserId(clinicUser.id);
-        setSelectedRole(clinicUser.role);
-      }
-    }
-  }, [clinicUsers, userId, clinicId]);
-  
-  // Query to get permissions for the clinic user
-  const { data: permissions, isLoading: isLoadingPermissions } = useQuery({
-    queryKey: ["/api/clinic-users", clinicUserId, "permissions"],
-    enabled: !!clinicUserId,
+
+  // Buscar permissões atuais do usuário
+  const { data: userPermissions = [], isLoading: isLoadingPermissions } = useQuery<Permission[]>({
+    queryKey: ["/api/clinic-users", clinicUser?.id, "permissions"],
+    enabled: !!clinicUser?.id,
   });
-  
-  // Initialize expanded state for all modules
+
+  // Configurar permissões iniciais quando os dados forem carregados
   useEffect(() => {
-    const expanded: Record<string, boolean> = {};
-    modules.forEach(module => {
-      expanded[module.id] = true;
-    });
-    setExpandedModules(expanded);
-  }, []);
-  
-  // Update permissions when data is loaded
-  useEffect(() => {
-    if (permissions) {
-      const permMap: Record<string, string[]> = {};
-      
-      permissions.forEach((perm: any) => {
-        if (!permMap[perm.module]) {
-          permMap[perm.module] = [];
-        }
-        permMap[perm.module].push(perm.action);
-      });
-      
-      setUserPermissions(permMap);
+    if (userPermissions && userPermissions.length > 0) {
+      const permissionKeys = userPermissions.map(p => `${p.module}:${p.action}`);
+      setSelectedPermissions(permissionKeys);
     }
-  }, [permissions]);
-  
-  // Mutation for updating user role
-  const updateRoleMutation = useMutation({
-    mutationFn: async (data: { role: string }) => {
-      if (!clinicUserId) throw new Error("ID do usuário na clínica não encontrado");
-      const res = await apiRequest("PATCH", `/api/clinic-users/${clinicUserId}`, data);
+  }, [userPermissions]);
+
+  // Mutation para adicionar uma permissão
+  const addPermissionMutation = useMutation({
+    mutationFn: async (data: { clinicUserId: number; module: string; action: string }) => {
+      const res = await apiRequest("POST", "/api/permissions", data);
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clinics", clinicId, "users"] });
+    onError: (error: Error) => {
       toast({
-        title: "Função atualizada",
-        description: "A função do usuário foi atualizada com sucesso.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Erro ao atualizar função",
-        description: "Não foi possível atualizar a função do usuário.",
+        title: "Erro ao adicionar permissão",
+        description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
-  
-  // Mutation for updating permissions
-  const updatePermissionsMutation = useMutation({
-    mutationFn: async (data: { permissions: Record<string, string[]> }) => {
-      if (!clinicUserId) throw new Error("ID do usuário na clínica não encontrado");
+
+  // Mutation para remover uma permissão
+  const removePermissionMutation = useMutation({
+    mutationFn: async (permissionId: number) => {
+      await apiRequest("DELETE", `/api/permissions/${permissionId}`, {});
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao remover permissão",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Manipular alteração em uma permissão
+  const handlePermissionChange = (module: string, action: string, checked: boolean) => {
+    const permissionKey = `${module}:${action}`;
+    
+    if (checked) {
+      // Adicionar permissão
+      setSelectedPermissions(prev => [...prev, permissionKey]);
+    } else {
+      // Remover permissão
+      setSelectedPermissions(prev => prev.filter(p => p !== permissionKey));
+    }
+  };
+
+  // Verificar se uma permissão está selecionada
+  const isPermissionSelected = (module: string, action: string) => {
+    return selectedPermissions.includes(`${module}:${action}`);
+  };
+
+  // Salvar todas as alterações de permissões
+  const savePermissions = async () => {
+    if (!clinicUser?.id) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Primeiro, determinar quais permissões devem ser adicionadas e quais devem ser removidas
+      const existingPermissionKeys = userPermissions.map(p => `${p.module}:${p.action}`);
       
-      // Convert permissions object to array of permission objects
-      const permissionsArray = Object.entries(data.permissions).flatMap(([module, actions]) =>
-        actions.map(action => ({ clinicUserId, module, action }))
+      // Permissões para adicionar (estão em selectedPermissions mas não em existingPermissionKeys)
+      const permissionsToAdd = selectedPermissions.filter(
+        key => !existingPermissionKeys.includes(key)
+      ).map(key => {
+        const [module, action] = key.split(':');
+        return { clinicUserId: clinicUser.id, module, action };
+      });
+      
+      // Permissões para remover (estão em existingPermissionKeys mas não em selectedPermissions)
+      const permissionsToRemove = userPermissions.filter(
+        p => !selectedPermissions.includes(`${p.module}:${p.action}`)
       );
       
-      // First delete all existing permissions
-      await apiRequest("DELETE", `/api/clinic-users/${clinicUserId}/permissions`, {});
-      
-      // Then create new permissions
-      if (permissionsArray.length > 0) {
-        const res = await apiRequest("POST", `/api/permissions/batch`, { permissions: permissionsArray });
-        return res.json();
+      // Adicionar novas permissões
+      for (const permission of permissionsToAdd) {
+        await addPermissionMutation.mutateAsync(permission);
       }
-      return null;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clinic-users", clinicUserId, "permissions"] });
+      
+      // Remover permissões
+      for (const permission of permissionsToRemove) {
+        await removePermissionMutation.mutateAsync(permission.id);
+      }
+      
+      // Atualizar cache
+      queryClient.invalidateQueries({ queryKey: ["/api/clinic-users", clinicUser.id, "permissions"] });
+      
       toast({
         title: "Permissões atualizadas",
         description: "As permissões do usuário foram atualizadas com sucesso.",
       });
-    },
-    onError: () => {
+    } catch (error) {
       toast({
         title: "Erro ao atualizar permissões",
-        description: "Não foi possível atualizar as permissões do usuário.",
+        description: "Ocorreu um erro ao salvar as permissões.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
-  });
-  
-  // Toggle module expansion
-  const toggleModule = (moduleId: string) => {
-    setExpandedModules(prev => ({
-      ...prev,
-      [moduleId]: !prev[moduleId]
-    }));
   };
-  
-  // Check if a module is checked (at least one permission)
-  const isModuleChecked = (moduleId: string) => {
-    return !!userPermissions[moduleId] && userPermissions[moduleId].length > 0;
-  };
-  
-  // Toggle module checkbox (all permissions for a module)
-  const toggleModuleCheck = (moduleId: string, checked: boolean) => {
-    const module = modules.find(m => m.id === moduleId);
-    if (!module) return;
-    
-    setUserPermissions(prev => {
-      const updated = { ...prev };
-      if (checked) {
-        updated[moduleId] = [...module.permissions];
-      } else {
-        delete updated[moduleId];
-      }
-      return updated;
-    });
-  };
-  
-  // Check if a specific permission is checked
-  const isPermissionChecked = (moduleId: string, action: string) => {
-    return !!userPermissions[moduleId] && userPermissions[moduleId].includes(action);
-  };
-  
-  // Toggle a specific permission
-  const togglePermission = (moduleId: string, action: string, checked: boolean) => {
-    setUserPermissions(prev => {
-      const updated = { ...prev };
-      
-      if (!updated[moduleId]) {
-        updated[moduleId] = [];
-      }
-      
-      if (checked) {
-        if (!updated[moduleId].includes(action)) {
-          updated[moduleId] = [...updated[moduleId], action];
-        }
-      } else {
-        updated[moduleId] = updated[moduleId].filter(a => a !== action);
-        if (updated[moduleId].length === 0) {
-          delete updated[moduleId];
-        }
-      }
-      
-      return updated;
-    });
-  };
-  
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Update role if changed
-    if (selectedRole !== userRole) {
-      updateRoleMutation.mutate({ role: selectedRole });
-    }
-    
-    // Update permissions
-    updatePermissionsMutation.mutate({ permissions: userPermissions });
-  };
-  
-  const isLoading = isLoadingClinicUsers || isLoadingPermissions;
-  const isSaving = updateRoleMutation.isPending || updatePermissionsMutation.isPending;
-  
+
+  if (isLoadingUser || isLoadingPermissions) {
+    return (
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Carregando Permissões</CardTitle>
+          <CardDescription>Aguarde enquanto carregamos as informações...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!clinicUser) {
+    return null;
+  }
+
   return (
     <Card className="mt-8">
       <CardHeader>
-        <CardTitle>Editar Permissões - {clinicUsers?.find((cu: any) => cu.userId === userId)?.user?.name || "Usuário"}</CardTitle>
-        <CardDescription>Configure as permissões específicas para este usuário.</CardDescription>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Permissões do Usuário
+            </CardTitle>
+            <CardDescription>
+              Configurando permissões para {clinicUser.name} - {roleDisplayNames[userRole] || userRole}
+            </CardDescription>
+          </div>
+          <Button 
+            onClick={savePermissions} 
+            disabled={isSubmitting}
+            className="mt-2 sm:mt-0"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Permissões
+              </>
+            )}
+          </Button>
+        </div>
       </CardHeader>
-      
-      <form onSubmit={handleSubmit}>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              <span>Carregando permissões...</span>
-            </div>
-          ) : (
-            <>
-              <div className="mb-6">
-                <Label htmlFor="role" className="text-sm font-medium text-gray-700 block mb-2">Função na Clínica</Label>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger id="role" className="w-full">
-                    <SelectValue placeholder="Selecione uma função" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="OWNER">Proprietário</SelectItem>
-                    <SelectItem value="MANAGER">Gerente</SelectItem>
-                    <SelectItem value="PROFESSIONAL">Profissional</SelectItem>
-                    <SelectItem value="RECEPTIONIST">Recepcionista</SelectItem>
-                    <SelectItem value="FINANCIAL">Financeiro</SelectItem>
-                    <SelectItem value="MARKETING">Marketing</SelectItem>
-                    <SelectItem value="STAFF">Funcionário</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <h4 className="text-md font-medium text-gray-700 mb-3">Permissões de Acesso</h4>
+      <CardContent>
+        <Tabs value={activeModuleTab} onValueChange={setActiveModuleTab}>
+          <TabsList className="flex flex-wrap">
+            {permissionModules.map(module => (
+              <TabsTrigger key={module.id} value={module.id}>
+                {module.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {permissionModules.map(module => (
+            <TabsContent key={module.id} value={module.id} className="pt-6">
+              <div className="grid gap-6">
+                <div>
+                  <h3 className="text-lg font-medium">{module.name}</h3>
+                  <p className="text-sm text-muted-foreground">{module.description}</p>
+                </div>
                 
-                <div className="space-y-5">
-                  {modules.map(module => (
-                    <div key={module.id} className="border border-gray-200 rounded-md">
-                      <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-                        <div className="flex items-center">
-                          <Checkbox 
-                            id={`${module.id}-module`} 
-                            checked={isModuleChecked(module.id)}
-                            onCheckedChange={(checked) => toggleModuleCheck(module.id, checked as boolean)}
-                            className="h-4 w-4"
-                          />
-                          <Label htmlFor={`${module.id}-module`} className="ml-2 text-sm font-medium text-gray-700">
-                            {module.name}
-                          </Label>
-                        </div>
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => toggleModule(module.id)}
-                        >
-                          {expandedModules[module.id] ? (
-                            <ChevronUp className="h-5 w-5 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 text-gray-400" />
-                          )}
-                        </Button>
-                      </div>
-                      
-                      {expandedModules[module.id] && (
-                        <div className={`p-4 ${module.permissions.length > 2 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : 'space-y-3'}`}>
-                          {module.permissions.map(action => (
-                            <div key={`${module.id}-${action}`} className="flex items-center">
-                              <Checkbox 
-                                id={`${module.id}-${action}`} 
-                                checked={isPermissionChecked(module.id, action)}
-                                onCheckedChange={(checked) => togglePermission(module.id, action, checked as boolean)}
-                                className="h-4 w-4"
-                              />
-                              <Label htmlFor={`${module.id}-${action}`} className="ml-2 text-sm text-gray-700">
-                                {permissionActions[action] || action}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                <div className="space-y-4">
+                  {module.actions.map(action => (
+                    <div key={action.id} className="flex items-center space-x-2">
+                      <Switch 
+                        id={`${module.id}-${action.id}`}
+                        checked={isPermissionSelected(module.id, action.id)}
+                        onCheckedChange={(checked) => 
+                          handlePermissionChange(module.id, action.id, checked)
+                        }
+                      />
+                      <Label htmlFor={`${module.id}-${action.id}`}>
+                        {action.name}
+                      </Label>
                     </div>
                   ))}
                 </div>
               </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </CardContent>
+      <CardFooter className="flex justify-end border-t pt-6">
+        <Button 
+          onClick={savePermissions} 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar Permissões
             </>
           )}
-        </CardContent>
-        
-        <CardFooter className="flex justify-end space-x-3">
-          <Button type="button" variant="outline" disabled={isSaving}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isLoading || isSaving}>
-            {isSaving ? (
-              <span className="flex items-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </span>
-            ) : (
-              "Salvar Alterações"
-            )}
-          </Button>
-        </CardFooter>
-      </form>
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

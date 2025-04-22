@@ -1,289 +1,211 @@
 import { useState } from "react";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious 
-} from "@/components/ui/pagination";
+import { ClinicUser } from "@shared/schema";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import { MoreHorizontal, Mail, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getInitials, getAvatarColor, formatDate, roleDisplayNames, roleColors, statusColors } from "@/lib/auth-utils";
-import { MoreHorizontal } from "lucide-react";
+import { roleDisplayNames, roleColors, statusColors, getInitials } from "@/lib/auth-utils";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
+import { formatDate } from "@/lib/auth-utils";
 import { usePermissions } from "@/hooks/use-permissions";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserListProps {
-  isLoading: boolean;
   users: any[];
+  isLoading: boolean;
   searchQuery: string;
   roleFilter: string;
   statusFilter: string;
   onEdit: (userId: number, role: string) => void;
 }
 
-export function UserList({
-  isLoading,
-  users,
-  searchQuery,
-  roleFilter,
-  statusFilter,
-  onEdit
-}: UserListProps) {
-  const { toast } = useToast();
+export function UserList({ users, isLoading, searchQuery, roleFilter, statusFilter, onEdit }: UserListProps) {
   const { hasPermission } = usePermissions();
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-  
-  // Apply filters
-  const filteredUsers = users.filter(user => {
-    // Verificar se user e user.user existem para evitar erros
-    if (!user || !user.user) return false;
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [targetUserId, setTargetUserId] = useState<number | null>(null);
+  const [targetUserName, setTargetUserName] = useState<string>("");
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      !searchQuery ||
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
     
-    const matchesSearch = 
-      !searchQuery || 
-      (user.user.name && user.user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (user.user.email && user.user.email.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    
-    const matchesStatus = 
-      statusFilter === 'all' || 
-      (statusFilter === 'active' && user.user.isActive) ||
-      (statusFilter === 'inactive' && !user.user.isActive);
-    
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && user.status === "ACTIVE") ||
+      (statusFilter === "inactive" && user.status === "INACTIVE");
+
     return matchesSearch && matchesRole && matchesStatus;
   });
-  
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
-  
-  // Handle status change
-  const handleStatusChange = async (userId: number, isActive: boolean) => {
-    try {
-      await apiRequest("PATCH", `/api/users/${userId}`, { isActive: !isActive });
-      
-      // Invalidate queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["/api/clinics"] });
-      
-      toast({
-        title: "Status atualizado",
-        description: `Usuário ${!isActive ? "ativado" : "desativado"} com sucesso.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro ao alterar status",
-        description: "Não foi possível atualizar o status do usuário.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // If loading, show skeleton
+
   if (isLoading) {
-    return (
-      <div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Usuário</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Função</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Último acesso</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="ml-4">
-                      <Skeleton className="h-4 w-[120px]" />
-                      <Skeleton className="h-3 w-[80px] mt-1" />
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell><Skeleton className="h-4 w-[180px]" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-[100px] rounded-full" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-[80px] rounded-full" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-8 w-[100px] ml-auto" /></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
+    return <UserListSkeleton />;
   }
-  
-  // If no users after filtering
+
   if (filteredUsers.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">Nenhum usuário encontrado.</p>
+        <p className="text-muted-foreground">Nenhum usuário encontrado com os filtros selecionados.</p>
       </div>
     );
   }
-  
+
   return (
-    <div>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Usuário</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Função</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Último acesso</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedUsers.map((clinicUser) => {
-              // Verificar se clinicUser e clinicUser.user existem
-              if (!clinicUser || !clinicUser.user) return null;
-              
-              const user = clinicUser.user;
-              return (
-                <TableRow key={clinicUser.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <div className="flex items-center">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${getAvatarColor(user.name || 'Usuário')}`}>
-                        <span>{getInitials(user.name || 'Usuário')}</span>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.name || 'Nome não disponível'}</div>
-                        <div className="text-sm text-gray-500">
-                          Criado em {user.createdAt ? formatDate(user.createdAt).split(',')[0] : 'data desconhecida'}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-gray-900">{user.email || 'Email não disponível'}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      className={`${clinicUser.role && roleColors[clinicUser.role as keyof typeof roleColors] || 'bg-gray-100 text-gray-800'}`}
-                    >
-                      {clinicUser.role && roleDisplayNames[clinicUser.role as keyof typeof roleDisplayNames] || clinicUser.role || 'Função desconhecida'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      className={user.isActive !== undefined ? (user.isActive ? statusColors.active : statusColors.inactive) : 'bg-gray-100 text-gray-800'}
-                    >
-                      {user.isActive !== undefined ? (user.isActive ? "Ativo" : "Inativo") : "Status desconhecido"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-gray-500">
-                      {user.lastLogin ? formatDate(user.lastLogin) : "Nunca"}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Abrir menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {hasPermission("users", "update") && user.id && (
-                          <DropdownMenuItem onClick={() => onEdit(user.id, clinicUser.role)}>
-                            Editar
-                          </DropdownMenuItem>
-                        )}
-                        {hasPermission("users", "update") && user.id && user.isActive !== undefined && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(user.id, user.isActive)}>
-                            {user.isActive ? "Desativar" : "Ativar"}
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="text-left text-xs font-medium text-muted-foreground tracking-wide">
+            <th className="p-2 pl-4">Usuário</th>
+            <th className="p-2">Tipo</th>
+            <th className="p-2">Status</th>
+            <th className="p-2">Entrou em</th>
+            <th className="p-2">Último acesso</th>
+            <th className="p-2 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {filteredUsers.map((user) => (
+            <tr key={user.id} className="hover:bg-muted/50">
+              <td className="p-2 pl-4">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {getInitials(user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">{user.name}</div>
+                    <div className="text-sm text-muted-foreground">{user.email}</div>
+                  </div>
+                </div>
+              </td>
+              <td className="p-2">
+                <Badge 
+                  className={`${roleColors[user.role] || roleColors.DEFAULT} hover:${roleColors[user.role] || roleColors.DEFAULT}`}
+                >
+                  {roleDisplayNames[user.role] || user.role}
+                </Badge>
+              </td>
+              <td className="p-2">
+                <Badge 
+                  variant="outline" 
+                  className={`${statusColors[user.status] || statusColors.DEFAULT} border-${statusColors[user.status] || statusColors.DEFAULT}`}
+                >
+                  {user.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                </Badge>
+              </td>
+              <td className="p-2 text-sm">
+                {formatDate(user.joinedAt)}
+              </td>
+              <td className="p-2 text-sm">
+                {formatDate(user.lastLogin)}
+              </td>
+              <td className="p-2 text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Menu de ações</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    
+                    {/* Enviar email para usuário */}
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Mail className="mr-2 h-4 w-4" />
+                      <span>Enviar email</span>
+                    </DropdownMenuItem>
+                    
+                    {/* Permissões de usuário - apenas para administradores e gerentes */}
+                    {hasPermission("users", "edit") && user.role !== "OWNER" && (
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={() => onEdit(user.id, user.role)}
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        <span>Permissões</span>
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {/* Excluir usuário - apenas para administradores e gerentes */}
+                    {hasPermission("users", "delete") && user.role !== "OWNER" && (
+                      <DropdownMenuItem 
+                        className="cursor-pointer text-destructive focus:text-destructive"
+                        onClick={() => {
+                          setTargetUserId(user.id);
+                          setTargetUserName(user.name);
+                          setShowDeleteDialog(true);
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Remover</span>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
       
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-end mt-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-              
-              {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                // Show pages centered around current page
-                let pageToShow = currentPage;
-                if (currentPage < 3) {
-                  pageToShow = i + 1;
-                } else if (currentPage > totalPages - 2) {
-                  pageToShow = totalPages - 4 + i;
-                } else {
-                  pageToShow = currentPage - 2 + i;
-                }
-                
-                // Make sure we don't show pages below 1 or above totalPages
-                if (pageToShow < 1 || pageToShow > totalPages) return null;
-                
-                return (
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(pageToShow)}
-                      isActive={currentPage === pageToShow}
-                    >
-                      {pageToShow}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-              
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+      {/* Diálogo de confirmação para exclusão de usuário */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover Usuário</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover <strong>{targetUserName}</strong> da clínica? 
+              Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                // Implementar a lógica de exclusão
+                setShowDeleteDialog(false);
+              }}
+            >
+              Remover
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Skeleton para carregamento
+function UserListSkeleton() {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div key={index} className="flex items-center gap-4 p-2">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-40" />
+          </div>
+          <div className="ml-auto flex gap-2">
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-8 w-8" />
+          </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
