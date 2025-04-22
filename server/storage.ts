@@ -898,8 +898,9 @@ export class DatabaseStorage implements IStorage {
   async createClinicUser(clinicUser: InsertClinicUser): Promise<ClinicUser> {
     // Adiciona timestamps e valores padrão
     const clinicUserData = {
-      ...clinicUser,
-      role: clinicUser.role || ClinicRole.STAFF,
+      clinicId: clinicUser.clinicId,
+      userId: clinicUser.userId,
+      role: (clinicUser.role as ClinicRole) || ClinicRole.STAFF,
       invitedBy: clinicUser.invitedBy || null,
       invitedAt: new Date(),
       acceptedAt: null
@@ -949,12 +950,14 @@ export class DatabaseStorage implements IStorage {
   async createClient(client: InsertClient): Promise<Client> {
     // Adiciona timestamps e valores padrão
     const clientData = {
-      ...client,
+      name: client.name,
+      email: client.email ?? null,
+      createdBy: client.createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),
-      email: client.email ?? null,
       address: client.address ?? null,
       phone: client.phone ?? null,
+      clinicId: client.clinicId,
       birthdate: client.birthdate ?? null
     };
     
@@ -985,10 +988,11 @@ export class DatabaseStorage implements IStorage {
   async createProfessional(professional: InsertProfessional): Promise<Professional> {
     // Adiciona timestamps e valores padrão
     const professionalData = {
-      ...professional,
+      clinicId: professional.clinicId,
+      userId: professional.userId,
+      specialization: professional.specialization ?? null,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      specialization: professional.specialization ?? null
+      updatedAt: new Date()
     };
     
     const [newProfessional] = await db.insert(professionals).values(professionalData).returning();
@@ -1010,10 +1014,13 @@ export class DatabaseStorage implements IStorage {
   async createService(service: InsertService): Promise<Service> {
     // Adiciona timestamps e valores padrão
     const serviceData = {
-      ...service,
+      name: service.name,
+      clinicId: service.clinicId,
+      description: service.description ?? null,
+      duration: service.duration,
+      price: service.price,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      description: service.description ?? null
+      updatedAt: new Date()
     };
     
     const [newService] = await db.insert(services).values(serviceData).returning();
@@ -1035,10 +1042,16 @@ export class DatabaseStorage implements IStorage {
   async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
     // Adiciona timestamps e valores padrão
     const appointmentData = {
-      ...appointment,
+      createdBy: appointment.createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),
       status: appointment.status || 'AGENDADO',
+      clinicId: appointment.clinicId,
+      clientId: appointment.clientId,
+      professionalId: appointment.professionalId,
+      serviceId: appointment.serviceId,
+      startTime: appointment.startTime,
+      endTime: appointment.endTime,
       notes: appointment.notes ?? null
     };
     
@@ -1069,9 +1082,14 @@ export class DatabaseStorage implements IStorage {
   async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
     // Adiciona timestamps e valores padrão
     const invitationData = {
-      ...invitation,
-      createdAt: new Date(),
-      permissions: invitation.permissions ?? null
+      email: invitation.email,
+      role: invitation.role as ClinicRole,
+      clinicId: invitation.clinicId,
+      invitedBy: invitation.invitedBy,
+      permissions: invitation.permissions ?? null,
+      token: invitation.token,
+      expiresAt: invitation.expiresAt,
+      createdAt: new Date()
     };
     
     const [newInvitation] = await db.insert(invitations).values(invitationData).returning();
