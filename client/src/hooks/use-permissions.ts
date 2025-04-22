@@ -143,8 +143,8 @@ export function usePermissions() {
       return false;
     }
 
-    // Proprietários têm permissão para tudo na sua clínica
-    if (activeClinicUser.role === "OWNER") {
+    // Super admins e proprietários têm permissão para tudo
+    if (user.role === "SUPER_ADMIN" || activeClinicUser.role === "OWNER") {
       return true;
     }
 
@@ -169,8 +169,8 @@ export function usePermissions() {
       return false;
     }
 
-    // Proprietários têm permissão para tudo na sua clínica
-    if (activeClinicUser.role === "OWNER") {
+    // Super admins e proprietários têm permissão para tudo
+    if (user.role === "SUPER_ADMIN" || activeClinicUser.role === "OWNER") {
       return true;
     }
 
