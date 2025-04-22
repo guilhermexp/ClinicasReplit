@@ -18,6 +18,9 @@ import { pool } from "./db";
 
 // Storage interface for CRUD operations
 export interface IStorage {
+  // Propriedade de armazenamento de sessão
+  sessionStore: session.Store;
+  
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -73,6 +76,8 @@ export interface IStorage {
 
 // In-memory storage implementation
 export class MemStorage implements IStorage {
+  sessionStore: session.Store;
+  
   private users: Map<number, User>;
   private clinics: Map<number, Clinic>;
   private clinicUsers: Map<number, ClinicUser>;
@@ -94,6 +99,12 @@ export class MemStorage implements IStorage {
   private invitationIdCounter: number;
   
   constructor() {
+    // Initialize in-memory session store
+    const MemoryStore = require('memorystore')(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+    
     this.users = new Map();
     this.clinics = new Map();
     this.clinicUsers = new Map();
@@ -810,13 +821,15 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     // Adiciona timestamps e valores padrão
     const userData = {
-      ...user,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      role: user.role || UserRole.STAFF,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      role: (user.role as UserRole) || UserRole.STAFF,
       isActive: user.isActive !== undefined ? user.isActive : true,
       lastLogin: null,
-      createdBy: user.createdBy || null
+      createdBy: user.createdBy || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
     
     const [newUser] = await db.insert(users).values(userData).returning();
