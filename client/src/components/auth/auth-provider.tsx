@@ -103,17 +103,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   
   // Get current clinic user relationship for permission checking
-  const { data: clinicUsers = [] } = useQuery<ClinicUser[]>({
-    queryKey: ["/api/clinic-users", selectedClinic?.id],
+  const { data: activeClinicUser = null } = useQuery<ClinicUser | null>({
+    queryKey: ["/api/clinics", selectedClinic?.id, "user"],
     enabled: !!userData?.user && !!selectedClinic?.id,
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000 // 10 minutos
   });
-  
-  // Encontra o activeClinicUser com base no usuário atual e clínica selecionada
-  const activeClinicUser = clinicUsers.find(
-    cu => cu.userId === userData?.user?.id && cu.clinicId === selectedClinic?.id
-  ) || null;
   
   // Set default selected clinic if not already set
   // Redirect behavior based on user's clinic association status

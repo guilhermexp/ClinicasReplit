@@ -277,6 +277,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ClinicUser routes
+  app.get("/api/clinics/:clinicId/user", isAuthenticated, async (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Não autorizado." });
+    }
+    
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      const userId = req.user.id;
+      
+      const clinicUser = await storage.getClinicUser(clinicId, userId);
+      
+      if (!clinicUser) {
+        return res.status(404).json({ message: "Relação usuário-clínica não encontrada." });
+      }
+      
+      res.json(clinicUser);
+    } catch (error) {
+      console.error("Erro ao buscar relação usuário-clínica:", error);
+      res.status(500).json({ message: "Erro ao buscar relação usuário-clínica." });
+    }
+  });
+  
   // Permissions routes
   app.get("/api/clinic-users/:clinicUserId/permissions", isAuthenticated, async (req: Request, res: Response) => {
     try {
