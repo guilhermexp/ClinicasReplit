@@ -55,10 +55,13 @@ export function UserList({
   
   // Apply filters
   const filteredUsers = users.filter(user => {
+    // Verificar se user e user.user existem para evitar erros
+    if (!user || !user.user) return false;
+    
     const matchesSearch = 
       !searchQuery || 
-      user.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      (user.user.name && user.user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.user.email && user.user.email.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     
@@ -161,39 +164,42 @@ export function UserList({
           </TableHeader>
           <TableBody>
             {paginatedUsers.map((clinicUser) => {
+              // Verificar se clinicUser e clinicUser.user existem
+              if (!clinicUser || !clinicUser.user) return null;
+              
               const user = clinicUser.user;
               return (
                 <TableRow key={clinicUser.id} className="hover:bg-gray-50">
                   <TableCell>
                     <div className="flex items-center">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${getAvatarColor(user.name)}`}>
-                        <span>{getInitials(user.name)}</span>
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${getAvatarColor(user.name || 'Usuário')}`}>
+                        <span>{getInitials(user.name || 'Usuário')}</span>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        <div className="text-sm font-medium text-gray-900">{user.name || 'Nome não disponível'}</div>
                         <div className="text-sm text-gray-500">
-                          Criado em {formatDate(user.createdAt).split(',')[0]}
+                          Criado em {user.createdAt ? formatDate(user.createdAt).split(',')[0] : 'data desconhecida'}
                         </div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm text-gray-900">{user.email}</div>
+                    <div className="text-sm text-gray-900">{user.email || 'Email não disponível'}</div>
                   </TableCell>
                   <TableCell>
                     <Badge 
                       variant="outline" 
-                      className={`${roleColors[clinicUser.role as keyof typeof roleColors] || 'bg-gray-100 text-gray-800'}`}
+                      className={`${clinicUser.role && roleColors[clinicUser.role as keyof typeof roleColors] || 'bg-gray-100 text-gray-800'}`}
                     >
-                      {roleDisplayNames[clinicUser.role as keyof typeof roleDisplayNames] || clinicUser.role}
+                      {clinicUser.role && roleDisplayNames[clinicUser.role as keyof typeof roleDisplayNames] || clinicUser.role || 'Função desconhecida'}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge 
                       variant="outline" 
-                      className={user.isActive ? statusColors.active : statusColors.inactive}
+                      className={user.isActive !== undefined ? (user.isActive ? statusColors.active : statusColors.inactive) : 'bg-gray-100 text-gray-800'}
                     >
-                      {user.isActive ? "Ativo" : "Inativo"}
+                      {user.isActive !== undefined ? (user.isActive ? "Ativo" : "Inativo") : "Status desconhecido"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -210,12 +216,12 @@ export function UserList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {hasPermission("users", "update") && (
+                        {hasPermission("users", "update") && user.id && (
                           <DropdownMenuItem onClick={() => onEdit(user.id, clinicUser.role)}>
                             Editar
                           </DropdownMenuItem>
                         )}
-                        {hasPermission("users", "update") && (
+                        {hasPermission("users", "update") && user.id && user.isActive !== undefined && (
                           <DropdownMenuItem onClick={() => handleStatusChange(user.id, user.isActive)}>
                             {user.isActive ? "Desativar" : "Ativar"}
                           </DropdownMenuItem>
