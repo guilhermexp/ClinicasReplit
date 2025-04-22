@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -61,7 +61,8 @@ export default function Settings() {
   });
   
   // Update clinic info form when data is loaded
-  useState(() => {
+  // Corrigido: usando useEffect em vez de useState para atualizar quando os dados da clínica mudam
+  useEffect(() => {
     if (clinic) {
       setClinicInfo({
         name: clinic.name || "",
@@ -70,7 +71,7 @@ export default function Settings() {
         openingHours: clinic.openingHours || ""
       });
     }
-  });
+  }, [clinic]);
   
   // Mutation for updating clinic
   const updateClinicMutation = useMutation({
