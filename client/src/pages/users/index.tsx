@@ -42,16 +42,22 @@ export default function Users() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [selectedUserRole, setSelectedUserRole] = useState<string | null>(null);
   
-  // Query to get clinic users
+  // Query to get clinic users com cache otimizado
   const { data: clinicUsers = [], isLoading } = useQuery({
     queryKey: ["/api/clinics", selectedClinic?.id, "users"],
     enabled: !!selectedClinic,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    placeholderData: (previousData) => previousData || [],
   });
   
-  // Query to get pending invitations
+  // Query to get pending invitations com cache otimizado
   const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery({
     queryKey: ["/api/clinics", selectedClinic?.id, "invitations"],
     enabled: !!selectedClinic,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    placeholderData: (previousData) => previousData || [],
   });
   
   const handleUserEdit = (userId: number, role: string) => {

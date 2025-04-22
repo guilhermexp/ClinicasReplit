@@ -32,7 +32,7 @@ export default function ClientsPage() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [isAddingClient, setIsAddingClient] = useState(false);
 
-  // Fetch clients
+  // Fetch clients com cache otimizado
   const {
     data: clients = [],
     isLoading,
@@ -41,6 +41,10 @@ export default function ClientsPage() {
   } = useQuery<Client[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "clients"],
     enabled: !!selectedClinic?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    // Uma estratégia para reduzir o impacto da primeira carga
+    placeholderData: (previousData) => previousData || [],
   });
 
   const handleRefresh = () => {

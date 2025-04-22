@@ -82,28 +82,40 @@ export default function Appointments() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [statusFilter, setStatusFilter] = useState("all");
   
-  // Query to get appointments
+  // Query to get appointments com cache otimizado
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "appointments"],
     enabled: !!selectedClinic,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    placeholderData: (previousData) => previousData || [],
   });
   
-  // Query to get clients
+  // Query to get clients com cache otimizado
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "clients"],
     enabled: !!selectedClinic,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    placeholderData: (previousData) => previousData || [],
   });
   
-  // Query to get professionals
+  // Query to get professionals com cache otimizado
   const { data: professionals = [] } = useQuery<Professional[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "professionals"],
     enabled: !!selectedClinic,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    placeholderData: (previousData) => previousData || [],
   });
   
-  // Query to get services
+  // Query to get services com cache otimizado
   const { data: services = [] } = useQuery<Service[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "services"],
     enabled: !!selectedClinic,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    placeholderData: (previousData) => previousData || [],
   });
   
   // Filter appointments by selected date and status
