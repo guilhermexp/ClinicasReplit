@@ -83,35 +83,35 @@ export default function Appointments() {
   const [statusFilter, setStatusFilter] = useState("all");
   
   // Query to get appointments
-  const { data: appointments = [], isLoading } = useQuery({
+  const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "appointments"],
     enabled: !!selectedClinic,
   });
   
   // Query to get clients
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "clients"],
     enabled: !!selectedClinic,
   });
   
   // Query to get professionals
-  const { data: professionals = [] } = useQuery({
+  const { data: professionals = [] } = useQuery<Professional[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "professionals"],
     enabled: !!selectedClinic,
   });
   
   // Query to get services
-  const { data: services = [] } = useQuery({
+  const { data: services = [] } = useQuery<Service[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "services"],
     enabled: !!selectedClinic,
   });
   
   // Filter appointments by selected date and status
-  const filteredAppointments = appointments.filter((appointment: any) => {
+  const filteredAppointments = appointments.filter((appointment: Appointment) => {
     // Verificar se startTime está definido antes de chamar parseISO
     if (!appointment.startTime) return false;
     
-    const appointmentDate = parseISO(appointment.startTime);
+    const appointmentDate = parseISO(appointment.startTime.toString());
     const dateMatches = selectedDate 
       ? appointmentDate.toDateString() === selectedDate.toDateString()
       : true;
@@ -123,36 +123,42 @@ export default function Appointments() {
   
   // Group appointments by time blocks (morning, afternoon, evening)
   const groupedAppointments = {
-    morning: filteredAppointments.filter((appointment: any) => {
+    morning: filteredAppointments.filter((appointment: Appointment) => {
       if (!appointment.startTime) return false;
-      const hour = parseISO(appointment.startTime).getHours();
+      const hour = parseISO(appointment.startTime.toString()).getHours();
       return hour >= 6 && hour < 12;
     }),
-    afternoon: filteredAppointments.filter((appointment: any) => {
+    afternoon: filteredAppointments.filter((appointment: Appointment) => {
       if (!appointment.startTime) return false;
-      const hour = parseISO(appointment.startTime).getHours();
+      const hour = parseISO(appointment.startTime.toString()).getHours();
       return hour >= 12 && hour < 18;
     }),
-    evening: filteredAppointments.filter((appointment: any) => {
+    evening: filteredAppointments.filter((appointment: Appointment) => {
       if (!appointment.startTime) return false;
-      const hour = parseISO(appointment.startTime).getHours();
+      const hour = parseISO(appointment.startTime.toString()).getHours();
       return hour >= 18 || hour < 6;
     })
   };
   
   // Find client, professional, and service names
   const getClientName = (clientId: number) => {
-    const client = clients.find((c: any) => c.id === clientId);
+    const client = clients.find((c: Client) => c.id === clientId);
     return client ? client.name : "Cliente não encontrado";
   };
   
   const getProfessionalName = (professionalId: number) => {
-    const professional = professionals.find((p: any) => p.id === professionalId);
-    return professional ? professional.name || "Profissional" : "Profissional não encontrado";
+    // Procura primeiro nos professores
+    const professional = professionals.find((p: Professional) => p.id === professionalId);
+    if (professional) {
+      // Busca informações do usuário relacionado
+      const user = clients.find((c: Client) => c.id === professional.userId);
+      return user?.name || "Profissional";
+    }
+    return "Profissional não encontrado";
   };
   
   const getServiceName = (serviceId: number) => {
-    const service = services.find((s: any) => s.id === serviceId);
+    const service = services.find((s: Service) => s.id === serviceId);
     return service ? service.name : "Serviço não encontrado";
   };
   
@@ -194,11 +200,11 @@ export default function Appointments() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="scheduled">Agendado</SelectItem>
-                  <SelectItem value="confirmed">Confirmado</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                  <SelectItem value="noshow">Não compareceu</SelectItem>
+                  <SelectItem value={AppointmentStatus.SCHEDULED}>Agendado</SelectItem>
+                  <SelectItem value={AppointmentStatus.CONFIRMED}>Confirmado</SelectItem>
+                  <SelectItem value={AppointmentStatus.COMPLETED}>Concluído</SelectItem>
+                  <SelectItem value={AppointmentStatus.CANCELLED}>Cancelado</SelectItem>
+                  <SelectItem value={AppointmentStatus.NO_SHOW}>Não compareceu</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -290,7 +296,7 @@ export default function Appointments() {
                           Manhã (6h - 12h)
                         </h3>
                         <div className="space-y-3">
-                          {groupedAppointments.morning.map((appointment: any) => (
+                          {groupedAppointments.morning.map((appointment: Appointment) => (
                             <AppointmentCard 
                               key={appointment.id}
                               appointment={appointment}
@@ -311,7 +317,7 @@ export default function Appointments() {
                           Tarde (12h - 18h)
                         </h3>
                         <div className="space-y-3">
-                          {groupedAppointments.afternoon.map((appointment: any) => (
+                          {groupedAppointments.afternoon.map((appointment: Appointment) => (
                             <AppointmentCard 
                               key={appointment.id}
                               appointment={appointment}
@@ -427,21 +433,17 @@ export default function Appointments() {
                 <Label htmlFor="date" className="text-right">
                   Data
                 </Label>
-                <div className="col-span-3 flex space-x-2">
-                  <div className="flex-1">
-                    <Input
-                      id="date"
-                      type="date"
-                      defaultValue={selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Input
-                      id="time"
-                      type="time"
-                      defaultValue="09:00"
-                    />
-                  </div>
+                <div className="col-span-3">
+                  <Input id="date" type="date" className="w-full" />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="time" className="text-right">
+                  Horário
+                </Label>
+                <div className="col-span-3">
+                  <Input id="time" type="time" className="w-full" />
                 </div>
               </div>
               
@@ -449,16 +451,16 @@ export default function Appointments() {
                 <Label htmlFor="status" className="text-right">
                   Status
                 </Label>
-                <Select defaultValue="scheduled">
+                <Select>
                   <SelectTrigger id="status" className="col-span-3">
                     <SelectValue placeholder="Selecione um status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="scheduled">Agendado</SelectItem>
-                    <SelectItem value="confirmed">Confirmado</SelectItem>
-                    <SelectItem value="completed">Concluído</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
-                    <SelectItem value="noshow">Não compareceu</SelectItem>
+                    <SelectItem value={AppointmentStatus.SCHEDULED}>Agendado</SelectItem>
+                    <SelectItem value={AppointmentStatus.CONFIRMED}>Confirmado</SelectItem>
+                    <SelectItem value={AppointmentStatus.COMPLETED}>Concluído</SelectItem>
+                    <SelectItem value={AppointmentStatus.CANCELLED}>Cancelado</SelectItem>
+                    <SelectItem value={AppointmentStatus.NO_SHOW}>Não compareceu</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -467,16 +469,12 @@ export default function Appointments() {
                 <Label htmlFor="notes" className="text-right pt-2">
                   Observações
                 </Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Observações sobre o agendamento"
-                  className="col-span-3"
-                  rows={3}
-                />
+                <Textarea id="notes" className="col-span-3" placeholder="Observações sobre o agendamento" />
               </div>
             </div>
+            
             <DialogFooter>
-              <Button type="submit">Agendar</Button>
+              <Button type="submit">Salvar Agendamento</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -485,7 +483,6 @@ export default function Appointments() {
   );
 }
 
-// Appointment Card Component
 function AppointmentCard({ 
   appointment, 
   clientName,
