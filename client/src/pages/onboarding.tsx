@@ -1,94 +1,71 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useAuth } from "@/hooks/use-auth";
+import { useForm } from "react-hook-form";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Building2,
-  PlusCircle,
-  LogIn,
-  Loader2,
-} from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 
-// Esquema de validação para criação de clínica
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+
+import { Building, Mail, User, Clock, MapPin, Phone, Gift, CheckCircle2, TicketCheck } from "lucide-react";
+
+// Esquemas de validação
 const clinicFormSchema = z.object({
-  name: z.string().min(3, {
-    message: "O nome da clínica precisa ter pelo menos 3 caracteres.",
-  }),
+  name: z.string().min(3, "O nome da clínica deve ter pelo menos 3 caracteres"),
   address: z.string().optional(),
   phone: z.string().optional(),
+  email: z.string().email("Email inválido").optional(),
   openingHours: z.string().optional(),
 });
 
-// Esquema de validação para código de convite
 const inviteCodeSchema = z.object({
-  code: z.string().min(6, {
-    message: "O código de convite precisa ter pelo menos 6 caracteres.",
-  }),
+  token: z.string().min(8, "Código de convite deve ter pelo menos 8 caracteres")
 });
 
 type ClinicFormValues = z.infer<typeof clinicFormSchema>;
 type InviteCodeFormValues = z.infer<typeof inviteCodeSchema>;
 
 export default function OnboardingPage() {
-  const { user, clinics } = useAuth();
-  const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const [_, navigate] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>("create");
+  const [activeTab, setActiveTab] = useState("create-clinic");
 
-  const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery({
-    queryKey: ["/api/invitations/user"],
-    enabled: !!user,
-  });
-
+  // Form para criar uma nova clínica
   const clinicForm = useForm<ClinicFormValues>({
     resolver: zodResolver(clinicFormSchema),
     defaultValues: {
       name: "",
       address: "",
       phone: "",
-      openingHours: "",
-    },
+      email: "",
+      openingHours: ""
+    }
   });
 
+  // Form para usar um código de convite
   const inviteCodeForm = useForm<InviteCodeFormValues>({
     resolver: zodResolver(inviteCodeSchema),
     defaultValues: {
-      code: "",
-    },
+      token: ""
+    }
   });
 
-  // Mutação para criar clínica
+  // Buscar convites pendentes para este usuário
+  const { data: invitations = [] } = useQuery<any[]>({
+    queryKey: ["/api/invitations/user"],
+    enabled: !!user
+  });
+
+  // Mutation para criar uma nova clínica
   const createClinicMutation = useMutation({
     mutationFn: async (data: ClinicFormValues) => {
       const res = await apiRequest("POST", "/api/clinics", data);
@@ -96,45 +73,45 @@ export default function OnboardingPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clinics"] });
+      navigate("/dashboard");
       toast({
         title: "Clínica criada com sucesso!",
-        description: "Sua clínica foi criada e você agora é o proprietário.",
+        description: "Você agora é o proprietário desta clínica."
       });
-      navigate("/dashboard");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao criar clínica",
-        description: error.message || "Houve um erro ao criar a clínica. Tente novamente.",
-        variant: "destructive",
+        description: error.message,
+        variant: "destructive"
       });
-    },
+    }
   });
 
-  // Mutação para usar código de convite
+  // Mutation para usar um código de convite
   const useInviteCodeMutation = useMutation({
     mutationFn: async (data: InviteCodeFormValues) => {
-      const res = await apiRequest("POST", "/api/invitations/accept", { token: data.code });
+      const res = await apiRequest("POST", "/api/invitations/accept", data);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clinics"] });
+      navigate("/dashboard");
       toast({
         title: "Convite aceito com sucesso!",
-        description: "Você agora tem acesso à clínica.",
+        description: "Você agora faz parte desta clínica."
       });
-      navigate("/dashboard");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "Código de convite inválido",
-        description: error.message || "O código de convite é inválido ou expirou.",
-        variant: "destructive",
+        title: "Erro ao usar código de convite",
+        description: error.message,
+        variant: "destructive"
       });
-    },
+    }
   });
 
-  // Mutação para aceitar convite
+  // Mutation para aceitar um convite específico
   const acceptInvitationMutation = useMutation({
     mutationFn: async (invitationId: number) => {
       const res = await apiRequest("POST", `/api/invitations/${invitationId}/accept`, {});
@@ -143,262 +120,337 @@ export default function OnboardingPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clinics"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invitations/user"] });
+      navigate("/dashboard");
       toast({
         title: "Convite aceito com sucesso!",
-        description: "Você agora tem acesso à clínica.",
+        description: "Você agora faz parte desta clínica."
       });
-      navigate("/dashboard");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao aceitar convite",
-        description: error.message || "Houve um erro ao aceitar o convite. Tente novamente.",
-        variant: "destructive",
+        description: error.message,
+        variant: "destructive"
       });
-    },
+    }
   });
 
-  // Se o usuário já tem uma clínica, redireciona para o dashboard
-  useEffect(() => {
-    if (user && clinics.length > 0) {
-      navigate("/dashboard");
-    }
-  }, [user, clinics, navigate]);
-
-  // Função para criar clínica
   const onCreateClinic = async (values: ClinicFormValues) => {
     await createClinicMutation.mutateAsync(values);
   };
 
-  // Função para usar código de convite
   const onUseInviteCode = async (values: InviteCodeFormValues) => {
     await useInviteCodeMutation.mutateAsync(values);
   };
 
-  // Função para aceitar convite
   const onAcceptInvitation = async (invitationId: number) => {
     await acceptInvitationMutation.mutateAsync(invitationId);
   };
 
-  // Se não houver usuário logado, redireciona para login
   if (!user) {
-    navigate("/login");
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Acesso Não Autorizado</CardTitle>
+            <CardDescription>Você precisa estar logado para acessar esta página.</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={() => navigate("/login")}>Ir para o Login</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-4xl p-6">
-        <h1 className="text-3xl font-bold text-center mb-8">Bem-vindo(a) ao Gardenia, {user.name}!</h1>
-        <p className="text-center text-gray-600 mb-10">
-          Para começar a usar o sistema, escolha uma das opções abaixo:
-        </p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Coluna esquerda - Formulários */}
+        <div className="space-y-8">
+          <div className="text-center lg:text-left">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Bem-vindo ao Sistema de Gestão de Clínicas
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Para começar, você precisa criar uma clínica, aceitar um convite ou usar um código de acesso.
+            </p>
+          </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="create">Criar Clínica</TabsTrigger>
-            <TabsTrigger value="invite" disabled={invitations.length === 0}>
-              Convites ({invitations.length})
-            </TabsTrigger>
-            <TabsTrigger value="code">Código de Acesso</TabsTrigger>
-          </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-3 mb-8">
+              <TabsTrigger value="create-clinic">Criar Clínica</TabsTrigger>
+              <TabsTrigger value="invitations">Convites ({invitations?.length || 0})</TabsTrigger>
+              <TabsTrigger value="invite-code">Código de Acesso</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="create">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Building2 className="mr-2 h-5 w-5" />
-                  Criar Nova Clínica
-                </CardTitle>
-                <CardDescription>
-                  Crie sua própria clínica para começar a gerenciar seus pacientes e agendamentos.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...clinicForm}>
-                  <form onSubmit={clinicForm.handleSubmit(onCreateClinic)} className="space-y-4">
-                    <FormField
-                      control={clinicForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome da Clínica</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Clínica Estética Exemplar" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={clinicForm.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Endereço (opcional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Rua Exemplo, 123 - Cidade" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={clinicForm.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telefone (opcional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="(11) 99999-9999" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={clinicForm.control}
-                      name="openingHours"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Horário de Funcionamento (opcional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Segunda a Sexta, 8h às 18h" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      disabled={createClinicMutation.isPending}
-                    >
-                      {createClinicMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Criando...
-                        </>
-                      ) : (
-                        <>
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          Criar Clínica
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            {/* Tab para criar uma nova clínica */}
+            <TabsContent value="create-clinic">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Criar Nova Clínica
+                  </CardTitle>
+                  <CardDescription>
+                    Crie sua própria clínica e torne-se o administrador.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...clinicForm}>
+                    <form onSubmit={clinicForm.handleSubmit(onCreateClinic)} className="space-y-4">
+                      <FormField
+                        control={clinicForm.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome da Clínica *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Clínica Estética Gardênia" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-          <TabsContent value="invite">
-            <Card>
-              <CardHeader>
-                <CardTitle>Convites Pendentes</CardTitle>
-                <CardDescription>
-                  Você recebeu convites para juntar-se às seguintes clínicas:
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoadingInvitations ? (
-                  <div className="flex justify-center py-6">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : invitations.length === 0 ? (
-                  <div className="text-center py-6 text-gray-500">
-                    Você não tem convites pendentes.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {invitations.map((invitation: any) => (
-                      <Card key={invitation.id} className="border border-gray-200">
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <h3 className="font-medium">{invitation.clinicName}</h3>
-                              <p className="text-sm text-gray-500">
-                                Função: {invitation.role}
-                              </p>
-                              <p className="text-sm text-gray-500">
+                      <FormField
+                        control={clinicForm.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Endereço</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Av. Paulista, 1000 - São Paulo/SP" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={clinicForm.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Telefone</FormLabel>
+                              <FormControl>
+                                <Input placeholder="(11) 99999-9999" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={clinicForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="contato@clinica.com.br" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={clinicForm.control}
+                        name="openingHours"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Horário de Funcionamento</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Segunda a Sexta: 9h às 18h" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={createClinicMutation.isPending}
+                      >
+                        {createClinicMutation.isPending ? "Criando..." : "Criar Clínica"}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Tab para listar convites pendentes */}
+            <TabsContent value="invitations">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Convites Pendentes
+                  </CardTitle>
+                  <CardDescription>
+                    Aceite convites para se juntar a clínicas existentes.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {invitations && invitations.length > 0 ? (
+                    <div className="space-y-4">
+                      {invitations.map((invitation: any) => (
+                        <Card key={invitation.id}>
+                          <CardContent className="pt-6">
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-start">
+                                <h3 className="font-medium">{invitation.clinicName}</h3>
+                                <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                  {invitation.role}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
                                 Convidado por: {invitation.inviterName}
                               </p>
+                              <p className="text-sm text-muted-foreground">
+                                Expira em: {new Date(invitation.expiresAt).toLocaleDateString()}
+                              </p>
                             </div>
-                            <Button
+                          </CardContent>
+                          <CardFooter className="flex justify-end gap-2 border-t pt-4">
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setActiveTab("invite-code")}
+                            >
+                              Recusar
+                            </Button>
+                            <Button 
                               onClick={() => onAcceptInvitation(invitation.id)}
                               disabled={acceptInvitationMutation.isPending}
-                              size="sm"
                             >
-                              {acceptInvitationMutation.isPending && 
-                                acceptInvitationMutation.variables === invitation.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                "Aceitar"
-                              )}
+                              {acceptInvitationMutation.isPending ? "Aceitando..." : "Aceitar Convite"}
                             </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Mail className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                      <h3 className="text-lg font-medium">Sem convites pendentes</h3>
+                      <p className="text-muted-foreground mt-1">
+                        Você não tem convites pendentes para se juntar a clínicas.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="code">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <LogIn className="mr-2 h-5 w-5" />
-                  Usar Código de Acesso
-                </CardTitle>
-                <CardDescription>
-                  Insira um código de acesso que você recebeu para juntar-se a uma clínica existente.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...inviteCodeForm}>
-                  <form onSubmit={inviteCodeForm.handleSubmit(onUseInviteCode)} className="space-y-4">
-                    <FormField
-                      control={inviteCodeForm.control}
-                      name="code"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Código de Acesso</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Insira o código de acesso" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            O código deve ter sido fornecido pelo administrador da clínica.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      disabled={useInviteCodeMutation.isPending}
-                    >
-                      {useInviteCodeMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Validando...
-                        </>
-                      ) : (
-                        <>
-                          <LogIn className="mr-2 h-4 w-4" />
-                          Acessar Clínica
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            {/* Tab para usar código de convite */}
+            <TabsContent value="invite-code">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TicketCheck className="h-5 w-5" />
+                    Usar Código de Acesso
+                  </CardTitle>
+                  <CardDescription>
+                    Entre com o código de convite que você recebeu.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...inviteCodeForm}>
+                    <form onSubmit={inviteCodeForm.handleSubmit(onUseInviteCode)} className="space-y-4">
+                      <FormField
+                        control={inviteCodeForm.control}
+                        name="token"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Código de Convite</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Insira o código que você recebeu" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={useInviteCodeMutation.isPending}
+                      >
+                        {useInviteCodeMutation.isPending ? "Verificando..." : "Usar Código"}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Coluna direita - Informações */}
+        <div className="flex flex-col bg-primary text-primary-foreground rounded-lg p-8 hidden lg:flex">
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-3xl font-bold mb-4">Sistema Completo para Gestão de Clínicas</h2>
+              <p className="text-primary-foreground/80 mb-6">
+                Nossa plataforma foi desenvolvida para atender às necessidades específicas de clínicas estéticas,
+                oferecendo um conjunto completo de ferramentas para gerenciar todos os aspectos do seu negócio.
+              </p>
+            </div>
+
+            <Separator className="bg-primary-foreground/20" />
+
+            <div className="space-y-6">
+              <h3 className="text-xl font-medium">Principais Recursos:</h3>
+              
+              <div className="grid gap-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 mt-0.5 text-primary-foreground/80" />
+                  <div>
+                    <h4 className="font-medium">Agendamento Inteligente</h4>
+                    <p className="text-primary-foreground/80 text-sm">
+                      Gerencie consultas, evite conflitos e envie lembretes automáticos.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 mt-0.5 text-primary-foreground/80" />
+                  <div>
+                    <h4 className="font-medium">Gestão de Pacientes</h4>
+                    <p className="text-primary-foreground/80 text-sm">
+                      Mantenha um histórico completo, com fotos, tratamentos e evolução.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 mt-0.5 text-primary-foreground/80" />
+                  <div>
+                    <h4 className="font-medium">Controle Financeiro</h4>
+                    <p className="text-primary-foreground/80 text-sm">
+                      Acompanhe pagamentos, gere relatórios e tenha visão completa do faturamento.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 mt-0.5 text-primary-foreground/80" />
+                  <div>
+                    <h4 className="font-medium">Controle de Acesso</h4>
+                    <p className="text-primary-foreground/80 text-sm">
+                      Defina permissões específicas para cada tipo de usuário da sua equipe.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -196,10 +196,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
       }
       
+      // Check if user already has a clinic where they are the owner
+      const user = req.user as any;
+      const allClinics = await storage.listClinics();
+      
+      // Get all clinic-user relationships for this user
+      const clinicUsers = [];
+      for (const clinic of allClinics) {
+        const users = await storage.listClinicUsers(clinic.id);
+        const userClinics = users.filter(cu => cu.userId === user.id && cu.role === ClinicRole.OWNER);
+        clinicUsers.push(...userClinics);
+      }
+      
+      // Each user can only create one clinic as an owner
+      if (clinicUsers.length > 0) {
+        return res.status(400).json({ 
+          message: "Você já possui uma clínica cadastrada como proprietário. Você pode criar novas clínicas apenas se for convidado por outros usuários." 
+        });
+      }
+      
       const newClinic = await storage.createClinic(result.data);
       
       // Create clinic-user relationship for the owner
-      const user = req.user as any;
       await storage.createClinicUser({
         clinicId: newClinic.id,
         userId: user.id,
@@ -422,6 +440,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get invitations for current user (by email)
+  app.get("/api/invitations/user", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as any;
+      if (!user || !user.email) {
+        return res.status(400).json({ message: "Usuário não autenticado corretamente." });
+      }
+      
+      // Find all invitations for this user's email
+      const allInvitations = [];
+      // Get invitations from all clinics
+      const clinics = await storage.listClinics();
+      for (const clinic of clinics) {
+        const clinicInvitations = await storage.listInvitations(clinic.id);
+        allInvitations.push(...clinicInvitations);
+      }
+      
+      const userInvitations = allInvitations.filter(inv => 
+        inv.email.toLowerCase() === user.email.toLowerCase() && 
+        new Date(inv.expiresAt) > new Date()
+      );
+      
+      // Get additional info for each invitation
+      const invitationsWithDetails = await Promise.all(userInvitations.map(async inv => {
+        const clinic = await storage.getClinic(inv.clinicId);
+        const inviter = await storage.getUser(inv.invitedBy);
+        
+        return {
+          ...inv,
+          clinicName: clinic?.name || "Clínica desconhecida",
+          inviterName: inviter?.name || "Usuário desconhecido"
+        };
+      }));
+      
+      res.json(invitationsWithDetails);
+    } catch (error) {
+      console.error("Error fetching user invitations:", error);
+      res.status(500).json({ message: "Erro ao buscar convites." });
+    }
+  });
+  
+  // Accept invitation
+  app.post("/api/invitations/:id/accept", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const invitationId = parseInt(req.params.id);
+      const user = req.user as any;
+      
+      // Find the invitation by searching in all clinics
+      let invitation = null;
+      const clinics = await storage.listClinics();
+      for (const clinic of clinics) {
+        const clinicInvitations = await storage.listInvitations(clinic.id);
+        const found = clinicInvitations.find(inv => inv.id === invitationId);
+        if (found) {
+          invitation = found;
+          break;
+        }
+      }
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Convite não encontrado." });
+      }
+      
+      // Verify invitation belongs to this user
+      if (invitation.email.toLowerCase() !== user.email.toLowerCase()) {
+        return res.status(403).json({ message: "Este convite não pertence ao usuário atual." });
+      }
+      
+      // Check if invitation is expired
+      if (new Date(invitation.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Convite expirado." });
+      }
+      
+      // Create clinic-user relationship
+      const clinicUser = await storage.createClinicUser({
+        clinicId: invitation.clinicId,
+        userId: user.id,
+        role: invitation.role,
+        invitedBy: invitation.invitedBy
+      });
+      
+      // If permissions were specified in the invitation, create them
+      if (invitation.permissions) {
+        try {
+          const permissions = JSON.parse(invitation.permissions);
+          for (const perm of permissions) {
+            await storage.createPermission({
+              clinicUserId: clinicUser.id,
+              module: perm.module,
+              action: perm.action
+            });
+          }
+        } catch (e) {
+          console.error("Error parsing permissions:", e);
+        }
+      }
+      
+      // Delete the invitation
+      await storage.deleteInvitation(invitation.id);
+      
+      res.json({ message: "Convite aceito com sucesso!", clinicUser });
+    } catch (error) {
+      console.error("Error accepting invitation:", error);
+      res.status(500).json({ message: "Erro ao aceitar convite." });
+    }
+  });
+  
+  // Get invitation by token
   app.get("/api/invitations/:token", async (req: Request, res: Response) => {
     try {
       const token = req.params.token;
@@ -438,6 +564,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(invitation);
     } catch (error) {
       res.status(500).json({ message: "Erro ao buscar convite." });
+    }
+  });
+  
+  // Accept invitation by token
+  app.post("/api/invitations/accept", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        return res.status(400).json({ message: "Token de convite é obrigatório." });
+      }
+      
+      const user = req.user as any;
+      const invitation = await storage.getInvitation(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Convite não encontrado ou expirado." });
+      }
+      
+      // Check if invitation is expired
+      if (new Date(invitation.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Convite expirado." });
+      }
+      
+      // Create clinic-user relationship
+      const clinicUser = await storage.createClinicUser({
+        clinicId: invitation.clinicId,
+        userId: user.id,
+        role: invitation.role,
+        invitedBy: invitation.invitedBy
+      });
+      
+      // If permissions were specified in the invitation, create them
+      if (invitation.permissions) {
+        try {
+          const permissions = JSON.parse(invitation.permissions);
+          for (const perm of permissions) {
+            await storage.createPermission({
+              clinicUserId: clinicUser.id,
+              module: perm.module,
+              action: perm.action
+            });
+          }
+        } catch (e) {
+          console.error("Error parsing permissions:", e);
+        }
+      }
+      
+      // Delete the invitation
+      await storage.deleteInvitation(invitation.id);
+      
+      res.json({ message: "Convite aceito com sucesso!", clinicUser });
+    } catch (error) {
+      console.error("Error accepting invitation by token:", error);
+      res.status(500).json({ message: "Erro ao aceitar convite." });
     }
   });
   
