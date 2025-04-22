@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { format, parseISO, isToday, isTomorrow, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { AppointmentStatus, Appointment, Client, Professional, Service } from "@shared/schema";
 
 // Format the date display in a user-friendly way
 const formatDateDisplay = (date: string | Date) => {
@@ -57,22 +58,22 @@ const formatTime = (date: string | Date) => {
   return format(appointmentDate, "HH:mm");
 };
 
-// Status colors
+// Status colors and display names
 const statusColors: Record<string, string> = {
-  scheduled: "bg-blue-100 text-blue-800",
-  confirmed: "bg-green-100 text-green-800",
-  completed: "bg-purple-100 text-purple-800",
-  cancelled: "bg-red-100 text-red-800",
-  noshow: "bg-amber-100 text-amber-800"
+  [AppointmentStatus.SCHEDULED]: "bg-blue-100 text-blue-800",
+  [AppointmentStatus.CONFIRMED]: "bg-green-100 text-green-800",
+  [AppointmentStatus.COMPLETED]: "bg-purple-100 text-purple-800",
+  [AppointmentStatus.CANCELLED]: "bg-red-100 text-red-800",
+  [AppointmentStatus.NO_SHOW]: "bg-amber-100 text-amber-800"
 };
 
 // Status display names
 const statusNames: Record<string, string> = {
-  scheduled: "Agendado",
-  confirmed: "Confirmado",
-  completed: "Concluído",
-  cancelled: "Cancelado",
-  noshow: "Não compareceu"
+  [AppointmentStatus.SCHEDULED]: "Agendado",
+  [AppointmentStatus.CONFIRMED]: "Confirmado",
+  [AppointmentStatus.COMPLETED]: "Concluído",
+  [AppointmentStatus.CANCELLED]: "Cancelado",
+  [AppointmentStatus.NO_SHOW]: "Não Compareceu"
 };
 
 export default function Appointments() {

@@ -25,6 +25,15 @@ export enum ClinicRole {
   STAFF = "STAFF"
 }
 
+// Appointment Status enum
+export enum AppointmentStatus {
+  SCHEDULED = "scheduled",
+  CONFIRMED = "confirmed",
+  COMPLETED = "completed",
+  CANCELLED = "cancelled",
+  NO_SHOW = "no_show"
+}
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -123,7 +132,7 @@ export const appointments = pgTable("appointments", {
   serviceId: integer("service_id").notNull().references(() => services.id),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
-  status: text("status").notNull().default("scheduled"),
+  status: text("status").$type<AppointmentStatus>().notNull().default(AppointmentStatus.SCHEDULED),
   notes: text("notes"),
   createdBy: integer("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
