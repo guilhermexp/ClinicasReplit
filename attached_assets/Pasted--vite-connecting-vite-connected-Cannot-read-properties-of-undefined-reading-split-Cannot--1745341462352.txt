@@ -1,0 +1,32 @@
+[vite] connecting...
+[vite] connected.
+Cannot read properties of undefined (reading 'split')
+Cannot read properties of undefined (reading 'split')
+The above error occurred in the <Appointments> component:
+
+    at Appointments (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/pages/appointments/index.tsx:85:30)
+    at main
+    at div
+    at div
+    at MainLayout (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/components/layout/main-layout.tsx?t=1745341280077:22:38)
+    at Route (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e95aa619:323:16)
+    at Switch (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=e95aa619:379:17)
+    at Provider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=e95aa619:38:15)
+    at TooltipProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=e95aa619:61:5)
+    at AuthProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/components/auth/auth-provider.tsx:37:32)
+    at QueryClientProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=e95aa619:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+Cannot read properties of undefined (reading 'split')
+at splitDateString (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-O42U6HQT.js?v=e95aa619:4751:28)
+at parseISO (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-O42U6HQT.js?v=e95aa619:4700:23)
+at https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/pages/appointments/index.tsx:106:29
+at Array.filter (<anonymous>)
+at Appointments (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/pages/appointments/index.tsx:105:45)
+at renderWithHooks (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=e95aa619:11548:26)
+at updateFunctionComponent (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=e95aa619:14582:28)
+at beginWork (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=e95aa619:15924:22)
+at beginWork$1 (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=e95aa619:19753:22)
+at performUnitOfWork (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=e95aa619:19198:20)

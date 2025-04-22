@@ -107,6 +107,9 @@ export default function Appointments() {
   
   // Filter appointments by selected date and status
   const filteredAppointments = appointments.filter((appointment: any) => {
+    // Verificar se startTime está definido antes de chamar parseISO
+    if (!appointment.startTime) return false;
+    
     const appointmentDate = parseISO(appointment.startTime);
     const dateMatches = selectedDate 
       ? appointmentDate.toDateString() === selectedDate.toDateString()
@@ -120,14 +123,17 @@ export default function Appointments() {
   // Group appointments by time blocks (morning, afternoon, evening)
   const groupedAppointments = {
     morning: filteredAppointments.filter((appointment: any) => {
+      if (!appointment.startTime) return false;
       const hour = parseISO(appointment.startTime).getHours();
       return hour >= 6 && hour < 12;
     }),
     afternoon: filteredAppointments.filter((appointment: any) => {
+      if (!appointment.startTime) return false;
       const hour = parseISO(appointment.startTime).getHours();
       return hour >= 12 && hour < 18;
     }),
     evening: filteredAppointments.filter((appointment: any) => {
+      if (!appointment.startTime) return false;
       const hour = parseISO(appointment.startTime).getHours();
       return hour >= 18 || hour < 6;
     })
@@ -490,6 +496,11 @@ function AppointmentCard({
   professionalName: string;
   serviceName: string;
 }) {
+  // Verificar se startTime e endTime estão definidos antes de chamar parseISO
+  if (!appointment.startTime || !appointment.endTime) {
+    return <Card><CardContent className="p-4">Dados de agendamento inválidos</CardContent></Card>;
+  }
+  
   const startTime = parseISO(appointment.startTime);
   const endTime = parseISO(appointment.endTime);
   
