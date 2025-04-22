@@ -131,21 +131,19 @@ export function Sidebar({ className }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto">
           <div className="px-2 py-4 space-y-1">
-            {/* Dashboard */}
-            {hasPermission("dashboard", "read") && (
-              <button
-                onClick={() => window.location.href = '/dashboard'}
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
-                  location === "/dashboard" || location === "/"
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <LayoutDashboard className="mr-3 h-5 w-5" />
-                Dashboard
-              </button>
-            )}
+            {/* Dashboard - Sempre visível */}
+            <button
+              onClick={() => window.location.href = '/dashboard'}
+              className={cn(
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
+                location === "/dashboard" || location === "/"
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <LayoutDashboard className="mr-3 h-5 w-5" />
+              Dashboard
+            </button>
             
             {/* Clients */}
             {hasPermission("clients", "read") && (
