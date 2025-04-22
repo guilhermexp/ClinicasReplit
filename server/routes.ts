@@ -195,6 +195,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invitedBy: user.id
       });
       
+      // Atualizar o papel do usuário para SUPER_ADMIN
+      await storage.updateUser(user.id, {
+        role: UserRole.SUPER_ADMIN
+      });
+      
       res.status(201).json(newClinic);
     } catch (error) {
       res.status(500).json({ message: "Erro ao criar clínica." });
