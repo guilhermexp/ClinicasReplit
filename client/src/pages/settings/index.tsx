@@ -47,11 +47,9 @@ export default function Settings() {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Query to get clinic details - usando tipagem correta
-  const { data: clinic, isLoading } = useQuery<Clinic>({
-    queryKey: ["/api/clinics", selectedClinic?.id],
-    enabled: !!selectedClinic?.id,
-  });
+  // Usar diretamente os dados de selectedClinic em vez de fazer uma nova consulta
+  const [isLoading, setIsLoading] = useState(false);
+  const clinicDetails = selectedClinic;
   
   // Inicializar clinicInfo com dados vazios
   const [clinicInfo, setClinicInfo] = useState({
@@ -63,16 +61,18 @@ export default function Settings() {
   
   // Atualizar o formulário quando os dados da clínica são carregados
   useEffect(() => {
-    console.log("Clinic data loaded:", clinic);
-    if (clinic) {
+    if (clinicDetails) {
+      console.log("Setting clinic info:", clinicDetails);
+      
+      // Definir os valores dos campos do formulário
       setClinicInfo({
-        name: clinic.name || "",
-        address: clinic.address || "",
-        phone: clinic.phone || "",
-        openingHours: clinic.openingHours || ""
+        name: clinicDetails.name || "",
+        address: clinicDetails.address || "",
+        phone: clinicDetails.phone || "",
+        openingHours: clinicDetails.openingHours || ""
       });
     }
-  }, [clinic]);
+  }, [clinicDetails]);
   
   // Mutation for updating clinic
   const updateClinicMutation = useMutation({
