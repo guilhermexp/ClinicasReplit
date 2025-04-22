@@ -785,7 +785,7 @@ export class MemStorage implements IStorage {
 
 // Database storage implementation using Drizzle ORM
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     // Initialize PostgreSQL session store
