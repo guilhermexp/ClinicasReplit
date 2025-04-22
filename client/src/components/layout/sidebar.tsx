@@ -231,8 +231,13 @@ export function Sidebar({ className }: SidebarProps) {
           </div>
         </nav>
 
-        {/* Logout */}
+        {/* Email info and Logout */}
         <div className="border-t border-gray-200 p-4">
+          {user && (
+            <div className="mb-3 text-xs text-gray-500 truncate">
+              {user.email}
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="flex w-full items-center text-sm text-gray-700 hover:text-primary-600"
