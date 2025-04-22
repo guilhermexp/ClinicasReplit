@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import {
   LayoutDashboard,
   Users,
@@ -26,7 +26,7 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const { user, logout, clinics, selectedClinic, setSelectedClinic } = useAuth();
   const { hasPermission } = usePermissions();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(!isMobile);
   
@@ -133,107 +133,114 @@ export function Sidebar({ className }: SidebarProps) {
           <div className="px-2 py-4 space-y-1">
             {/* Dashboard */}
             {hasPermission("dashboard", "read") && (
-              <Link href="/dashboard">
-                <a className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+              <button
+                onClick={() => window.location.href = '/dashboard'}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/dashboard" || location === "/"
                     ? "bg-primary-50 text-primary-700"
                     : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <LayoutDashboard className="mr-3 h-5 w-5" />
-                  Dashboard
-                </a>
-              </Link>
+                )}
+              >
+                <LayoutDashboard className="mr-3 h-5 w-5" />
+                Dashboard
+              </button>
             )}
             
             {/* Clients */}
             {hasPermission("clients", "read") && (
-              <Link href="/clients">
-                <a className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+              <button
+                onClick={() => navigate("/clients")}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/clients"
                     ? "bg-primary-50 text-primary-700"
                     : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <Users className="mr-3 h-5 w-5" />
-                  Clientes
-                </a>
-              </Link>
+                )}
+              >
+                <Users className="mr-3 h-5 w-5" />
+                Clientes
+              </button>
             )}
             
             {/* Appointments */}
             {hasPermission("appointments", "read") && (
-              <Link href="/appointments">
-                <a className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+              <button
+                onClick={() => navigate("/appointments")}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/appointments"
                     ? "bg-primary-50 text-primary-700"
                     : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <Calendar className="mr-3 h-5 w-5" />
-                  Agenda
-                </a>
-              </Link>
+                )}
+              >
+                <Calendar className="mr-3 h-5 w-5" />
+                Agenda
+              </button>
             )}
             
             {/* Financial */}
             {hasPermission("financial", "read") && (
-              <Link href="/financial">
-                <a className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+              <button
+                onClick={() => navigate("/financial")}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/financial"
                     ? "bg-primary-50 text-primary-700"
                     : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <DollarSign className="mr-3 h-5 w-5" />
-                  Financeiro
-                </a>
-              </Link>
+                )}
+              >
+                <DollarSign className="mr-3 h-5 w-5" />
+                Financeiro
+              </button>
             )}
             
             {/* CRM */}
             {hasPermission("crm", "read") && (
-              <Link href="/crm">
-                <a className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+              <button
+                onClick={() => navigate("/crm")}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/crm"
                     ? "bg-primary-50 text-primary-700"
                     : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <Copy className="mr-3 h-5 w-5" />
-                  CRM
-                </a>
-              </Link>
+                )}
+              >
+                <Copy className="mr-3 h-5 w-5" />
+                CRM
+              </button>
             )}
             
             {/* Users */}
             {hasPermission("users", "read") && (
-              <Link href="/users">
-                <a className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+              <button
+                onClick={() => navigate("/users")}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/users"
                     ? "bg-primary-50 text-primary-700"
                     : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <Users className="mr-3 h-5 w-5" />
-                  Usuários
-                </a>
-              </Link>
+                )}
+              >
+                <Users className="mr-3 h-5 w-5" />
+                Usuários
+              </button>
             )}
             
             {/* Settings */}
             {hasPermission("settings", "read") && (
-              <Link href="/settings">
-                <a className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+              <button
+                onClick={() => navigate("/settings")}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/settings"
                     ? "bg-primary-50 text-primary-700"
                     : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <Settings className="mr-3 h-5 w-5" />
-                  Configurações
-                </a>
-              </Link>
+                )}
+              >
+                <Settings className="mr-3 h-5 w-5" />
+                Configurações
+              </button>
             )}
           </div>
         </nav>

@@ -63,11 +63,13 @@ export default function Login() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="password">Senha</Label>
-                  <Link href="/forgot-password">
-                    <a className="text-xs text-primary-600 hover:underline">
-                      Esqueceu sua senha?
-                    </a>
-                  </Link>
+                  <button 
+                    onClick={() => window.location.href = '/forgot-password'}
+                    className="text-xs text-primary-600 hover:underline"
+                    type="button"
+                  >
+                    Esqueceu sua senha?
+                  </button>
                 </div>
                 <Input
                   id="password"
@@ -98,11 +100,13 @@ export default function Login() {
               </Button>
               <p className="text-sm text-center text-gray-600">
                 Não tem uma conta?{" "}
-                <Link href="/register">
-                  <a className="text-primary-600 hover:underline">
-                    Registre-se
-                  </a>
-                </Link>
+                <button
+                  onClick={() => window.location.href = '/register'}
+                  className="text-primary-600 hover:underline"
+                  type="button"
+                >
+                  Registre-se
+                </button>
               </p>
             </CardFooter>
           </form>

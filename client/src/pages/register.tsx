@@ -124,11 +124,13 @@ export default function Register() {
               </Button>
               <p className="text-sm text-center text-gray-600">
                 Já tem uma conta?{" "}
-                <Link href="/login">
-                  <a className="text-primary-600 hover:underline">
-                    Faça login
-                  </a>
-                </Link>
+                <button
+                  onClick={() => window.location.href = '/login'}
+                  className="text-primary-600 hover:underline"
+                  type="button"
+                >
+                  Faça login
+                </button>
               </p>
             </CardFooter>
           </form>
