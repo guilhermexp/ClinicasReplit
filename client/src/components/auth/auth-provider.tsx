@@ -104,15 +104,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   
   // Set default selected clinic if not already set
-  // Redirect to onboarding if logged in but no clinics available
+  // Redirect behavior based on user's clinic association status
   useEffect(() => {
     if (userData?.user) {
       if (clinics?.length > 0) {
+        // Usuário já tem clínicas associadas
         if (!selectedClinic) {
           setSelectedClinic(clinics[0]);
         }
+        
+        // Se estiver na página de onboarding, redirecionar para o dashboard
+        const currentPath = window.location.pathname;
+        if (currentPath === "/onboarding") {
+          navigate("/dashboard");
+        }
       } else {
-        // User is logged in but has no clinics - redirect to onboarding
+        // Usuário está logado mas não tem clínicas - redirecionar para onboarding
         const currentPath = window.location.pathname;
         if (currentPath !== "/onboarding" && currentPath !== "/login" && currentPath !== "/register") {
           navigate("/onboarding");
@@ -127,9 +134,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/login", credentials);
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.setQueryData(["/api/auth/me"], data);
-      navigate("/dashboard");
+      
+      // Verificar se o usuário já está vinculado a alguma clínica
+      const clinicsRes = await apiRequest("GET", "/api/clinics");
+      const userClinics = await clinicsRes.json();
+      
+      if (userClinics && userClinics.length > 0) {
+        // Usuário já está vinculado a pelo menos uma clínica, vai para o dashboard
+        navigate("/dashboard");
+      } else {
+        // Usuário sem clínicas vinculadas, vai para o onboarding
+        navigate("/onboarding");
+      }
+      
       toast({
         title: "Login bem-sucedido",
         description: `Bem-vindo, ${data.user.name}!`,
@@ -165,9 +184,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/register", userData);
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.setQueryData(["/api/auth/me"], data);
-      navigate("/dashboard");
+      
+      // Novos usuários registrados vão para o onboarding
+      // porque ainda não tem clínica vinculada
+      navigate("/onboarding");
+      
       toast({
         title: "Registro bem-sucedido",
         description: `Bem-vindo, ${data.user.name}!`,
