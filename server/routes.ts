@@ -13,83 +13,14 @@ import {
   UserRole,
   ClinicRole
 } from "@shared/schema";
-import session from "express-session";
 import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
+import { setupAuth } from "./auth";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import MemoryStore from "memorystore";
-
-// Create an instance of MemoryStore for sessions
-const SessionStore = MemoryStore(session);
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session middleware
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "gardenia-session-secret",
-      resave: false,
-      saveUninitialized: false,
-      cookie: { secure: process.env.NODE_ENV === "production", maxAge: 24 * 60 * 60 * 1000 }, // 24 hours
-      store: new SessionStore({
-        checkPeriod: 86400000 // prune expired entries every 24h
-      })
-    })
-  );
-  
-  // Initialize Passport
-  app.use(passport.initialize());
-  app.use(passport.session());
-  
-  // Configure Passport Local Strategy
-  passport.use(
-    new LocalStrategy(
-      { usernameField: "email" },
-      async (email, password, done) => {
-        try {
-          const user = await storage.getUserByEmail(email);
-          
-          if (!user) {
-            return done(null, false, { message: "Credenciais inválidas." });
-          }
-          
-          if (!user.isActive) {
-            return done(null, false, { message: "Usuário inativo. Entre em contato com o administrador." });
-          }
-          
-          // Compare password with hashed password
-          // In a real app we'd use bcrypt.compare, but for this demo we'll check directly
-          // const isValid = await bcrypt.compare(password, user.password);
-          const isValid = password === "password"; // Simplified for demo
-          
-          if (!isValid) {
-            return done(null, false, { message: "Credenciais inválidas." });
-          }
-          
-          // Update last login time
-          await storage.updateUser(user.id, { lastLogin: new Date() });
-          
-          return done(null, user);
-        } catch (err) {
-          return done(err);
-        }
-      }
-    )
-  );
-  
-  // Serialize and deserialize user
-  passport.serializeUser((user: any, done) => {
-    done(null, user.id);
-  });
-  
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const user = await storage.getUser(id);
-      done(null, user);
-    } catch (err) {
-      done(err);
-    }
-  });
+  // Set up authentication
+  setupAuth(app);
   
   // Authentication middleware
   const isAuthenticated = (req: Request, res: Response, next: Function) => {

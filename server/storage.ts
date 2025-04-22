@@ -7,8 +7,14 @@ import {
   Professional, InsertProfessional,
   Service, InsertService,
   Appointment, InsertAppointment,
-  Invitation, InsertInvitation
+  Invitation, InsertInvitation,
+  users, clinics, clinicUsers, permissions, clients, professionals, services, appointments, invitations
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, sql } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
 // Storage interface for CRUD operations
 export interface IStorage {
@@ -777,4 +783,225 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database storage implementation using Drizzle ORM
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.SessionStore;
+
+  constructor() {
+    // Initialize PostgreSQL session store
+    const PostgresSessionStore = connectPg(session);
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
+    });
+  }
+
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async listUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  // Clinic operations
+  async getClinic(id: number): Promise<Clinic | undefined> {
+    const [clinic] = await db.select().from(clinics).where(eq(clinics.id, id));
+    return clinic;
+  }
+
+  async createClinic(clinic: InsertClinic): Promise<Clinic> {
+    const [newClinic] = await db.insert(clinics).values(clinic).returning();
+    return newClinic;
+  }
+
+  async updateClinic(id: number, updates: Partial<Clinic>): Promise<Clinic | undefined> {
+    const [updatedClinic] = await db.update(clinics)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(clinics.id, id))
+      .returning();
+    return updatedClinic;
+  }
+
+  async listClinics(): Promise<Clinic[]> {
+    return await db.select().from(clinics);
+  }
+
+  // ClinicUser operations
+  async getClinicUser(clinicId: number, userId: number): Promise<ClinicUser | undefined> {
+    const [clinicUser] = await db.select()
+      .from(clinicUsers)
+      .where(
+        and(
+          eq(clinicUsers.clinicId, clinicId),
+          eq(clinicUsers.userId, userId)
+        )
+      );
+    return clinicUser;
+  }
+
+  async createClinicUser(clinicUser: InsertClinicUser): Promise<ClinicUser> {
+    const [newClinicUser] = await db.insert(clinicUsers).values(clinicUser).returning();
+    return newClinicUser;
+  }
+
+  async updateClinicUser(id: number, updates: Partial<ClinicUser>): Promise<ClinicUser | undefined> {
+    const [updatedClinicUser] = await db.update(clinicUsers)
+      .set(updates)
+      .where(eq(clinicUsers.id, id))
+      .returning();
+    return updatedClinicUser;
+  }
+
+  async listClinicUsers(clinicId: number): Promise<ClinicUser[]> {
+    return await db.select()
+      .from(clinicUsers)
+      .where(eq(clinicUsers.clinicId, clinicId));
+  }
+
+  // Permission operations
+  async getPermissions(clinicUserId: number): Promise<Permission[]> {
+    return await db.select()
+      .from(permissions)
+      .where(eq(permissions.clinicUserId, clinicUserId));
+  }
+
+  async createPermission(permission: InsertPermission): Promise<Permission> {
+    const [newPermission] = await db.insert(permissions).values(permission).returning();
+    return newPermission;
+  }
+
+  async deletePermission(id: number): Promise<boolean> {
+    const result = await db.delete(permissions).where(eq(permissions.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Client operations
+  async getClient(id: number): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
+  }
+
+  async createClient(client: InsertClient): Promise<Client> {
+    const [newClient] = await db.insert(clients).values(client).returning();
+    return newClient;
+  }
+
+  async updateClient(id: number, updates: Partial<Client>): Promise<Client | undefined> {
+    const [updatedClient] = await db.update(clients)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(clients.id, id))
+      .returning();
+    return updatedClient;
+  }
+
+  async listClients(clinicId: number): Promise<Client[]> {
+    return await db.select()
+      .from(clients)
+      .where(eq(clients.clinicId, clinicId));
+  }
+
+  // Professional operations
+  async getProfessional(id: number): Promise<Professional | undefined> {
+    const [professional] = await db.select().from(professionals).where(eq(professionals.id, id));
+    return professional;
+  }
+
+  async createProfessional(professional: InsertProfessional): Promise<Professional> {
+    const [newProfessional] = await db.insert(professionals).values(professional).returning();
+    return newProfessional;
+  }
+
+  async listProfessionals(clinicId: number): Promise<Professional[]> {
+    return await db.select()
+      .from(professionals)
+      .where(eq(professionals.clinicId, clinicId));
+  }
+
+  // Service operations
+  async getService(id: number): Promise<Service | undefined> {
+    const [service] = await db.select().from(services).where(eq(services.id, id));
+    return service;
+  }
+
+  async createService(service: InsertService): Promise<Service> {
+    const [newService] = await db.insert(services).values(service).returning();
+    return newService;
+  }
+
+  async listServices(clinicId: number): Promise<Service[]> {
+    return await db.select()
+      .from(services)
+      .where(eq(services.clinicId, clinicId));
+  }
+
+  // Appointment operations
+  async getAppointment(id: number): Promise<Appointment | undefined> {
+    const [appointment] = await db.select().from(appointments).where(eq(appointments.id, id));
+    return appointment;
+  }
+
+  async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
+    const [newAppointment] = await db.insert(appointments).values(appointment).returning();
+    return newAppointment;
+  }
+
+  async updateAppointment(id: number, updates: Partial<Appointment>): Promise<Appointment | undefined> {
+    const [updatedAppointment] = await db.update(appointments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(appointments.id, id))
+      .returning();
+    return updatedAppointment;
+  }
+
+  async listAppointments(clinicId: number): Promise<Appointment[]> {
+    return await db.select()
+      .from(appointments)
+      .where(eq(appointments.clinicId, clinicId));
+  }
+
+  // Invitation operations
+  async getInvitation(token: string): Promise<Invitation | undefined> {
+    const [invitation] = await db.select().from(invitations).where(eq(invitations.token, token));
+    return invitation;
+  }
+
+  async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
+    const [newInvitation] = await db.insert(invitations).values(invitation).returning();
+    return newInvitation;
+  }
+
+  async deleteInvitation(id: number): Promise<boolean> {
+    const result = await db.delete(invitations).where(eq(invitations.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async listInvitations(clinicId: number): Promise<Invitation[]> {
+    return await db.select()
+      .from(invitations)
+      .where(eq(invitations.clinicId, clinicId));
+  }
+}
+
+// Use database storage instead of in-memory storage
+export const storage = new DatabaseStorage();
