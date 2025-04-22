@@ -17,6 +17,7 @@ import {
   clinics,
   clinicUsers
 } from "@shared/schema";
+import { z } from "zod";
 import passport from "passport";
 import { setupAuth } from "./auth";
 import bcrypt from "bcryptjs";
@@ -640,6 +641,218 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error accepting invitation by token:", error);
       res.status(500).json({ message: "Erro ao aceitar convite." });
+    }
+  });
+  
+  // Dashboard routes
+  app.get("/api/clinics/:clinicId/dashboard/stats", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      
+      // Get client count
+      const clients = await storage.listClients(clinicId);
+      const clientCount = clients.length;
+      
+      // Get today's appointments
+      const appointments = await storage.listAppointments(clinicId);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const todayAppointments = appointments.filter(appointment => {
+        const appointmentDate = new Date(appointment.startTime);
+        return appointmentDate >= today && appointmentDate < tomorrow;
+      });
+      
+      // Calculate completed procedures this month
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const completedProcedures = appointments.filter(appointment => {
+        const appointmentDate = new Date(appointment.startTime);
+        return appointmentDate >= firstDayOfMonth && 
+               appointmentDate <= today && 
+               appointment.status === 'completed';
+      });
+      
+      // Calculate monthly revenue (in a real app, this would come from financial records)
+      // For now, we'll estimate based on completed appointments
+      const services = await storage.listServices(clinicId);
+      let monthlyRevenue = 0;
+      
+      completedProcedures.forEach(appointment => {
+        const service = services.find(s => s.id === appointment.serviceId);
+        if (service && service.price) {
+          monthlyRevenue += Number(service.price);
+        }
+      });
+      
+      res.json({
+        clientCount,
+        todayAppointmentCount: todayAppointments.length,
+        completedProceduresCount: completedProcedures.length,
+        monthlyRevenue
+      });
+    } catch (error) {
+      console.error("Error getting dashboard stats:", error);
+      res.status(500).json({ message: "Erro ao obter estatísticas do dashboard." });
+    }
+  });
+  
+  // Today's appointments
+  app.get("/api/clinics/:clinicId/dashboard/appointments/today", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      
+      // Get all appointments
+      const appointments = await storage.listAppointments(clinicId);
+      
+      // Get all clients, professionals and services for lookup
+      const clients = await storage.listClients(clinicId);
+      const professionals = await storage.listProfessionals(clinicId);
+      const services = await storage.listServices(clinicId);
+      
+      // Filter today's appointments
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const todayAppointments = appointments
+        .filter(appointment => {
+          const appointmentDate = new Date(appointment.startTime);
+          return appointmentDate >= today && appointmentDate < tomorrow;
+        })
+        .map(appointment => {
+          // Get client name
+          const client = clients.find(c => c.id === appointment.clientId);
+          
+          // Get professional name
+          const professional = professionals.find(p => p.id === appointment.professionalId);
+          
+          // Get service name
+          const service = services.find(s => s.id === appointment.serviceId);
+          
+          // Format time
+          const time = new Date(appointment.startTime).toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false
+          });
+          
+          return {
+            id: appointment.id,
+            time,
+            client: client?.name || 'Cliente não encontrado',
+            service: service?.name || 'Serviço não encontrado',
+            status: appointment.status
+          };
+        })
+        .sort((a, b) => a.time.localeCompare(b.time));
+      
+      res.json(todayAppointments);
+    } catch (error) {
+      console.error("Error getting today's appointments:", error);
+      res.status(500).json({ message: "Erro ao obter agendamentos de hoje." });
+    }
+  });
+  
+  // Recent clients
+  app.get("/api/clinics/:clinicId/dashboard/clients/recent", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      
+      // Get all clients
+      const clients = await storage.listClients(clinicId);
+      
+      // Get all appointments for last visit lookup
+      const appointments = await storage.listAppointments(clinicId);
+      
+      // Process clients to include last visit information
+      const clientsWithLastVisit = clients.map(client => {
+        // Find client's appointments
+        const clientAppointments = appointments.filter(a => a.clientId === client.id);
+        
+        // Find the most recent appointment
+        let lastVisit = null;
+        if (clientAppointments.length > 0) {
+          lastVisit = clientAppointments
+            .map(a => new Date(a.startTime))
+            .sort((a, b) => b.getTime() - a.getTime())[0];
+        }
+        
+        return {
+          id: client.id,
+          name: client.name,
+          phone: client.phone || 'Não informado',
+          lastVisit: lastVisit ? lastVisit.toISOString() : null
+        };
+      });
+      
+      // Filter clients with at least one visit and sort by most recent
+      const recentClients = clientsWithLastVisit
+        .filter(client => client.lastVisit !== null)
+        .sort((a, b) => {
+          if (!a.lastVisit) return 1;
+          if (!b.lastVisit) return -1;
+          return new Date(b.lastVisit).getTime() - new Date(a.lastVisit).getTime();
+        })
+        .slice(0, 5); // Get top 5 most recent
+      
+      res.json(recentClients);
+    } catch (error) {
+      console.error("Error getting recent clients:", error);
+      res.status(500).json({ message: "Erro ao obter clientes recentes." });
+    }
+  });
+  
+  // Revenue by service
+  app.get("/api/clinics/:clinicId/dashboard/revenue/services", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      
+      // Get all appointments
+      const appointments = await storage.listAppointments(clinicId);
+      
+      // Get all services
+      const services = await storage.listServices(clinicId);
+      
+      // Get first day of current month
+      const today = new Date();
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      
+      // Filter completed appointments for current month
+      const completedAppointments = appointments.filter(appointment => {
+        const appointmentDate = new Date(appointment.startTime);
+        return appointmentDate >= firstDayOfMonth && 
+               appointmentDate <= today && 
+               appointment.status === 'completed';
+      });
+      
+      // Calculate revenue by service
+      const revenueByService = services.map(service => {
+        // Filter appointments for this service
+        const serviceAppointments = completedAppointments.filter(a => a.serviceId === service.id);
+        
+        // Calculate total revenue
+        const totalRevenue = serviceAppointments.length * (service.price ? Number(service.price) : 0);
+        
+        return {
+          name: service.name,
+          valor: totalRevenue
+        };
+      });
+      
+      // Sort by revenue (highest first) and get top 5
+      const topServices = revenueByService
+        .sort((a, b) => b.valor - a.valor)
+        .slice(0, 5);
+      
+      res.json(topServices);
+    } catch (error) {
+      console.error("Error getting revenue by service:", error);
+      res.status(500).json({ message: "Erro ao obter receita por serviço." });
     }
   });
   
