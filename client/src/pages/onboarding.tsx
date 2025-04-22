@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
+import { LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ type ClinicFormValues = z.infer<typeof clinicFormSchema>;
 type InviteCodeFormValues = z.infer<typeof inviteCodeSchema>;
 
 export default function OnboardingPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [_, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("create-clinic");
@@ -168,13 +169,25 @@ export default function OnboardingPage() {
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Coluna esquerda - Formulários */}
         <div className="space-y-8">
-          <div className="text-center lg:text-left">
-            <h1 className="text-3xl font-bold tracking-tight">
-              Bem-vindo ao Sistema de Gestão de Clínicas
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Para começar, você precisa criar uma clínica, aceitar um convite ou usar um código de acesso.
-            </p>
+          <div className="flex justify-between items-center mb-6">
+            <div className="text-center lg:text-left">
+              <h1 className="text-3xl font-bold tracking-tight">
+                Bem-vindo ao Sistema de Gestão de Clínicas
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Para começar, você precisa criar uma clínica, aceitar um convite ou usar um código de acesso.
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="flex gap-2 items-center" 
+              onClick={() => {
+                logout().then(() => navigate("/login"));
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              Sair
+            </Button>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
