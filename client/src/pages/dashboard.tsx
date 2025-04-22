@@ -206,41 +206,41 @@ export default function Dashboard() {
       
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        {hasPermission("clients", "read") && dashboardStats && (
+        {hasPermission("clients", "read") && dashboardStats && typeof dashboardStats.clientCount !== 'undefined' && (
           <StatCard 
             icon={<Users className="h-5 w-5 text-blue-600" />}
             title="Clientes"
-            value={dashboardStats.clientCount.toString()}
+            value={String(dashboardStats.clientCount || 0)}
             desc="Total de clientes"
             color="bg-blue-100"
           />
         )}
         
-        {hasPermission("appointments", "read") && dashboardStats && (
+        {hasPermission("appointments", "read") && dashboardStats && typeof dashboardStats.todayAppointmentCount !== 'undefined' && (
           <StatCard 
             icon={<Calendar className="h-5 w-5 text-purple-600" />}
             title="Agendamentos"
-            value={dashboardStats.todayAppointmentCount.toString()}
+            value={String(dashboardStats.todayAppointmentCount || 0)}
             desc="Agendamentos hoje"
             color="bg-purple-100"
           />
         )}
         
-        {hasPermission("financial", "read") && dashboardStats && (
+        {hasPermission("financial", "read") && dashboardStats && typeof dashboardStats.monthlyRevenue !== 'undefined' && (
           <StatCard 
             icon={<DollarSign className="h-5 w-5 text-green-600" />}
             title="Receita"
-            value={formatCurrency(dashboardStats.monthlyRevenue)}
+            value={formatCurrency(dashboardStats.monthlyRevenue || 0)}
             desc="Mês atual"
             color="bg-green-100"
           />
         )}
         
-        {dashboardStats && (
+        {dashboardStats && typeof dashboardStats.completedProceduresCount !== 'undefined' && (
           <StatCard 
             icon={<CheckSquare className="h-5 w-5 text-amber-600" />}
             title="Procedimentos"
-            value={dashboardStats.completedProceduresCount.toString()}
+            value={String(dashboardStats.completedProceduresCount || 0)}
             desc="Realizados no mês"
             color="bg-amber-100"
           />
@@ -265,7 +265,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {todayAppointments.length === 0 ? (
+              {!todayAppointments || todayAppointments.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Calendar className="mx-auto h-10 w-10 mb-2 text-gray-400" />
                   <p>Não há agendamentos para hoje</p>
@@ -284,8 +284,14 @@ export default function Dashboard() {
                             <p className="font-medium">{appointment.client}</p>
                             <p className="text-sm text-gray-500">{appointment.service}</p>
                           </div>
-                          <Badge className={appointmentStatusColors[appointment.status]}>
-                            {appointmentStatusLabels[appointment.status]}
+                          <Badge className={
+                            appointment.status && appointmentStatusColors[appointment.status] 
+                              ? appointmentStatusColors[appointment.status] 
+                              : "bg-gray-100 text-gray-800"
+                          }>
+                            {appointment.status && appointmentStatusLabels[appointment.status] 
+                              ? appointmentStatusLabels[appointment.status] 
+                              : "Status desconhecido"}
                           </Badge>
                         </div>
                       </div>
@@ -326,7 +332,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {recentClients.length === 0 ? (
+              {!recentClients || recentClients.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Users className="mx-auto h-10 w-10 mb-2 text-gray-400" />
                   <p>Nenhum cliente recente</p>
@@ -340,10 +346,10 @@ export default function Dashboard() {
                         <User className="h-5 w-5 text-primary-700" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{client.name}</p>
+                        <p className="font-medium">{client.name || "Cliente sem nome"}</p>
                         <div className="flex gap-4 text-xs text-gray-500">
                           <span className="flex items-center">
-                            <Phone className="mr-1 h-3 w-3" /> {client.phone}
+                            <Phone className="mr-1 h-3 w-3" /> {client.phone || "Sem telefone"}
                           </span>
                           <span className="flex items-center">
                             <CalendarIcon className="mr-1 h-3 w-3" /> {formatDate(client.lastVisit)}
@@ -376,7 +382,7 @@ export default function Dashboard() {
             <CardDescription>Faturamento do mês atual por tipo de serviço</CardDescription>
           </CardHeader>
           <CardContent>
-            {revenueData.length === 0 ? (
+            {!revenueData || revenueData.length === 0 ? (
               <div className="text-center py-16 text-gray-500">
                 <DollarSign className="mx-auto h-10 w-10 mb-2 text-gray-400" />
                 <p>Sem dados de receita disponíveis</p>
@@ -393,7 +399,13 @@ export default function Dashboard() {
                     <XAxis dataKey="name" tick={{ fill: '#6B7280' }} />
                     <YAxis tick={{ fill: '#6B7280' }} />
                     <Tooltip 
-                      formatter={(value) => [formatCurrency(Number(value)), 'Receita']}
+                      formatter={(value) => {
+                        try {
+                          return [formatCurrency(Number(value)), 'Receita'];
+                        } catch (e) {
+                          return [value, 'Receita'];
+                        }
+                      }}
                       labelStyle={{ color: '#111827' }}
                       contentStyle={{ 
                         backgroundColor: 'white',
