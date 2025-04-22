@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
   
-  // Get current user
+  // Get current user com caching otimizado
   const { data: userData, isLoading } = useQuery({
     queryKey: ["/api/auth/me"],
     onError: () => {
@@ -95,14 +95,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     retry: false, // Don't retry auth requests
-    staleTime: 30 * 1000, // 30 segundos
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
   
-  // Get clinics for current user
+  // Get clinics for current user com caching otimizado
   const { data: clinics = [] } = useQuery({
     queryKey: ["/api/clinics"],
     enabled: !!userData?.user,
-    staleTime: 30 * 1000, // 30 segundos
+    staleTime: 5 * 60 * 1000, // 5 minutos 
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
   
   // Set default selected clinic if not already set

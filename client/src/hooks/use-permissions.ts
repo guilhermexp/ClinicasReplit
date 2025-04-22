@@ -130,10 +130,12 @@ const defaultPermissions = {
 export function usePermissions() {
   const { user, selectedClinic, activeClinicUser } = useAuth();
 
-  // Buscar as permissões do usuário para a clínica atual
+  // Buscar as permissões do usuário para a clínica atual com cache otimizado
   const { data: permissions = [] } = useQuery<Permission[]>({
     queryKey: ["/api/clinic-users", activeClinicUser?.id, "permissions"],
     enabled: !!activeClinicUser?.id,
+    staleTime: 10 * 60 * 1000, // 10 minutos - as permissões não mudam frequentemente
+    gcTime: 20 * 60 * 1000, // 20 minutos
   });
 
   // Verificar se um usuário tem uma permissão específica
