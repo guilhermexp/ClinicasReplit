@@ -15,8 +15,8 @@ export const roleDisplayNames = {
   // Clinic roles
   OWNER: "Proprietário",
   MANAGER: "Gerente",
-  PROFESSIONAL: "Profissional",
-  STAFF: "Funcionário"
+  PROFESSIONAL: "Profissional"
+  // STAFF is already defined above
 };
 
 // Role colors for badges
