@@ -163,16 +163,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const allClinics = await storage.listClinics();
       
-      // Get all clinic-user relationships for this user
-      const clinicUsers = [];
-      for (const clinic of allClinics) {
-        const users = await storage.listClinicUsers(clinic.id);
-        const userClinics = users.filter(cu => cu.userId === user.id && cu.role === ClinicRole.OWNER);
-        clinicUsers.push(...userClinics);
-      }
+      // Get all clinic-user relationships for this user where the user is an owner
+      const clinicUsers = await storage.listClinicUsers(undefined, user.id);
+      const ownerClinics = clinicUsers.filter(cu => cu.role === ClinicRole.OWNER);
       
       // Each user can only create one clinic as an owner
-      if (clinicUsers.length > 0) {
+      if (ownerClinics.length > 0) {
         return res.status(400).json({ 
           message: "Você já possui uma clínica cadastrada como proprietário. Você pode criar novas clínicas apenas se for convidado por outros usuários." 
         });
