@@ -12,12 +12,15 @@ import {
   insertServiceSchema,
   insertAppointmentSchema,
   insertInvitationSchema,
+  insertPaymentSchema,
   UserRole,
   ClinicRole,
   clinics,
-  clinicUsers
+  clinicUsers,
+  PaymentStatus
 } from "@shared/schema";
 import { z } from "zod";
+import { stripeService } from "./stripe";
 import passport from "passport";
 import { setupAuth } from "./auth";
 import bcrypt from "bcryptjs";
@@ -911,6 +914,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting revenue by service:", error);
       res.status(500).json({ message: "Erro ao obter receita por serviço." });
+    }
+  });
+  
+  // Stripe Payment Routes
+  app.post("/api/payments/create-intent", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { amount, currency = 'brl', appointmentId, clinicId, serviceId, clientId } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Valor do pagamento inválido" });
+      }
+      
+      // Metadata para o pagamento
+      const metadata: Record<string, any> = {
+        userId: req.user?.id,
+        appointmentId,
+        clinicId,
+        serviceId,
+        clientId
+      };
+      
+      // Criar intenção de pagamento no Stripe
+      const paymentIntent = await stripeService.createPaymentIntent(amount, currency, metadata);
+      
+      // Registrar o pagamento na base de dados
+      const payment = await storage.createPayment({
+        amount,
+        currency,
+        status: PaymentStatus.PENDING,
+        stripePaymentIntentId: paymentIntent.id,
+        appointmentId: appointmentId,
+        clinicId: clinicId,
+        clientId: clientId,
+        serviceId: serviceId,
+        createdBy: req.user?.id as number
+      });
+      
+      res.json({
+        paymentId: payment.id,
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id
+      });
+    } catch (error: any) {
+      console.error("Erro ao criar intenção de pagamento:", error);
+      res.status(500).json({ message: error.message || "Erro ao processar pagamento" });
+    }
+  });
+  
+  app.post("/api/payments/confirm", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { paymentIntentId } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: "ID de pagamento inválido" });
+      }
+      
+      // Confirmar pagamento no Stripe
+      const paymentIntent = await stripeService.confirmPayment(paymentIntentId);
+      
+      // Atualizar status do pagamento na base de dados
+      await storage.updatePaymentByStripeId(paymentIntentId, {
+        status: PaymentStatus.PAID,
+        paidAt: new Date()
+      });
+      
+      res.json({ success: true, paymentIntent });
+    } catch (error: any) {
+      console.error("Erro ao confirmar pagamento:", error);
+      res.status(500).json({ message: error.message || "Erro ao confirmar pagamento" });
+    }
+  });
+  
+  app.post("/api/payments/refund", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { paymentIntentId, amount, reason } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: "ID de pagamento inválido" });
+      }
+      
+      // Processar reembolso no Stripe
+      const refund = await stripeService.createRefund(paymentIntentId, amount, reason);
+      
+      // Atualizar status do pagamento na base de dados
+      await storage.updatePaymentByStripeId(paymentIntentId, {
+        status: amount ? PaymentStatus.PARTIAL : PaymentStatus.REFUNDED,
+        refundedAt: new Date(),
+        refundAmount: amount
+      });
+      
+      res.json({ success: true, refund });
+    } catch (error: any) {
+      console.error("Erro ao processar reembolso:", error);
+      res.status(500).json({ message: error.message || "Erro ao processar reembolso" });
+    }
+  });
+  
+  app.get("/api/payments/clinic/:clinicId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      const payments = await storage.listPaymentsByClinic(clinicId);
+      res.json(payments);
+    } catch (error: any) {
+      console.error("Erro ao buscar pagamentos da clínica:", error);
+      res.status(500).json({ message: error.message || "Erro ao buscar pagamentos" });
+    }
+  });
+  
+  app.get("/api/payments/appointment/:appointmentId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const appointmentId = parseInt(req.params.appointmentId);
+      const payments = await storage.listPaymentsByAppointment(appointmentId);
+      res.json(payments);
+    } catch (error: any) {
+      console.error("Erro ao buscar pagamentos do agendamento:", error);
+      res.status(500).json({ message: error.message || "Erro ao buscar pagamentos" });
     }
   });
   
