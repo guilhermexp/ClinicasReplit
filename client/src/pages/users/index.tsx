@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { 
   Select, 
   SelectContent, 
@@ -32,6 +34,7 @@ import { Copy, Loader2, Mail, MoreHorizontal, Plus, Search, Trash2 } from "lucid
 export default function Users() {
   const { selectedClinic } = useAuth();
   const { hasPermission } = usePermissions();
+  const { toast } = useToast();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -255,13 +258,192 @@ export default function Users() {
           <Card>
             <CardHeader>
               <CardTitle>Configuração de Permissões</CardTitle>
+              <CardDescription>
+                Configure as permissões padrão para cada tipo de usuário na sua clínica
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500 mb-6">
-                Configure as permissões padrão para cada tipo de usuário na sua clínica.
-              </p>
-              
-              {/* Permission configuration would go here */}
+              <div className="space-y-6">
+                <div className="grid gap-6">
+                  <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="role-select">Tipo de Usuário</Label>
+                    <Select defaultValue="PROFESSIONAL">
+                      <SelectTrigger id="role-select" className="w-full sm:w-[260px]">
+                        <SelectValue placeholder="Selecione um tipo de usuário" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectItem value="MANAGER">Gerente</SelectItem>
+                        <SelectItem value="PROFESSIONAL">Profissional</SelectItem>
+                        <SelectItem value="RECEPTIONIST">Recepcionista</SelectItem>
+                        <SelectItem value="FINANCIAL">Financeiro</SelectItem>
+                        <SelectItem value="MARKETING">Marketing</SelectItem>
+                        <SelectItem value="STAFF">Funcionário</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <h3 className="text-base font-medium mb-3">Permissões do Profissional</h3>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {/* Dashboard */}
+                      <div className="border rounded-md p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">Dashboard</h4>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch id="dashboard-view" defaultChecked />
+                            <Label htmlFor="dashboard-view">Visualizar</Label>
+                          </div>
+                        </div>
+                      </div>
+                    
+                      {/* Clientes */}
+                      <div className="border rounded-md p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">Clientes</h4>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch id="clients-view" defaultChecked />
+                            <Label htmlFor="clients-view">Visualizar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="clients-create" defaultChecked />
+                            <Label htmlFor="clients-create">Criar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="clients-edit" defaultChecked />
+                            <Label htmlFor="clients-edit">Editar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="clients-delete" />
+                            <Label htmlFor="clients-delete">Excluir</Label>
+                          </div>
+                        </div>
+                      </div>
+                    
+                      {/* Agendamentos */}
+                      <div className="border rounded-md p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">Agendamentos</h4>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch id="appointments-view" defaultChecked />
+                            <Label htmlFor="appointments-view">Visualizar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="appointments-create" defaultChecked />
+                            <Label htmlFor="appointments-create">Criar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="appointments-edit" defaultChecked />
+                            <Label htmlFor="appointments-edit">Editar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="appointments-delete" />
+                            <Label htmlFor="appointments-delete">Excluir</Label>
+                          </div>
+                        </div>
+                      </div>
+                    
+                      {/* Financeiro */}
+                      <div className="border rounded-md p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">Financeiro</h4>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch id="financial-view" />
+                            <Label htmlFor="financial-view">Visualizar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="financial-create" />
+                            <Label htmlFor="financial-create">Criar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="financial-edit" />
+                            <Label htmlFor="financial-edit">Editar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="financial-delete" />
+                            <Label htmlFor="financial-delete">Excluir</Label>
+                          </div>
+                        </div>
+                      </div>
+                    
+                      {/* Relatórios */}
+                      <div className="border rounded-md p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">Relatórios</h4>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch id="reports-view" />
+                            <Label htmlFor="reports-view">Visualizar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="reports-export" />
+                            <Label htmlFor="reports-export">Exportar</Label>
+                          </div>
+                        </div>
+                      </div>
+                    
+                      {/* Configurações */}
+                      <div className="border rounded-md p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">Configurações</h4>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch id="settings-view" />
+                            <Label htmlFor="settings-view">Visualizar</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch id="settings-edit" />
+                            <Label htmlFor="settings-edit">Editar</Label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        className="mr-2"
+                        onClick={() => {
+                          toast({
+                            title: "Permissões restauradas",
+                            description: "As permissões padrão foram restauradas.",
+                          });
+                        }}
+                      >
+                        Restaurar Padrão
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          toast({
+                            title: "Recurso em desenvolvimento",
+                            description: "A funcionalidade de salvar permissões padrão será implementada em breve.",
+                          });
+                        }}
+                      >
+                        Salvar Configurações
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+                  <h3 className="text-amber-800 font-medium mb-2">Importante sobre permissões</h3>
+                  <p className="text-amber-700 text-sm">
+                    As permissões padrão são aplicadas automaticamente aos novos usuários conforme o tipo selecionado.
+                    Usuários do tipo "Proprietário" sempre terão acesso total à clínica e não podem ter suas permissões alteradas.
+                    Para configurar permissões específicas para um usuário, edite-o na aba "Usuários".
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
