@@ -133,7 +133,7 @@ export function Sidebar({ className }: SidebarProps) {
           <div className="px-2 py-4 space-y-1">
             {/* Dashboard - Sempre visível */}
             <button
-              onClick={() => window.location.href = '/dashboard'}
+              onClick={() => navigate('/dashboard')}
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                 location === "/dashboard" || location === "/"
@@ -147,7 +147,7 @@ export function Sidebar({ className }: SidebarProps) {
             
             {/* Clients - Temporariamente sempre visível */}
             <button
-              onClick={() => window.location.href = '/clients'}
+              onClick={() => navigate('/clients')}
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                 location === "/clients"
@@ -161,7 +161,7 @@ export function Sidebar({ className }: SidebarProps) {
             
             {/* Appointments - Temporariamente sempre visível */}
             <button
-              onClick={() => window.location.href = '/appointments'}
+              onClick={() => navigate('/appointments')}
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                 location === "/appointments"
@@ -175,7 +175,7 @@ export function Sidebar({ className }: SidebarProps) {
             
             {/* Financial - Temporariamente sempre visível */}
             <button
-              onClick={() => window.location.href = '/financial'}
+              onClick={() => navigate('/financial')}
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                 location === "/financial"
@@ -189,7 +189,7 @@ export function Sidebar({ className }: SidebarProps) {
             
             {/* CRM - Temporariamente sempre visível */}
             <button
-              onClick={() => window.location.href = '/crm'}
+              onClick={() => navigate('/crm')}
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                 location === "/crm"
@@ -203,7 +203,7 @@ export function Sidebar({ className }: SidebarProps) {
             
             {/* Users - Temporariamente sempre visível */}
             <button
-              onClick={() => window.location.href = '/users'}
+              onClick={() => navigate('/users')}
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                 location === "/users"
@@ -217,7 +217,7 @@ export function Sidebar({ className }: SidebarProps) {
             
             {/* Settings - Temporariamente sempre visível */}
             <button
-              onClick={() => window.location.href = '/settings'}
+              onClick={() => navigate('/settings')}
               className={cn(
                 "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                 location === "/settings"
