@@ -113,7 +113,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all super admin users
   app.get("/api/users/superadmins", isAuthenticated, async (req: Request, res: Response) => {
     try {
       // Verificar se o usuário tem permissão para ver os Super Admins
@@ -122,20 +121,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Usuário não autenticado." });
       }
       
+      console.log("Requisição para /api/users/superadmins recebida. Usuário:", user.email);
+      
       // Buscar todos os usuários que são Super Admins
       const allUsers = await storage.listUsers();
-      const superAdmins = allUsers.filter(u => u.role === UserRole.SUPER_ADMIN)
-        .map(admin => ({
-          id: admin.id,
-          name: admin.name,
-          email: admin.email,
-          role: admin.role,
-          isActive: admin.isActive,
-          createdAt: admin.createdAt,
-          lastLogin: admin.lastLogin
-        }));
+      console.log("Total de usuários encontrados:", allUsers.length);
       
-      res.json(superAdmins);
+      const superAdmins = allUsers.filter(u => u.role === UserRole.SUPER_ADMIN);
+      console.log("Super Admins encontrados:", superAdmins.length);
+      
+      const formattedSuperAdmins = superAdmins.map(admin => ({
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        isActive: admin.isActive,
+        createdAt: admin.createdAt,
+        lastLogin: admin.lastLogin
+      }));
+      
+      console.log("Enviando resposta com Super Admins formatados");
+      res.json(formattedSuperAdmins);
     } catch (error) {
       console.error("Erro ao buscar super administradores:", error);
       res.status(500).json({ message: "Erro ao buscar super administradores." });
