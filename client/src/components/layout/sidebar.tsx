@@ -150,7 +150,7 @@ export function Sidebar({ className }: SidebarProps) {
             {/* Clients */}
             {hasPermission("clients", "read") && (
               <button
-                onClick={() => navigate("/clients")}
+                onClick={() => window.location.href = '/clients'}
                 className={cn(
                   "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/clients"
@@ -166,7 +166,7 @@ export function Sidebar({ className }: SidebarProps) {
             {/* Appointments */}
             {hasPermission("appointments", "read") && (
               <button
-                onClick={() => navigate("/appointments")}
+                onClick={() => window.location.href = '/appointments'}
                 className={cn(
                   "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/appointments"
@@ -182,7 +182,7 @@ export function Sidebar({ className }: SidebarProps) {
             {/* Financial */}
             {hasPermission("financial", "read") && (
               <button
-                onClick={() => navigate("/financial")}
+                onClick={() => window.location.href = '/financial'}
                 className={cn(
                   "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/financial"
@@ -198,7 +198,7 @@ export function Sidebar({ className }: SidebarProps) {
             {/* CRM */}
             {hasPermission("crm", "read") && (
               <button
-                onClick={() => navigate("/crm")}
+                onClick={() => window.location.href = '/crm'}
                 className={cn(
                   "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/crm"
@@ -214,7 +214,7 @@ export function Sidebar({ className }: SidebarProps) {
             {/* Users */}
             {hasPermission("users", "read") && (
               <button
-                onClick={() => navigate("/users")}
+                onClick={() => window.location.href = '/users'}
                 className={cn(
                   "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/users"
@@ -230,7 +230,7 @@ export function Sidebar({ className }: SidebarProps) {
             {/* Settings */}
             {hasPermission("settings", "read") && (
               <button
-                onClick={() => navigate("/settings")}
+                onClick={() => window.location.href = '/settings'}
                 className={cn(
                   "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
                   location === "/settings"
