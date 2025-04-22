@@ -25,19 +25,31 @@ interface UserListProps {
   roleFilter: string;
   statusFilter: string;
   onEdit: (userId: number, role: string) => void;
+  superAdmins?: any[];
+  isLoadingSuperAdmins?: boolean;
 }
 
-export function UserList({ users, isLoading, searchQuery, roleFilter, statusFilter, onEdit }: UserListProps) {
+export function UserList({ 
+  users, 
+  isLoading, 
+  searchQuery, 
+  roleFilter, 
+  statusFilter, 
+  onEdit,
+  superAdmins = [],
+  isLoadingSuperAdmins = false
+}: UserListProps) {
   const { hasPermission } = usePermissions();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [targetUserId, setTargetUserId] = useState<number | null>(null);
   const [targetUserName, setTargetUserName] = useState<string>("");
 
+  // Filtragem para usuários regulares da clínica
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       !searchQuery ||
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesRole = roleFilter === "all" || user.role === roleFilter;
     
@@ -48,11 +60,20 @@ export function UserList({ users, isLoading, searchQuery, roleFilter, statusFilt
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  if (isLoading) {
+  // Filtragem para Super Admins
+  const filteredSuperAdmins = superAdmins.filter((admin) => {
+    if (roleFilter !== "all" && roleFilter !== "SUPER_ADMIN") return false;
+    
+    return !searchQuery || 
+      admin.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      admin.email?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  if (isLoading || isLoadingSuperAdmins) {
     return <UserListSkeleton />;
   }
 
-  if (filteredUsers.length === 0) {
+  if (filteredUsers.length === 0 && filteredSuperAdmins.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">Nenhum usuário encontrado com os filtros selecionados.</p>
@@ -74,6 +95,85 @@ export function UserList({ users, isLoading, searchQuery, roleFilter, statusFilt
           </tr>
         </thead>
         <tbody className="divide-y">
+          {/* Super Admins primeiro */}
+          {filteredSuperAdmins.length > 0 && (
+            <>
+              {filteredSuperAdmins.map((admin, index) => (
+                <tr key={`admin-${admin.id || index}`} className="hover:bg-muted/50 bg-violet-50">
+                  <td className="p-2 pl-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarFallback className="bg-violet-100 text-violet-800">
+                          {getInitials(admin.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="flex items-center font-medium">
+                          {admin.name}
+                          <ShieldAlert className="ml-2 h-4 w-4 text-violet-800" />
+                        </div>
+                        <div className="text-sm text-muted-foreground">{admin.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    <Badge 
+                      className={`${roleColors.SUPER_ADMIN} hover:${roleColors.SUPER_ADMIN}`}
+                    >
+                      {roleDisplayNames.SUPER_ADMIN}
+                    </Badge>
+                  </td>
+                  <td className="p-2">
+                    <Badge 
+                      variant="outline" 
+                      className={`${statusColors.ACTIVE} border-${statusColors.ACTIVE}`}
+                    >
+                      Ativo
+                    </Badge>
+                  </td>
+                  <td className="p-2 text-sm">
+                    {formatDate(admin.createdAt)}
+                  </td>
+                  <td className="p-2 text-sm">
+                    {formatDate(admin.lastLogin)}
+                  </td>
+                  <td className="p-2 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Menu de ações</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        
+                        {/* Enviar email para Super Admin */}
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Mail className="mr-2 h-4 w-4" />
+                          <span>Enviar email</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))}
+              
+              {/* Separador visual entre Super Admins e usuários regulares */}
+              {filteredUsers.length > 0 && (
+                <tr className="bg-muted/40">
+                  <td colSpan={6} className="p-1 py-2 text-center">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      Usuários da Clínica
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </>
+          )}
+          
+          {/* Usuários regulares da clínica */}
           {filteredUsers.map((user) => (
             <tr key={user.id} className="hover:bg-muted/50">
               <td className="p-2 pl-4">

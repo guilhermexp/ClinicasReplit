@@ -51,6 +51,15 @@ export default function Users() {
     placeholderData: (previousData) => previousData || [],
   });
   
+  // Query para obter usuários Super Admin (apenas para proprietários)
+  const { data: superAdmins = [], isLoading: isLoadingSuperAdmins } = useQuery({
+    queryKey: ["/api/users/superadmins"],
+    enabled: !!selectedClinic && hasPermission("users", "read"),
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos
+    placeholderData: (previousData) => previousData || [],
+  });
+  
   // Query to get pending invitations com cache otimizado
   const { data: invitations = [], isLoading: isLoadingInvitations } = useQuery({
     queryKey: ["/api/clinics", selectedClinic?.id, "invitations"],
@@ -143,6 +152,8 @@ export default function Users() {
                 roleFilter={roleFilter}
                 statusFilter={statusFilter}
                 onEdit={handleUserEdit}
+                superAdmins={superAdmins}
+                isLoadingSuperAdmins={isLoadingSuperAdmins}
               />
             </CardContent>
           </Card>
