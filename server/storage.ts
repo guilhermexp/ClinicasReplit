@@ -109,49 +109,47 @@ export class DatabaseStorage implements IStorage {
   
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        password: users.password,
-        role: users.role,
-        isActive: users.isActive,
-        profilePhoto: users.profilePhoto,
-        preferences: users.preferences,
-        lastLogin: users.lastLogin,
-        createdBy: users.createdBy,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        stripeCustomerId: users.stripeCustomerId,
-        stripeSubscriptionId: users.stripeSubscriptionId
-      })
-      .from(users)
-      .where(eq(users.id, id));
-    return user;
+    try {
+      // Buscar apenas os campos que existem no banco de dados para evitar erros
+      const result = await db.execute(
+        sql`SELECT 
+            id, name, email, password, role, is_active AS "isActive", 
+            preferences, last_login AS "lastLogin", created_by AS "createdBy", 
+            created_at AS "createdAt", updated_at AS "updatedAt", 
+            stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
+          FROM users 
+          WHERE id = ${id}`
+      );
+      
+      if (result.rows.length === 0) return undefined;
+      
+      return result.rows[0] as User;
+    } catch (error) {
+      console.error("Erro ao buscar usuário por ID:", error);
+      return undefined;
+    }
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        password: users.password,
-        role: users.role,
-        isActive: users.isActive,
-        profilePhoto: users.profilePhoto,
-        preferences: users.preferences,
-        lastLogin: users.lastLogin,
-        createdBy: users.createdBy,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        stripeCustomerId: users.stripeCustomerId,
-        stripeSubscriptionId: users.stripeSubscriptionId
-      })
-      .from(users)
-      .where(eq(users.email, email));
-    return user;
+    try {
+      // Buscar apenas os campos que existem no banco de dados para evitar erros
+      const result = await db.execute(
+        sql`SELECT 
+            id, name, email, password, role, is_active AS "isActive", 
+            preferences, last_login AS "lastLogin", created_by AS "createdBy", 
+            created_at AS "createdAt", updated_at AS "updatedAt", 
+            stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
+          FROM users 
+          WHERE email = ${email}`
+      );
+      
+      if (result.rows.length === 0) return undefined;
+      
+      return result.rows[0] as User;
+    } catch (error) {
+      console.error("Erro ao buscar usuário por email:", error);
+      return undefined;
+    }
   }
   
   async createUser(user: InsertUser): Promise<User> {
@@ -169,7 +167,21 @@ export class DatabaseStorage implements IStorage {
   }
   
   async listUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    try {
+      const result = await db.execute(
+        sql`SELECT 
+            id, name, email, password, role, is_active AS "isActive", 
+            preferences, last_login AS "lastLogin", created_by AS "createdBy", 
+            created_at AS "createdAt", updated_at AS "updatedAt", 
+            stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
+          FROM users`
+      );
+      
+      return result.rows as User[];
+    } catch (error) {
+      console.error("Erro ao listar usuários:", error);
+      return [];
+    }
   }
   
   // Clinic operations
