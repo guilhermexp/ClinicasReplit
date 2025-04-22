@@ -338,7 +338,7 @@ export default function Appointments() {
                           Noite (18h - 6h)
                         </h3>
                         <div className="space-y-3">
-                          {groupedAppointments.evening.map((appointment: any) => (
+                          {groupedAppointments.evening.map((appointment: Appointment) => (
                             <AppointmentCard 
                               key={appointment.id}
                               appointment={appointment}
@@ -384,7 +384,7 @@ export default function Appointments() {
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client: any) => (
+                    {clients.map((client: Client) => (
                       <SelectItem key={client.id} value={client.id.toString()}>
                         {client.name}
                       </SelectItem>
@@ -402,7 +402,7 @@ export default function Appointments() {
                     <SelectValue placeholder="Selecione um serviço" />
                   </SelectTrigger>
                   <SelectContent>
-                    {services.map((service: any) => (
+                    {services.map((service: Service) => (
                       <SelectItem key={service.id} value={service.id.toString()}>
                         {service.name} - {service.duration} min - R$ {(service.price / 100).toFixed(2)}
                       </SelectItem>
@@ -420,9 +420,9 @@ export default function Appointments() {
                     <SelectValue placeholder="Selecione um profissional" />
                   </SelectTrigger>
                   <SelectContent>
-                    {professionals.map((professional: any) => (
+                    {professionals.map((professional: Professional) => (
                       <SelectItem key={professional.id} value={professional.id.toString()}>
-                        {professional.name || `Profissional #${professional.id}`}
+                        {professional.specialization || `Profissional #${professional.id}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -489,18 +489,19 @@ function AppointmentCard({
   professionalName,
   serviceName
 }: {
-  appointment: any; 
+  appointment: Appointment; 
   clientName: string;
   professionalName: string;
   serviceName: string;
 }) {
-  // Verificar se startTime e endTime estão definidos antes de chamar parseISO
+  // Verificar se startTime e endTime estão definidos
   if (!appointment.startTime || !appointment.endTime) {
     return <Card><CardContent className="p-4">Dados de agendamento inválidos</CardContent></Card>;
   }
   
-  const startTime = parseISO(appointment.startTime);
-  const endTime = parseISO(appointment.endTime);
+  // Convertemos para Date para uso com formatTime
+  const startTime = new Date(appointment.startTime);
+  const endTime = new Date(appointment.endTime);
   
   return (
     <Card>
