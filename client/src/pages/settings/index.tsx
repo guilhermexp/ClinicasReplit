@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import type { Clinic } from "@shared/schema";
 import { 
   Card, 
   CardContent, 
@@ -41,18 +42,18 @@ import {
 } from "lucide-react";
 
 export default function Settings() {
-  const { selectedClinic } = useAuth();
+  const { selectedClinic, user } = useAuth();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Query to get clinic details
-  const { data: clinic, isLoading } = useQuery({
+  // Query to get clinic details - usando tipagem correta
+  const { data: clinic, isLoading } = useQuery<Clinic>({
     queryKey: ["/api/clinics", selectedClinic?.id],
-    enabled: !!selectedClinic,
+    enabled: !!selectedClinic?.id,
   });
   
-  // Form state for clinic information
+  // Inicializar clinicInfo com dados vazios
   const [clinicInfo, setClinicInfo] = useState({
     name: "",
     address: "",
@@ -60,9 +61,9 @@ export default function Settings() {
     openingHours: ""
   });
   
-  // Update clinic info form when data is loaded
-  // Corrigido: usando useEffect em vez de useState para atualizar quando os dados da clínica mudam
+  // Atualizar o formulário quando os dados da clínica são carregados
   useEffect(() => {
+    console.log("Clinic data loaded:", clinic);
     if (clinic) {
       setClinicInfo({
         name: clinic.name || "",
