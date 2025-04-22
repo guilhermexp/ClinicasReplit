@@ -180,12 +180,102 @@ export default function Appointments() {
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-gray-900">Agenda</h1>
         
         {hasPermission("appointments", "create") && (
-          <DialogTrigger asChild>
-            <Button className="mt-3 sm:mt-0">
-              <Plus className="mr-2 h-5 w-5" />
-              Novo Agendamento
-            </Button>
-          </DialogTrigger>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="mt-3 sm:mt-0">
+                <Plus className="mr-2 h-5 w-5" />
+                Novo Agendamento
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[550px]">
+              <DialogHeader>
+                <DialogTitle>Novo Agendamento</DialogTitle>
+                <DialogDescription>
+                  Criar um novo agendamento no sistema.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="client" className="text-right">Cliente</Label>
+                  <div className="col-span-3">
+                    <Select>
+                      <SelectTrigger id="client">
+                        <SelectValue placeholder="Selecione um cliente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id.toString()}>
+                            {client.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="professional" className="text-right">Profissional</Label>
+                  <div className="col-span-3">
+                    <Select>
+                      <SelectTrigger id="professional">
+                        <SelectValue placeholder="Selecione um profissional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {professionals.map((professional) => (
+                          <SelectItem key={professional.id} value={professional.id.toString()}>
+                            {getProfessionalName(professional.id)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="service" className="text-right">Serviço</Label>
+                  <div className="col-span-3">
+                    <Select>
+                      <SelectTrigger id="service">
+                        <SelectValue placeholder="Selecione um serviço" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services.map((service) => (
+                          <SelectItem key={service.id} value={service.id.toString()}>
+                            {service.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="date" className="text-right">Data</Label>
+                  <div className="col-span-3">
+                    <Input id="date" type="date" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="start-time" className="text-right">Hora início</Label>
+                  <div className="col-span-3">
+                    <Input id="start-time" type="time" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="end-time" className="text-right">Hora fim</Label>
+                  <div className="col-span-3">
+                    <Input id="end-time" type="time" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="notes" className="text-right">Observações</Label>
+                  <div className="col-span-3">
+                    <Textarea id="notes" placeholder="Adicione observações sobre o agendamento..." />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Agendar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
       
@@ -375,122 +465,6 @@ export default function Appointments() {
           </CardContent>
         </Card>
       </div>
-      
-      {/* New Appointment Dialog */}
-      <Dialog>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle>Novo Agendamento</DialogTitle>
-            <DialogDescription>
-              Preencha os dados para criar um novo agendamento.
-            </DialogDescription>
-          </DialogHeader>
-          <form>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="client" className="text-right">
-                  Cliente
-                </Label>
-                <Select>
-                  <SelectTrigger id="client" className="col-span-3">
-                    <SelectValue placeholder="Selecione um cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client: Client) => (
-                      <SelectItem key={client.id} value={client.id.toString()}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="service" className="text-right">
-                  Serviço
-                </Label>
-                <Select>
-                  <SelectTrigger id="service" className="col-span-3">
-                    <SelectValue placeholder="Selecione um serviço" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((service: Service) => (
-                      <SelectItem key={service.id} value={service.id.toString()}>
-                        {service.name} - {service.duration} min - R$ {(service.price / 100).toFixed(2)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="professional" className="text-right">
-                  Profissional
-                </Label>
-                <Select>
-                  <SelectTrigger id="professional" className="col-span-3">
-                    <SelectValue placeholder="Selecione um profissional" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {professionals.map((professional: Professional) => (
-                      <SelectItem key={professional.id} value={professional.id.toString()}>
-                        {professional.specialization || `Profissional #${professional.id}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right">
-                  Data
-                </Label>
-                <div className="col-span-3">
-                  <Input id="date" type="date" className="w-full" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="time" className="text-right">
-                  Horário
-                </Label>
-                <div className="col-span-3">
-                  <Input id="time" type="time" className="w-full" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status" className="text-right">
-                  Status
-                </Label>
-                <Select>
-                  <SelectTrigger id="status" className="col-span-3">
-                    <SelectValue placeholder="Selecione um status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={AppointmentStatus.SCHEDULED}>Agendado</SelectItem>
-                    <SelectItem value={AppointmentStatus.CONFIRMED}>Confirmado</SelectItem>
-                    <SelectItem value={AppointmentStatus.COMPLETED}>Concluído</SelectItem>
-                    <SelectItem value={AppointmentStatus.CANCELLED}>Cancelado</SelectItem>
-                    <SelectItem value={AppointmentStatus.NO_SHOW}>Não compareceu</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor="notes" className="text-right pt-2">
-                  Observações
-                </Label>
-                <Textarea id="notes" className="col-span-3" placeholder="Observações sobre o agendamento" />
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button type="submit">Salvar Agendamento</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -74,12 +74,55 @@ export default function CrmPage() {
               <Mail className="mr-2 h-4 w-4" />
               Campanhas
             </Button>
-            <DialogTrigger asChild>
-              <Button>
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Nova Mensagem
-              </Button>
-            </DialogTrigger>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Nova Mensagem
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Enviar Mensagem</DialogTitle>
+                  <DialogDescription>
+                    Crie e envie uma mensagem para clientes ou grupos.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="recipient" className="text-right">Para:</Label>
+                    <div className="col-span-3">
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um destinatário" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os clientes</SelectItem>
+                          <SelectItem value="premium">Clientes Premium</SelectItem>
+                          <SelectItem value="inactive">Clientes Inativos</SelectItem>
+                          <SelectItem value="new">Novos Clientes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="subject" className="text-right">Assunto:</Label>
+                    <Input id="subject" placeholder="Assunto da mensagem" className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label htmlFor="message" className="text-right pt-2">Mensagem:</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="Digite sua mensagem aqui..."
+                      className="col-span-3 min-h-[120px]"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">Enviar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
       </div>
@@ -385,84 +428,6 @@ export default function CrmPage() {
           </Card>
         </TabsContent>
       </Tabs>
-      
-      {/* New Message Dialog */}
-      <Dialog>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Enviar Mensagem</DialogTitle>
-            <DialogDescription>
-              Crie e envie uma mensagem para seus clientes.
-            </DialogDescription>
-          </DialogHeader>
-          <form>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="recipients" className="text-right">
-                  Destinatários
-                </Label>
-                <Select>
-                  <SelectTrigger id="recipients" className="col-span-3">
-                    <SelectValue placeholder="Selecione os destinatários" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os clientes</SelectItem>
-                    <SelectItem value="premium">Clientes Premium</SelectItem>
-                    <SelectItem value="recurrent">Clientes Recorrentes</SelectItem>
-                    <SelectItem value="inactive">Clientes Inativos</SelectItem>
-                    <SelectItem value="new">Novos Clientes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="subject" className="text-right">
-                  Assunto
-                </Label>
-                <Input
-                  id="subject"
-                  placeholder="Assunto da mensagem"
-                  className="col-span-3"
-                />
-              </div>
-              
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor="message" className="text-right pt-2">
-                  Mensagem
-                </Label>
-                <Textarea
-                  id="message"
-                  placeholder="Digite sua mensagem..."
-                  className="col-span-3"
-                  rows={6}
-                />
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="channel" className="text-right">
-                  Canal
-                </Label>
-                <Select defaultValue="whatsapp">
-                  <SelectTrigger id="channel" className="col-span-3">
-                    <SelectValue placeholder="Selecione o canal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="sms">SMS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline">
-                Salvar Rascunho
-              </Button>
-              <Button type="submit">Enviar Mensagem</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
