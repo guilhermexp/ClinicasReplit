@@ -1,0 +1,821 @@
+Entendo completamente a necessidade de um sistema robusto de gerenciamento de usuários e controle de acesso para clínicas de estética. Vou reelaborar o prompt com foco especial nesse aspecto crítico, garantindo que o sistema permita níveis granulares de permissões para diferentes tipos de usuários.
+
+# Prompt para Desenvolvimento: Sistema de Gestão para Clínicas de Estética (Gardenia)
+
+```markdown
+# Sistema de Gestão para Clínicas de Estética (Gardenia) - Especificação de Desenvolvimento
+
+## 1. Visão Geral do Projeto
+
+### 1.1 Objetivo
+Desenvolver uma aplicação web completa para gestão de clínicas de estética (Gardenia) que inclua gerenciamento de pacientes, agendamentos, finanças, CRM e integrações com WhatsApp, com um sistema robusto de gerenciamento de usuários e controle de acesso granular.
+
+### 1.2 Público-alvo
+- Clínicas de estética de pequeno e médio porte
+- Profissionais autônomos de estética
+- Redes de clínicas com múltiplas unidades
+
+### 1.3 Requisitos Fundamentais
+- Interface responsiva para desktop, tablet e mobile
+- **Sistema avançado de controle de acesso e permissões**
+- Multiusuário com diferentes níveis de acesso
+- Multiclínica (suporte a várias unidades)
+- Conformidade com LGPD (Lei Geral de Proteção de Dados)
+- PWA (Progressive Web App) para acesso offline limitado
+- Integração com WhatsApp Business API
+
+## 2. Stack Tecnológico
+
+### 2.1 Frontend
+- **Framework Base**: React 19+ com Next.js 14+ (App Router)
+- **UI/Componentes**: Shadcn/UI (baseado em Radix UI e Tailwind CSS)
+- **Estilização**: Tailwind CSS
+- **Gerenciamento de Estado**:
+  - React Query (TanStack Query) para estado do servidor
+  - Zustand para estado global do cliente
+  - Context API para estados locais
+- **Formulários**: React Hook Form + Zod para validação
+- **Autenticação**: NextAuth.js / Auth.js com suporte a RBAC (Role-Based Access Control)
+
+### 2.2 Backend
+- **Framework**: Next.js API Routes (para monolito) ou NestJS (para microserviços)
+- **ORM**: Prisma
+- **Banco de Dados**: 
+  - PostgreSQL (dados principais)
+  - Redis (cache e sessões)
+- **Autenticação**: JWT com refresh tokens e RBAC
+- **Upload de Arquivos**: Amazon S3 ou similar
+- **Envio de E-mails**: SendGrid ou Amazon SES (para convites e notificações)
+
+### 2.3 DevOps
+- **Containerização**: Docker
+- **CI/CD**: GitHub Actions
+- **Hospedagem**: Vercel (para monolito Next.js) ou AWS/GCP para solução completa
+- **Monitoramento**: Sentry para rastreamento de erros
+- **Logs de Acesso**: Implementação para auditoria de ações dos usuários
+
+## 3. Sistema de Gerenciamento de Usuários e Controle de Acesso
+
+### 3.1 Hierarquia de Usuários
+
+```typescript
+// Exemplo de enum para roles de usuário
+enum UserRole {
+  SUPER_ADMIN = "SUPER_ADMIN",       // Acesso total ao sistema, incluindo todas as clínicas
+  CLINIC_OWNER = "CLINIC_OWNER",     // Proprietário da clínica, acesso total à sua clínica
+  CLINIC_MANAGER = "CLINIC_MANAGER", // Gerente da clínica, pode gerenciar usuários e configurações
+  DOCTOR = "DOCTOR",                 // Médico/Esteticista, acesso a pacientes e agenda
+  RECEPTIONIST = "RECEPTIONIST",     // Recepcionista, agenda e dados básicos de clientes
+  FINANCIAL = "FINANCIAL",           // Acesso ao módulo financeiro
+  MARKETING = "MARKETING",           // Acesso ao CRM e campanhas
+  STAFF = "STAFF"                    // Funcionário com acesso limitado
+}
+```
+
+### 3.2 Modelo de Dados para Controle de Acesso
+
+```prisma
+// Esquema Prisma para controle de acesso
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  password      String     // Hashed
+  role          UserRole   @default(STAFF)
+  isActive      Boolean    @default(true)
+  lastLogin     DateTime?
+  createdBy     String?    // ID do usuário que criou
+  clinicAccess  ClinicUser[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Clinic {
+  id            String     @id @default(cuid())
+  name          String
+  logo          String?
+  address       String?
+  phone         String?
+  openingHours  Json?      // Horários de funcionamento
+  users         ClinicUser[]
+  clients       Client[]
+  // outros campos
+}
+
+model ClinicUser {
+  id             String     @id @default(cuid())
+  clinic         Clinic     @relation(fields: [clinicId], references: [id])
+  clinicId       String
+  user           User       @relation(fields: [userId], references: [id])
+  userId         String
+  role           ClinicRole @default(STAFF)
+  permissions    Permission[]
+  invitedBy      String?    // ID do usuário que convidou
+  invitedAt      DateTime   @default(now())
+  acceptedAt     DateTime?  // Quando o convite foi aceito
+  
+  @@unique([clinicId, userId])
+}
+
+model Permission {
+  id            String     @id @default(cuid())
+  clinicUser    ClinicUser @relation(fields: [clinicUserId], references: [id])
+  clinicUserId  String
+  module        String     // Nome do módulo (dashboard, clients, appointments, etc.)
+  action        String     // Ação (read, create, update, delete)
+  
+  @@unique([clinicUserId, module, action])
+}
+
+enum ClinicRole {
+  OWNER         // Proprietário
+  MANAGER       // Gerente
+  PROFESSIONAL  // Profissional de estética
+  RECEPTIONIST  // Recepcionista
+  FINANCIAL     // Financeiro
+  MARKETING     // Marketing
+  STAFF         // Funcionário comum
+}
+```
+
+### 3.3 Sistema de Convites e Gerenciamento de Usuários
+
+#### 3.3.1 Fluxo de Convite de Usuários
+
+1. Apenas usuários com permissão de gerenciamento (OWNER, MANAGER) podem convidar novos usuários
+2. Sistema envia e-mail de convite com link temporário
+3. Novo usuário cria conta ou vincula a conta existente à clínica
+4. Permissões são atribuídas conforme definido pelo gerente/proprietário
+
+```typescript
+// src/app/api/invitations/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { prisma } from '@/lib/prisma';
+import { authOptions } from '@/lib/auth';
+import { sendInvitationEmail } from '@/lib/email';
+import { generateInvitationToken } from '@/lib/tokens';
+import { canManageUsers } from '@/lib/permissions';
+
+export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  }
+  
+  try {
+    const { email, clinicId, role, permissions } = await request.json();
+    
+    // Verificar se o usuário atual tem permissão para convidar
+    const canInvite = await canManageUsers(session.user.id, clinicId);
+    
+    if (!canInvite) {
+      return NextResponse.json({ error: 'Sem permissão para convidar usuários' }, { status: 403 });
+    }
+    
+    // Gerar token de convite
+    const token = generateInvitationToken();
+    
+    // Salvar convite no banco
+    const invitation = await prisma.invitation.create({
+      data: {
+        email,
+        clinicId,
+        role,
+        token,
+        permissions: JSON.stringify(permissions),
+        invitedBy: session.user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias
+      },
+    });
+    
+    // Enviar e-mail
+    await sendInvitationEmail(email, token, session.user.name, role);
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao criar convite:', error);
+    return NextResponse.json(
+      { error: 'Erro ao processar convite' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+#### 3.3.2 Interface de Gerenciamento de Usuários
+
+```tsx
+// src/app/(auth)/clinica/[clinicId]/usuarios/page.tsx
+import { Suspense } from 'react';
+import { checkUserPermission } from '@/lib/permissions';
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import UsersList from '@/components/users/users-list';
+import InviteUserButton from '@/components/users/invite-user-button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UsersListSkeleton, InvitationsListSkeleton } from '@/components/skeletons';
+import InvitationsList from '@/components/users/invitations-list';
+
+export default async function UsersManagementPage({ params }: { params: { clinicId: string } }) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session) {
+    redirect('/login');
+  }
+  
+  // Verificar se o usuário tem permissão para gerenciar usuários
+  const canManage = await checkUserPermission(session.user.id, params.clinicId, 'users', 'read');
+  
+  if (!canManage) {
+    redirect('/dashboard');
+  }
+  
+  return (
+    <div className="flex flex-col gap-4 p-4 md:p-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-3xl font-bold">Gerenciamento de Usuários</h1>
+        
+        <InviteUserButton clinicId={params.clinicId} />
+      </div>
+      
+      <Tabs defaultValue="users">
+        <TabsList>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
+          <TabsTrigger value="invitations">Convites</TabsTrigger>
+          <TabsTrigger value="permissions">Permissões</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usuários da Clínica</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<UsersListSkeleton />}>
+                <UsersList clinicId={params.clinicId} />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="invitations">
+          <Card>
+            <CardHeader>
+              <CardTitle>Convites Pendentes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Suspense fallback={<InvitationsListSkeleton />}>
+                <InvitationsList clinicId={params.clinicId} />
+              </Suspense>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="permissions">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuração de Permissões</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Interface para configurar permissões padrão por função */}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+```
+
+### 3.4 Componente de Gerenciamento de Permissões de Usuário
+
+```tsx
+// src/components/users/user-permissions-form.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
+import { getUserPermissions, updateUserPermissions } from '@/services/users';
+
+// Definição dos módulos e permissões disponíveis
+const modules = [
+  {
+    id: 'dashboard',
+    name: 'Dashboard',
+    permissions: ['read'],
+  },
+  {
+    id: 'clients',
+    name: 'Clientes',
+    permissions: ['read', 'create', 'update', 'delete'],
+  },
+  {
+    id: 'appointments',
+    name: 'Agenda',
+    permissions: ['read', 'create', 'update', 'delete'],
+  },
+  {
+    id: 'anamnesis',
+    name: 'Anamnese',
+    permissions: ['read', 'create', 'update', 'delete'],
+  },
+  {
+    id: 'financial',
+    name: 'Financeiro',
+    permissions: ['read', 'create', 'update', 'delete'],
+  },
+  {
+    id: 'reports',
+    name: 'Relatórios',
+    permissions: ['read'],
+  },
+  {
+    id: 'crm',
+    name: 'CRM',
+    permissions: ['read', 'create', 'update', 'delete'],
+  },
+  {
+    id: 'whatsapp',
+    name: 'WhatsApp',
+    permissions: ['read', 'create', 'update', 'delete'],
+  },
+  {
+    id: 'users',
+    name: 'Usuários',
+    permissions: ['read', 'create', 'update', 'delete'],
+  },
+  {
+    id: 'settings',
+    name: 'Configurações',
+    permissions: ['read', 'update'],
+  },
+];
+
+interface PermissionAction {
+  action: string;
+  label: string;
+}
+
+const permissionActions: Record<string, string> = {
+  read: 'Visualizar',
+  create: 'Criar',
+  update: 'Editar',
+  delete: 'Excluir',
+};
+
+interface UserPermissionsFormProps {
+  userId: string;
+  clinicId: string;
+  userRole: string;
+}
+
+export function UserPermissionsForm({ userId, clinicId, userRole }: UserPermissionsFormProps) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [userPermissions, setUserPermissions] = useState<Record<string, string[]>>({});
+  
+  useEffect(() => {
+    async function loadPermissions() {
+      try {
+        const permissions = await getUserPermissions(userId, clinicId);
+        setUserPermissions(permissions);
+      } catch (error) {
+        toast.error('Erro ao carregar permissões');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadPermissions();
+  }, [userId, clinicId]);
+  
+  function togglePermission(module: string, action: string) {
+    setUserPermissions(prev => {
+      const modulePermissions = prev[module] || [];
+      
+      if (modulePermissions.includes(action)) {
+        return {
+          ...prev,
+          [module]: modulePermissions.filter(p => p !== action),
+        };
+      } else {
+        return {
+          ...prev,
+          [module]: [...modulePermissions, action],
+        };
+      }
+    });
+  }
+  
+  async function handleSavePermissions() {
+    try {
+      setSaving(true);
+      await updateUserPermissions(userId, clinicId, userPermissions);
+      toast.success('Permissões atualizadas com sucesso');
+    } catch (error) {
+      toast.error('Erro ao salvar permissões');
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
+  }
+  
+  // Verificar se o usuário é um proprietário (não pode editar permissões)
+  const isOwner = userRole === 'OWNER';
+  
+  if (loading) {
+    return <div>Carregando permissões...</div>;
+  }
+  
+  return (
+    <div className="space-y-6">
+      {isOwner && (
+        <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200">
+          <p className="text-yellow-800">
+            Este usuário é um proprietário da clínica e tem acesso completo ao sistema.
+            As permissões não podem ser editadas.
+          </p>
+        </div>
+      )}
+      
+      {modules.map(module => (
+        <Card key={module.id}>
+          <CardHeader>
+            <CardTitle>{module.name}</CardTitle>
+            <CardDescription>Configure as permissões para o módulo {module.name}.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {module.permissions.map(action => (
+                <div key={`${module.id}-${action}`} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`${module.id}-${action}`}
+                    checked={userPermissions[module.id]?.includes(action) || false}
+                    onCheckedChange={() => togglePermission(module.id, action)}
+                    disabled={isOwner}
+                  />
+                  <label
+                    htmlFor={`${module.id}-${action}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {permissionActions[action]}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+      
+      {!isOwner && (
+        <div className="flex justify-end">
+          <Button onClick={handleSavePermissions} disabled={saving}>
+            {saving ? 'Salvando...' : 'Salvar Permissões'}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### 3.5 Sistema de Verificação de Permissões
+
+```typescript
+// src/lib/permissions.ts
+import { prisma } from './prisma';
+
+// Verificar se um usuário tem permissão para uma ação específica
+export async function checkUserPermission(
+  userId: string,
+  clinicId: string,
+  module: string,
+  action: string
+): Promise<boolean> {
+  // Buscar a associação do usuário com a clínica
+  const clinicUser = await prisma.clinicUser.findUnique({
+    where: {
+      clinicId_userId: {
+        clinicId,
+        userId,
+      },
+    },
+    include: {
+      user: true,
+      permissions: true,
+    },
+  });
+  
+  if (!clinicUser) {
+    return false;
+  }
+  
+  // Se o usuário for dono ou super admin, tem todas as permissões
+  if (clinicUser.role === 'OWNER' || clinicUser.user.role === 'SUPER_ADMIN') {
+    return true;
+  }
+  
+  // Verificar permissões específicas
+  const hasPermission = clinicUser.permissions.some(
+    permission => permission.module === module && permission.action === action
+  );
+  
+  return hasPermission;
+}
+
+// Verificar se usuário pode gerenciar outros usuários
+export async function canManageUsers(userId: string, clinicId: string): Promise<boolean> {
+  // Um usuário pode gerenciar outros usuários se tiver permissão para isso
+  const canManage = await checkUserPermission(userId, clinicId, 'users', 'create');
+  return canManage;
+}
+
+// Middleware para proteção de rotas API baseado em permissões
+export async function withPermission(
+  userId: string,
+  clinicId: string,
+  module: string,
+  action: string,
+  handler: () => Promise<any>
+) {
+  const hasPermission = await checkUserPermission(userId, clinicId, module, action);
+  
+  if (!hasPermission) {
+    throw new Error('Permissão negada');
+  }
+  
+  return handler();
+}
+```
+
+### 3.6 Implementação de Middleware para Verificação de Permissões
+
+```typescript
+// src/middleware.ts
+import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+
+export async function middleware(request: NextRequest) {
+  // Obter o token do usuário
+  const token = await getToken({ req: request });
+  
+  // Se não estiver autenticado e a rota não for pública, redirecionar para login
+  if (!token && !isPublicRoute(request.nextUrl.pathname)) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  // Para rotas da API que exigem verificação de permissões
+  if (request.nextUrl.pathname.startsWith('/api/') && !isPublicApiRoute(request.nextUrl.pathname)) {
+    // A verificação detalhada de permissões é feita nas próprias rotas da API
+    // Aqui apenas verificamos a autenticação básica
+    if (!token) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+  }
+  
+  // Para rotas de página que exigem verificação de permissões
+  if (isProtectedPageRoute(request.nextUrl.pathname) && token) {
+    // A verificação detalhada de permissões é feita nos próprios componentes de página
+    // usando os hooks e funções de servidor apropriados
+  }
+  
+  return NextResponse.next();
+}
+
+// Configurar quais rotas esse middleware deve processar
+export const config = {
+  matcher: [
+    /*
+     * Corresponder a todas as rotas de solicitação, exceto por:
+     * 1. Rotas para arquivos estáticos (_next)
+     * 2. Rotas para arquivos em diretórios públicos (public)
+     * 3. Rotas para imagens (_next/image)
+     * 4. Rotas para verificação de saúde (_next/health)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+  ],
+};
+
+// Funções auxiliares para verificar tipos de rotas
+function isPublicRoute(pathname: string): boolean {
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/invitation'];
+  return publicRoutes.some(route => pathname.startsWith(route));
+}
+
+function isPublicApiRoute(pathname: string): boolean {
+  const publicApiRoutes = ['/api/auth', '/api/invitation/accept'];
+  return publicApiRoutes.some(route => pathname.startsWith(route));
+}
+
+function isProtectedPageRoute(pathname: string): boolean {
+  const protectedRoutes = ['/dashboard', '/clientes', '/agenda', '/financeiro', '/crm', '/whatsapp', '/configuracoes'];
+  return protectedRoutes.some(route => pathname.startsWith(route));
+}
+```
+
+## 4. Integrações e Módulos Principais
+
+### 4.1 Componente de Contexto para Permissões do Usuário
+
+```tsx
+// src/providers/permissions-provider.tsx
+'use client';
+
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useSession } from 'next-auth/react';
+import { fetchUserPermissions } from '@/services/users';
+import { useClinicContext } from './clinic-provider';
+
+type PermissionsContextType = {
+  permissions: Record<string, string[]>;
+  hasPermission: (module: string, action: string) => boolean;
+  isLoading: boolean;
+  refetchPermissions: () => Promise<void>;
+};
+
+const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
+
+export function PermissionsProvider({ children }: { children: ReactNode }) {
+  const { data: session } = useSession();
+  const { currentClinic } = useClinicContext();
+  const [permissions, setPermissions] = useState<Record<string, string[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  
+  async function loadPermissions() {
+    if (session?.user?.id && currentClinic?.id) {
+      setIsLoading(true);
+      try {
+        const userPermissions = await fetchUserPermissions(session.user.id, currentClinic.id);
+        setPermissions(userPermissions);
+      } catch (error) {
+        console.error('Erro ao carregar permissões:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }
+  
+  useEffect(() => {
+    loadPermissions();
+  }, [session, currentClinic]);
+  
+  function hasPermission(module: string, action: string): boolean {
+    // Se não tiver dados de sessão ou clínica, não tem permissão
+    if (!session?.user?.id || !currentClinic?.id) {
+      return false;
+    }
+    
+    // Se for super admin ou dono da clínica, tem todas as permissões
+    if (session.user.role === 'SUPER_ADMIN' || 
+        (currentClinic.userRole === 'OWNER' || currentClinic.userRole === 'MANAGER')) {
+      return true;
+    }
+    
+    // Verificar permissões específicas
+    return permissions[module]?.includes(action) || false;
+  }
+  
+  const value = {
+    permissions,
+    hasPermission,
+    isLoading,
+    refetchPermissions: loadPermissions,
+  };
+  
+  return (
+    <PermissionsContext.Provider value={value}>
+      {children}
+    </PermissionsContext.Provider>
+  );
+}
+
+export function usePermissions() {
+  const context = useContext(PermissionsContext);
+  
+  if (context === undefined) {
+    throw new Error('usePermissions deve ser usado dentro de um PermissionsProvider');
+  }
+  
+  return context;
+}
+```
+
+### 4.2 Componente de Proteção de Rotas
+
+```tsx
+// src/components/auth/require-permission.tsx
+'use client';
+
+import { ReactNode } from 'react';
+import { usePermissions } from '@/providers/permissions-provider';
+import { useRouter } from 'next/navigation';
+import { AlertCircle } from 'lucide-react';
+
+interface RequirePermissionProps {
+  module: string;
+  action: string;
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+export function RequirePermission({ 
+  module, 
+  action, 
+  children, 
+  fallback 
+}: RequirePermissionProps) {
+  const { hasPermission, isLoading } = usePermissions();
+  
+  if (isLoading) {
+    return <div>Verificando permissões...</div>;
+  }
+  
+  if (!hasPermission(module, action)) {
+    return fallback || (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Acesso Restrito</h2>
+        <p className="text-gray-500 mb-4">
+          Você não tem permissão para acessar esta funcionalidade.
+        </p>
+      </div>
+    );
+  }
+  
+  return <>{children}</>;
+}
+```
+
+### 4.3 Exemplo de Uso das Permissões em uma Página
+
+```tsx
+// src/app/(auth)/clientes/page.tsx
+import { Suspense } from 'react';
+import { ClientsList } from '@/components/clients/clients-list';
+import { ClientsSearch } from '@/components/clients/clients-search';
+import { Button } from '@/components/ui/button';
+import { RequirePermission } from '@/components/auth/require-permission';
+import { PlusIcon } from 'lucide-react';
+import Link from 'next/link';
+import { ClientsListSkeleton } from '@/components/skeletons';
+
+export default function ClientsPage() {
+  return (
+    <div className="flex flex-col gap-4 p-4 md:p-8">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Clientes</h1>
+        
+        <RequirePermission module="clients" action="create">
+          <Link href="/clientes/novo">
+            <Button>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Novo Cliente
+            </Button>
+          </Link>
+        </RequirePermission>
+      </div>
+      
+      <ClientsSearch />
+      
+      <RequirePermission module="clients" action="read">
+        <Suspense fallback={<ClientsListSkeleton />}>
+          <ClientsList />
+        </Suspense>
+      </RequirePermission>
+    </div>
+  );
+}
+```
+
+## 5. Interface de Administração de Clínica
+
+### 5.1 Página de Gerenciamento da Clínica
+
+```tsx
+// src/app/(auth)/clinica/[clinicId]/configuracoes/page.tsx
+import { Suspense } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RequirePermission } from '@/components/auth/require-permission';
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { ClinicInfoForm } from '@/components/clinic/clinic-info-form';
+import { ClinicHoursForm } from '@/components/clinic/clinic-hours-form';
+import { ClinicProceduresSettings } from '@/components/clinic/clinic-procedures';
+import { InviteUserButton } from '@/components/users/invite-user-button';
+import { ClinicAccessLogsList } from '@/components/clinic/clinic-access-logs-list';
+import { SettingsSkeleton } from '@/components/skeletons';
+
+export default async function ClinicSettingsPage({ params }: { params: { clinicId:
