@@ -8,6 +8,7 @@ import MainLayout from "@/components/layout/main-layout";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import Onboarding from "@/pages/onboarding";
 import Users from "@/pages/users";
 import Clients from "@/pages/clients";
 import Appointments from "@/pages/appointments";
@@ -25,6 +26,7 @@ function App() {
           <Switch>
             <Route path="/login" component={Login} />
             <Route path="/register" component={Register} />
+            <Route path="/onboarding" component={Onboarding} />
             <Route path="/dashboard">
               <MainLayout>
                 <Dashboard />

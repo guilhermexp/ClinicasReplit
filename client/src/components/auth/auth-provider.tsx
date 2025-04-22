@@ -104,11 +104,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   
   // Set default selected clinic if not already set
+  // Redirect to onboarding if logged in but no clinics available
   useEffect(() => {
-    if (clinics?.length > 0 && !selectedClinic) {
-      setSelectedClinic(clinics[0]);
+    if (userData?.user) {
+      if (clinics?.length > 0) {
+        if (!selectedClinic) {
+          setSelectedClinic(clinics[0]);
+        }
+      } else {
+        // User is logged in but has no clinics - redirect to onboarding
+        const currentPath = window.location.pathname;
+        if (currentPath !== "/onboarding" && currentPath !== "/login" && currentPath !== "/register") {
+          navigate("/onboarding");
+        }
+      }
     }
-  }, [clinics, selectedClinic]);
+  }, [clinics, selectedClinic, userData, navigate]);
   
   // Login mutation
   const loginMutation = useMutation({
