@@ -110,7 +110,7 @@ export default function Settings() {
     updateClinicMutation.mutate(clinicInfo);
   };
   
-  if (!hasPermission("settings", "read")) {
+  if (!hasPermission("settings", "view")) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8">
         <div className="text-center">
@@ -183,7 +183,7 @@ export default function Settings() {
                         value={clinicInfo.name}
                         onChange={(e) => handleClinicInfoChange("name", e.target.value)}
                         placeholder="Nome da sua clínica"
-                        disabled={!hasPermission("settings", "update") || isUpdating}
+                        disabled={!hasPermission("settings", "edit") || isUpdating}
                       />
                     </div>
                     
@@ -194,7 +194,7 @@ export default function Settings() {
                         value={clinicInfo.address}
                         onChange={(e) => handleClinicInfoChange("address", e.target.value)}
                         placeholder="Endereço completo da clínica"
-                        disabled={!hasPermission("settings", "update") || isUpdating}
+                        disabled={!hasPermission("settings", "edit") || isUpdating}
                       />
                     </div>
                     
@@ -205,7 +205,7 @@ export default function Settings() {
                         value={clinicInfo.phone}
                         onChange={(e) => handleClinicInfoChange("phone", e.target.value)}
                         placeholder="(XX) XXXXX-XXXX"
-                        disabled={!hasPermission("settings", "update") || isUpdating}
+                        disabled={!hasPermission("settings", "edit") || isUpdating}
                       />
                     </div>
                     
@@ -222,7 +222,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="08:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                             <span className="flex items-center">até</span>
                             <Input 
@@ -230,7 +230,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="18:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                           </div>
                         </div>
@@ -242,7 +242,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="08:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                             <span className="flex items-center">até</span>
                             <Input 
@@ -250,7 +250,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="18:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                           </div>
                         </div>
@@ -262,7 +262,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="08:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                             <span className="flex items-center">até</span>
                             <Input 
@@ -270,7 +270,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="18:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                           </div>
                         </div>
@@ -282,7 +282,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="08:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                             <span className="flex items-center">até</span>
                             <Input 
@@ -290,7 +290,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="18:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                           </div>
                         </div>
@@ -302,7 +302,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="08:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                             <span className="flex items-center">até</span>
                             <Input 
@@ -310,7 +310,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="18:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                           </div>
                         </div>
@@ -322,7 +322,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="09:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                             <span className="flex items-center">até</span>
                             <Input 
@@ -330,7 +330,7 @@ export default function Settings() {
                               type="time" 
                               className="flex-1" 
                               defaultValue="14:00"
-                              disabled={!hasPermission("settings", "update") || isUpdating}
+                              disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                           </div>
                         </div>
@@ -362,7 +362,7 @@ export default function Settings() {
                 )}
               </CardContent>
               <CardFooter className="flex justify-end">
-                {hasPermission("settings", "update") && (
+                {hasPermission("settings", "edit") && (
                   <Button 
                     type="submit" 
                     disabled={isUpdating || isLoading}

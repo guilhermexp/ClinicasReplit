@@ -10,6 +10,30 @@ interface Permission {
 
 // Mapeamento de permissões padrão por tipo de usuário
 const defaultPermissions = {
+  SUPER_ADMIN: [
+    // Administradores do sistema têm acesso total a tudo
+    { module: "dashboard", action: "view" },
+    { module: "users", action: "view" },
+    { module: "users", action: "create" },
+    { module: "users", action: "edit" },
+    { module: "users", action: "delete" },
+    { module: "clients", action: "view" },
+    { module: "clients", action: "create" },
+    { module: "clients", action: "edit" },
+    { module: "clients", action: "delete" },
+    { module: "appointments", action: "view" },
+    { module: "appointments", action: "create" },
+    { module: "appointments", action: "edit" },
+    { module: "appointments", action: "delete" },
+    { module: "financial", action: "view" },
+    { module: "financial", action: "create" },
+    { module: "financial", action: "edit" },
+    { module: "financial", action: "delete" },
+    { module: "reports", action: "view" },
+    { module: "reports", action: "export" },
+    { module: "settings", action: "view" },
+    { module: "settings", action: "edit" }
+  ],
   OWNER: [
     // Proprietários têm acesso total a tudo
     { module: "dashboard", action: "view" },
