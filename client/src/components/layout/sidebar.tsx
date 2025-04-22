@@ -145,101 +145,89 @@ export function Sidebar({ className }: SidebarProps) {
               Dashboard
             </button>
             
-            {/* Clients */}
-            {hasPermission("clients", "read") && (
-              <button
-                onClick={() => window.location.href = '/clients'}
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
-                  location === "/clients"
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <Users className="mr-3 h-5 w-5" />
-                Clientes
-              </button>
-            )}
+            {/* Clients - Temporariamente sempre visível */}
+            <button
+              onClick={() => window.location.href = '/clients'}
+              className={cn(
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
+                location === "/clients"
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <Users className="mr-3 h-5 w-5" />
+              Clientes
+            </button>
             
-            {/* Appointments */}
-            {hasPermission("appointments", "read") && (
-              <button
-                onClick={() => window.location.href = '/appointments'}
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
-                  location === "/appointments"
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <Calendar className="mr-3 h-5 w-5" />
-                Agenda
-              </button>
-            )}
+            {/* Appointments - Temporariamente sempre visível */}
+            <button
+              onClick={() => window.location.href = '/appointments'}
+              className={cn(
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
+                location === "/appointments"
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <Calendar className="mr-3 h-5 w-5" />
+              Agenda
+            </button>
             
-            {/* Financial */}
-            {hasPermission("financial", "read") && (
-              <button
-                onClick={() => window.location.href = '/financial'}
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
-                  location === "/financial"
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <DollarSign className="mr-3 h-5 w-5" />
-                Financeiro
-              </button>
-            )}
+            {/* Financial - Temporariamente sempre visível */}
+            <button
+              onClick={() => window.location.href = '/financial'}
+              className={cn(
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
+                location === "/financial"
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <DollarSign className="mr-3 h-5 w-5" />
+              Financeiro
+            </button>
             
-            {/* CRM */}
-            {hasPermission("crm", "read") && (
-              <button
-                onClick={() => window.location.href = '/crm'}
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
-                  location === "/crm"
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <Copy className="mr-3 h-5 w-5" />
-                CRM
-              </button>
-            )}
+            {/* CRM - Temporariamente sempre visível */}
+            <button
+              onClick={() => window.location.href = '/crm'}
+              className={cn(
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
+                location === "/crm"
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <Copy className="mr-3 h-5 w-5" />
+              CRM
+            </button>
             
-            {/* Users */}
-            {hasPermission("users", "read") && (
-              <button
-                onClick={() => window.location.href = '/users'}
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
-                  location === "/users"
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <Users className="mr-3 h-5 w-5" />
-                Usuários
-              </button>
-            )}
+            {/* Users - Temporariamente sempre visível */}
+            <button
+              onClick={() => window.location.href = '/users'}
+              className={cn(
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
+                location === "/users"
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <Users className="mr-3 h-5 w-5" />
+              Usuários
+            </button>
             
-            {/* Settings */}
-            {hasPermission("settings", "read") && (
-              <button
-                onClick={() => window.location.href = '/settings'}
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
-                  location === "/settings"
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <Settings className="mr-3 h-5 w-5" />
-                Configurações
-              </button>
-            )}
+            {/* Settings - Temporariamente sempre visível */}
+            <button
+              onClick={() => window.location.href = '/settings'}
+              className={cn(
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md w-full text-left",
+                location === "/settings"
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <Settings className="mr-3 h-5 w-5" />
+              Configurações
+            </button>
           </div>
         </nav>
 
