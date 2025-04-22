@@ -59,6 +59,7 @@ interface AuthContextType {
   user: User | null;
   clinics: Clinic[];
   selectedClinic: Clinic | null;
+  activeClinicUser: ClinicUser | null;
   setSelectedClinic: (clinic: Clinic) => void;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -71,6 +72,7 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   clinics: [],
   selectedClinic: null,
+  activeClinicUser: null,
   setSelectedClinic: () => {},
   isLoading: true,
   isAuthenticated: false,
@@ -87,13 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Get current user com caching otimizado
   const { data: userData, isLoading } = useQuery({
     queryKey: ["/api/auth/me"],
-    onError: () => {
-      // If not authenticated and not already on login page, redirect
-      const currentPath = window.location.pathname;
-      if (currentPath !== "/login" && currentPath !== "/register") {
-        navigate("/login");
-      }
-    },
     retry: false, // Don't retry auth requests
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos
@@ -106,6 +101,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     staleTime: 5 * 60 * 1000, // 5 minutos 
     gcTime: 10 * 60 * 1000, // 10 minutos
   });
+  
+  // Get current clinic user relationship for permission checking
+  const { data: clinicUsers = [] } = useQuery<ClinicUser[]>({
+    queryKey: ["/api/clinic-users", selectedClinic?.id],
+    enabled: !!userData?.user && !!selectedClinic?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000 // 10 minutos
+  });
+  
+  // Encontra o activeClinicUser com base no usuário atual e clínica selecionada
+  const activeClinicUser = clinicUsers.find(
+    cu => cu.userId === userData?.user?.id && cu.clinicId === selectedClinic?.id
+  ) || null;
   
   // Set default selected clinic if not already set
   // Redirect behavior based on user's clinic association status
@@ -255,6 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: userData?.user || null,
         clinics: clinics || [],
         selectedClinic,
+        activeClinicUser,
         setSelectedClinic,
         isLoading,
         isAuthenticated: !!userData?.user,
