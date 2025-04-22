@@ -8,7 +8,10 @@ import {
   Service, InsertService,
   Appointment, InsertAppointment, AppointmentStatus,
   Invitation, InsertInvitation,
-  users, clinics, clinicUsers, permissions, clients, professionals, services, appointments, invitations
+  Payment, InsertPayment, PaymentStatus,
+  Commission, InsertCommission,
+  users, clinics, clinicUsers, permissions, clients, professionals, services, appointments, invitations,
+  payments, commissions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -72,6 +75,23 @@ export interface IStorage {
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   deleteInvitation(id: number): Promise<boolean>;
   listInvitations(clinicId: number): Promise<Invitation[]>;
+  
+  // Payment operations
+  getPayment(id: number): Promise<Payment | undefined>;
+  getPaymentByStripeId(stripePaymentIntentId: string): Promise<Payment | undefined>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePayment(id: number, payment: Partial<Payment>): Promise<Payment | undefined>;
+  updatePaymentByStripeId(stripePaymentIntentId: string, payment: Partial<Payment>): Promise<Payment | undefined>;
+  listPaymentsByClinic(clinicId: number): Promise<Payment[]>;
+  listPaymentsByAppointment(appointmentId: number): Promise<Payment[]>;
+  listPaymentsByClient(clientId: number): Promise<Payment[]>;
+  
+  // Commission operations
+  getCommission(id: number): Promise<Commission | undefined>;
+  createCommission(commission: InsertCommission): Promise<Commission>;
+  updateCommission(id: number, commission: Partial<Commission>): Promise<Commission | undefined>;
+  listCommissionsByClinic(clinicId: number): Promise<Commission[]>;
+  listCommissionsByProfessional(professionalId: number): Promise<Commission[]>;
 }
 
 // Database storage implementation using Drizzle ORM
@@ -89,12 +109,48 @@ export class DatabaseStorage implements IStorage {
   
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        password: users.password,
+        role: users.role,
+        isActive: users.isActive,
+        profilePhoto: users.profilePhoto,
+        preferences: users.preferences,
+        lastLogin: users.lastLogin,
+        createdBy: users.createdBy,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        stripeCustomerId: users.stripeCustomerId,
+        stripeSubscriptionId: users.stripeSubscriptionId
+      })
+      .from(users)
+      .where(eq(users.id, id));
     return user;
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        password: users.password,
+        role: users.role,
+        isActive: users.isActive,
+        profilePhoto: users.profilePhoto,
+        preferences: users.preferences,
+        lastLogin: users.lastLogin,
+        createdBy: users.createdBy,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        stripeCustomerId: users.stripeCustomerId,
+        stripeSubscriptionId: users.stripeSubscriptionId
+      })
+      .from(users)
+      .where(eq(users.email, email));
     return user;
   }
   
@@ -330,6 +386,106 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(invitations)
       .where(eq(invitations.clinicId, clinicId));
+  }
+  
+  // Payment operations
+  async getPayment(id: number): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment;
+  }
+  
+  async getPaymentByStripeId(stripePaymentIntentId: string): Promise<Payment | undefined> {
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.stripePaymentIntentId, stripePaymentIntentId));
+    return payment;
+  }
+  
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const [newPayment] = await db.insert(payments).values({
+      ...payment,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return newPayment;
+  }
+  
+  async updatePayment(id: number, updates: Partial<Payment>): Promise<Payment | undefined> {
+    const [updatedPayment] = await db
+      .update(payments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(payments.id, id))
+      .returning();
+    return updatedPayment;
+  }
+  
+  async updatePaymentByStripeId(stripePaymentIntentId: string, updates: Partial<Payment>): Promise<Payment | undefined> {
+    const [updatedPayment] = await db
+      .update(payments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(payments.stripePaymentIntentId, stripePaymentIntentId))
+      .returning();
+    return updatedPayment;
+  }
+  
+  async listPaymentsByClinic(clinicId: number): Promise<Payment[]> {
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.clinicId, clinicId));
+  }
+  
+  async listPaymentsByAppointment(appointmentId: number): Promise<Payment[]> {
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.appointmentId, appointmentId));
+  }
+  
+  async listPaymentsByClient(clientId: number): Promise<Payment[]> {
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.clientId, clientId));
+  }
+  
+  // Commission operations
+  async getCommission(id: number): Promise<Commission | undefined> {
+    const [commission] = await db.select().from(commissions).where(eq(commissions.id, id));
+    return commission;
+  }
+  
+  async createCommission(commission: InsertCommission): Promise<Commission> {
+    const [newCommission] = await db.insert(commissions).values({
+      ...commission,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return newCommission;
+  }
+  
+  async updateCommission(id: number, updates: Partial<Commission>): Promise<Commission | undefined> {
+    const [updatedCommission] = await db
+      .update(commissions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(commissions.id, id))
+      .returning();
+    return updatedCommission;
+  }
+  
+  async listCommissionsByClinic(clinicId: number): Promise<Commission[]> {
+    return await db
+      .select()
+      .from(commissions)
+      .where(eq(commissions.clinicId, clinicId));
+  }
+  
+  async listCommissionsByProfessional(professionalId: number): Promise<Commission[]> {
+    return await db
+      .select()
+      .from(commissions)
+      .where(eq(commissions.professionalId, professionalId));
   }
 }
 

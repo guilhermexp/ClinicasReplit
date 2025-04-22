@@ -102,7 +102,7 @@ export class StripeServiceImpl implements StripeService {
       const customer = await stripe.customers.create({
         email: user.email,
         name: user.name,
-        phone: user.phone || undefined,
+        // phone: user.phone || undefined, // Comentado até adicionarmos esta coluna ao banco de dados
         metadata: {
           userId: user.id.toString(),
         },
