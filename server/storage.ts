@@ -225,10 +225,26 @@ export class MemStorage implements IStorage {
     return updatedClinicUser;
   }
   
-  async listClinicUsers(clinicId: number): Promise<ClinicUser[]> {
-    return Array.from(this.clinicUsers.values()).filter(
-      cu => cu.clinicId === clinicId
-    );
+  async listClinicUsers(clinicId?: number, userId?: number): Promise<ClinicUser[]> {
+    return Array.from(this.clinicUsers.values()).filter(cu => {
+      // Se clinicId e userId foram fornecidos, filtre por ambos
+      if (clinicId !== undefined && userId !== undefined) {
+        return cu.clinicId === clinicId && cu.userId === userId;
+      }
+      
+      // Se apenas clinicId foi fornecido, filtre apenas por clínica
+      if (clinicId !== undefined) {
+        return cu.clinicId === clinicId;
+      }
+      
+      // Se apenas userId foi fornecido, filtre apenas por usuário
+      if (userId !== undefined) {
+        return cu.userId === userId;
+      }
+      
+      // Se nenhum filtro foi fornecido, retorne todos
+      return true;
+    });
   }
   
   // Permission operations
@@ -918,10 +934,35 @@ export class DatabaseStorage implements IStorage {
     return updatedClinicUser;
   }
 
-  async listClinicUsers(clinicId: number): Promise<ClinicUser[]> {
-    return await db.select()
-      .from(clinicUsers)
-      .where(eq(clinicUsers.clinicId, clinicId));
+  async listClinicUsers(clinicId?: number, userId?: number): Promise<ClinicUser[]> {
+    // Se clinicId e userId foram fornecidos, filtre por ambos
+    if (clinicId !== undefined && userId !== undefined) {
+      return await db.select()
+        .from(clinicUsers)
+        .where(
+          and(
+            eq(clinicUsers.clinicId, clinicId),
+            eq(clinicUsers.userId, userId)
+          )
+        );
+    }
+    
+    // Se apenas clinicId foi fornecido, filtre apenas por clínica
+    if (clinicId !== undefined) {
+      return await db.select()
+        .from(clinicUsers)
+        .where(eq(clinicUsers.clinicId, clinicId));
+    }
+    
+    // Se apenas userId foi fornecido, filtre apenas por usuário
+    if (userId !== undefined) {
+      return await db.select()
+        .from(clinicUsers)
+        .where(eq(clinicUsers.userId, userId));
+    }
+    
+    // Se nenhum filtro foi fornecido, retorne todos
+    return await db.select().from(clinicUsers);
   }
 
   // Permission operations
