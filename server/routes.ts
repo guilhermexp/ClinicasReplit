@@ -1,6 +1,8 @@
 import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq, inArray } from "drizzle-orm";
 import { 
   insertUserSchema, 
   insertClinicSchema,
@@ -11,7 +13,9 @@ import {
   insertAppointmentSchema,
   insertInvitationSchema,
   UserRole,
-  ClinicRole
+  ClinicRole,
+  clinics,
+  clinicUsers
 } from "@shared/schema";
 import passport from "passport";
 import { setupAuth } from "./auth";
@@ -112,9 +116,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clinic routes
   app.get("/api/clinics", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const clinics = await storage.listClinics();
-      res.json(clinics);
+      // Verificar se é um SUPER_ADMIN - nesse caso, pode ver todas as clínicas
+      const user = req.user as any;
+      if (user && user.role === UserRole.SUPER_ADMIN) {
+        const allClinics = await storage.listClinics();
+        return res.json(allClinics);
+      }
+      
+      // Para usuários normais, buscar apenas as clínicas vinculadas a eles
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      // Usar o método do storage para buscar as clínicas vinculadas ao usuário
+      const clinicUsersList = await storage.listClinicUsers(undefined, userId);
+      
+      if (clinicUsersList.length === 0) {
+        // Usuário não tem vínculo com nenhuma clínica
+        return res.json([]);
+      }
+      
+      // Buscar as clínicas associadas
+      const clinicsPromises = clinicUsersList.map(cu => storage.getClinic(cu.clinicId));
+      const userClinics = await Promise.all(clinicsPromises);
+      
+      // Filtrar clínicas que existem (remove undefined)
+      const validClinics = userClinics.filter(c => c !== undefined);
+      
+      res.json(validClinics);
     } catch (error) {
+      console.error("Erro ao buscar clínicas:", error);
       res.status(500).json({ message: "Erro ao buscar clínicas." });
     }
   });
