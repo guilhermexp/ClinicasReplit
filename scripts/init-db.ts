@@ -142,6 +142,7 @@ async function createTables() {
       
       // Criar usuário admin inicial
       const hashedPassword = await hashPassword("admin123");
+      const testUserPassword = await hashPassword("adoado01");
       
       // Inserir usuário admin
       await db.execute(sql`
@@ -149,9 +150,19 @@ async function createTables() {
         VALUES ('Admin', 'admin@gardenia.com', ${hashedPassword}, 'SUPER_ADMIN', TRUE, NOW(), NOW())
       `);
       
+      // Inserir usuário de teste
+      await db.execute(sql`
+        INSERT INTO users (name, email, password, role, is_active, created_at, updated_at)
+        VALUES ('Guilherme Varela', 'guilherme-varela@hotmail.com', ${testUserPassword}, 'SUPER_ADMIN', TRUE, NOW(), NOW())
+      `);
+      
       console.log("Usuário admin criado com sucesso!");
       console.log("Email: admin@gardenia.com");
       console.log("Senha: admin123");
+      
+      console.log("Usuário de teste criado com sucesso!");
+      console.log("Email: guilherme-varela@hotmail.com");
+      console.log("Senha: adoado01");
     } else {
       console.log("Tabelas já existem, pulando criação.");
     }

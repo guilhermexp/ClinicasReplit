@@ -1,10 +1,11 @@
 modules = ["nodejs-20", "web", "postgresql-16"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+entrypoint = "server/index.ts"
 
 [nix]
 channel = "stable-24_05"
-packages = ["jq"]
+packages = ["jq", "nodejs@20", "postgresql@16"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -14,6 +15,45 @@ run = ["npm", "run", "start"]
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[env]
+NODE_ENV = "development"
+PORT = "5000"
+
+[packager]
+language = "nodejs"
+ignoredPaths = [".git", "node_modules", "dist"]
+
+[packager.features]
+packageSearch = true
+guessImports = true
+enabledForHosting = true
+
+[languages]
+[languages.javascript]
+pattern = "**/{*.js,*.jsx,*.ts,*.tsx}"
+[languages.javascript.languageServer]
+start = "typescript-language-server --stdio"
+
+[languages.typescript]
+pattern = "**/{*.ts,*.tsx}"
+[languages.typescript.languageServer]
+start = "typescript-language-server --stdio"
+
+[languages.css]
+pattern = "**/{*.css,*.scss}"
+[languages.css.languageServer]
+start = "vscode-css-language-server --stdio"
+
+[languages.html]
+pattern = "**/*.html"
+[languages.html.languageServer]
+start = "vscode-html-language-server --stdio"
+
+[languages.json]
+pattern = "**/*.json"
+[languages.json.languageServer]
+start = "vscode-json-language-server --stdio"
 
 [workflows]
 runButton = "Project"

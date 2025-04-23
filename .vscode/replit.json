@@ -1,0 +1,49 @@
+{
+  "language": "nodejs",
+  "run": "npm run dev",
+  "entrypoint": "server/index.ts",
+  "onBoot": "npm install",
+  "packager": {
+    "afterInstall": [
+      "npm run check"
+    ]
+  },
+  "extensions": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "formulahendry.auto-rename-tag",
+    "formulahendry.auto-close-tag",
+    "naumovs.color-highlight",
+    "mikestead.dotenv",
+    "dsznajder.es7-react-js-snippets",
+    "ms-vscode.vscode-typescript-next",
+    "christian-kohler.path-intellisense",
+    "christian-kohler.npm-intellisense",
+    "yoavbls.pretty-ts-errors"
+  ],
+  "nix": {
+    "channel": "stable-24_05",
+    "packages": [
+      "nodejs@20",
+      "postgresql@16"
+    ]
+  },
+  "debugger": {
+    "configs": {
+      "Server": {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug Server",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}/server/index.ts",
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+        "outFiles": ["${workspaceFolder}/**/*.js"],
+        "env": {
+          "NODE_ENV": "development"
+        },
+        "console": "integratedTerminal"
+      }
+    }
+  }
+}

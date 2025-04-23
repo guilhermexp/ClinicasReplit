@@ -16,14 +16,19 @@ import {
   Mail,
   Plus,
   ArrowRight,
-  Loader2
+  Loader2,
+  Bell,
+  BarChart as BarChartIcon,
+  AlertTriangle
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { format } from "date-fns";
+import { format, isSameDay, parseISO, startOfMonth, endOfMonth, addDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Link, useLocation } from "wouter";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { useState } from "react";
 
 // Interface para dados de receita
 interface RevenueData {
@@ -49,6 +54,14 @@ interface Appointment {
   client: string;
   service: string;
   status: AppointmentStatus;
+  startTime: string;
+  endTime: string;
+  clientId: number;
+  professionalId: number;
+  serviceId: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Interface para clientes recentes
@@ -57,6 +70,16 @@ interface RecentClient {
   name: string;
   phone: string;
   lastVisit: string | null;
+}
+
+// Interface para lembretes
+interface Reminder {
+  id: number;
+  title: string;
+  description: string;
+  dueDate: string;
+  priority: 'low' | 'medium' | 'high';
+  completed: boolean;
 }
 
 // Interface para o componente StatCard
@@ -104,6 +127,19 @@ const appointmentStatusLabels: Record<AppointmentStatus, string> = {
   no_show: "Não compareceu"
 };
 
+// Prioridades dos lembretes
+const reminderPriorityColors: Record<string, string> = {
+  low: "bg-blue-100 text-blue-800",
+  medium: "bg-yellow-100 text-yellow-800",
+  high: "bg-red-100 text-red-800"
+};
+
+const reminderPriorityLabels: Record<string, string> = {
+  low: "Baixa",
+  medium: "Média",
+  high: "Alta"
+};
+
 // Formatar data para exibição
 const formatDate = (dateString: string | null): string => {
   if (!dateString) return "Não disponível";
@@ -123,6 +159,7 @@ export default function Dashboard() {
   const { user, selectedClinic } = useAuth();
   const { hasPermission } = usePermissions();
   const [location, setLocation] = useLocation();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
   // Consultas para obter dados da dashboard
   const { data: dashboardStats, isLoading: isLoadingStats } = useQuery<DashboardStats>({
@@ -135,6 +172,11 @@ export default function Dashboard() {
     enabled: !!selectedClinic && hasPermission("appointments", "read"),
   });
   
+  const { data: selectedDateAppointments = [], isLoading: isLoadingSelectedDate } = useQuery<Appointment[]>({
+    queryKey: ["/api/clinics", selectedClinic?.id, "dashboard", "appointments", "date", selectedDate ? selectedDate.toISOString().split('T')[0] : null],
+    enabled: !!selectedClinic && !!selectedDate && hasPermission("appointments", "read"),
+  });
+  
   const { data: recentClients = [], isLoading: isLoadingClients } = useQuery<RecentClient[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "dashboard", "clients", "recent"],
     enabled: !!selectedClinic && hasPermission("clients", "read"),
@@ -143,6 +185,20 @@ export default function Dashboard() {
   const { data: revenueData = [], isLoading: isLoadingRevenue } = useQuery<RevenueData[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "dashboard", "revenue", "services"],
     enabled: !!selectedClinic && hasPermission("financial", "read"),
+  });
+
+  const { data: reminders = [], isLoading: isLoadingReminders } = useQuery<Reminder[]>({
+    queryKey: ["/api/clinics", selectedClinic?.id, "dashboard", "reminders"],
+    enabled: !!selectedClinic,
+  });
+  
+  // Obter dias com agendamentos para o calendário
+  const { data: appointmentDays = [], isLoading: isLoadingAppointmentDays } = useQuery<string[]>({
+    queryKey: ["/api/clinics", selectedClinic?.id, "dashboard", "appointments", "days", 
+      format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+      format(endOfMonth(new Date()), 'yyyy-MM-dd')
+    ],
+    enabled: !!selectedClinic && hasPermission("appointments", "read"),
   });
   
   // Loading state
@@ -158,7 +214,7 @@ export default function Dashboard() {
   }
   
   // Verificar se os dados das estatísticas foram carregados
-  const isLoading = isLoadingStats || isLoadingAppointments || isLoadingClients || isLoadingRevenue;
+  const isLoading = isLoadingStats || isLoadingAppointments || isLoadingClients || isLoadingRevenue || isLoadingReminders;
   const hasNoStats = !dashboardStats;
   
   if (isLoading || hasNoStats) {
@@ -169,6 +225,20 @@ export default function Dashboard() {
       </div>
     );
   }
+  
+  // Função para verificar se uma data tem agendamentos
+  const hasDayAppointment = (date: Date) => {
+    return appointmentDays.some(dayStr => {
+      if (typeof dayStr !== 'string') return false;
+      try {
+        const day = parseISO(dayStr);
+        return isSameDay(day, date);
+      } catch (error) {
+        console.error("Erro ao analisar data:", dayStr, error);
+        return false;
+      }
+    });
+  };
 
   return (
     <div>
@@ -248,180 +318,314 @@ export default function Dashboard() {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Próximos Agendamentos */}
-        {hasPermission("appointments", "read") && (
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-center">
-                <CardTitle>Agendamentos de Hoje</CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-8" 
-                  onClick={() => setLocation('/appointments')}
-                >
-                  <Calendar className="mr-2 h-4 w-4" /> Ver agenda
-                </Button>
-              </div>
+        {/* Calendário */}
+        <div className="lg:col-span-1">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <CalendarIcon className="h-5 w-5 mr-2" /> Calendário
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {!todayAppointments || todayAppointments.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="mx-auto h-10 w-10 mb-2 text-gray-400" />
-                  <p>Não há agendamentos para hoje</p>
-                  <p className="text-sm mt-1">Todos os agendamentos do dia aparecerão aqui</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {todayAppointments.map(appointment => (
-                    <div key={appointment.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50">
-                      <div className="p-2 bg-primary-100 rounded-full">
-                        <Clock className="h-5 w-5 text-primary-700" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="w-full"
+                modifiers={{
+                  hasAppointment: (date) => hasDayAppointment(date),
+                }}
+                modifiersClassNames={{
+                  hasAppointment: "bg-primary-100 text-primary-800 font-bold",
+                }}
+              />
+            </CardContent>
+            <CardFooter>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  setLocation("/appointments");
+                }}
+              >
+                Ver todos os agendamentos
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+        
+        {/* Agendamentos do dia */}
+        {hasPermission("appointments", "read") && (
+          <div className="lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center text-lg">
+                  <Clock className="h-5 w-5 mr-2" /> 
+                  {selectedDate && isSameDay(selectedDate, new Date()) 
+                    ? "Agendamentos de Hoje" 
+                    : `Agendamentos de ${format(selectedDate || new Date(), "dd 'de' MMMM", { locale: ptBR })}`}
+                </CardTitle>
+                <CardDescription>
+                  {selectedDateAppointments.length > 0 
+                    ? `${selectedDateAppointments.length} agendamentos`
+                    : `Nenhum agendamento para ${format(selectedDate || new Date(), "dd/MM", { locale: ptBR })}`
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="max-h-96 overflow-y-auto">
+                {selectedDateAppointments.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedDateAppointments.map((appointment) => (
+                      <div 
+                        key={appointment.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-2 h-full min-h-[40px] ${getAppointmentStatusColor(appointment.status)}`}></div>
                           <div>
                             <p className="font-medium">{appointment.client}</p>
-                            <p className="text-sm text-gray-500">{appointment.service}</p>
+                            <div className="flex items-center text-sm text-gray-500">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {appointment.startTime && appointment.endTime ? (
+                                <>
+                                  {format(parseISO(appointment.startTime), "HH:mm")} - {format(parseISO(appointment.endTime), "HH:mm")}
+                                </>
+                              ) : (
+                                "Horário não disponível"
+                              )}
+                            </div>
                           </div>
-                          <Badge className={
-                            appointment.status && appointmentStatusColors[appointment.status] 
-                              ? appointmentStatusColors[appointment.status] 
-                              : "bg-gray-100 text-gray-800"
-                          }>
-                            {appointment.status && appointmentStatusLabels[appointment.status] 
-                              ? appointmentStatusLabels[appointment.status] 
-                              : "Status desconhecido"}
+                        </div>
+                        <div>
+                          <Badge className={appointmentStatusColors[appointment.status]}>
+                            {appointmentStatusLabels[appointment.status]}
                           </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold">{appointment.time}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Calendar className="h-12 w-12 text-gray-300 mb-3" />
+                    <p className="text-gray-500">Nenhum agendamento para esta data</p>
+                    <Button
+                      variant="link"
+                      className="mt-2"
+                      onClick={() => setLocation("/appointments")}
+                    >
+                      Criar novo agendamento
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+              {selectedDateAppointments.length > 0 && (
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => setLocation("/appointments")}
+                  >
+                    Gerenciar agendamentos <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
+          </div>
+        )}
+        
+        {/* Gráfico de receita por serviço */}
+        {hasPermission("financial", "read") && (
+          <div className="md:col-span-2 lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <BarChartIcon className="h-5 w-5 mr-2" /> Receita por serviço
+                </CardTitle>
+                <CardDescription>Análise de receita por tipo de serviço</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {revenueData.length > 0 ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={revenueData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis 
+                          tickFormatter={(value) => `R$${value}`}
+                        />
+                        <Tooltip 
+                          formatter={(value) => [`R$${value}`, 'Valor']}
+                        />
+                        <Bar dataKey="valor" fill="#4F46E5" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <BarChartIcon className="h-12 w-12 text-gray-300 mb-3" />
+                    <p className="text-gray-500">Sem dados disponíveis</p>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setLocation("/financial")}
+                >
+                  Ver relatório financeiro completo
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        )}
+        
+        {/* Clientes recentes */}
+        {hasPermission("clients", "read") && (
+          <div className="md:col-span-2 lg:col-span-1">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <Users className="h-5 w-5 mr-2" /> Clientes Recentes
+                </CardTitle>
+                <CardDescription>Últimos atendimentos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {recentClients.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentClients.slice(0, 5).map((client) => (
+                      <div key={client.id} className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center">
+                          <User className="h-5 w-5 text-gray-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {client.name}
+                          </p>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Phone className="h-3 w-3 mr-1" />
+                            <span className="truncate">{client.phone}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Última visita: {formatDate(client.lastVisit)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Users className="h-12 w-12 text-gray-300 mb-3" />
+                    <p className="text-gray-500">Sem clientes recentes</p>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setLocation("/clients")}
+                >
+                  Ver todos os clientes
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        )}
+
+        {/* Lembretes */}
+        <div className="md:col-span-2 lg:col-span-3">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <Bell className="h-5 w-5 mr-2" /> Lembretes e Tarefas
+              </CardTitle>
+              <CardDescription>Seus lembretes e tarefas pendentes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {reminders && reminders.length > 0 ? (
+                <div className="space-y-3">
+                  {reminders.slice(0, 5).map((reminder) => (
+                    <div 
+                      key={reminder.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-full ${reminderPriorityColors[reminder.priority]}`}>
+                          {reminder.priority === 'high' ? (
+                            <AlertTriangle className="h-4 w-4" />
+                          ) : (
+                            <Bell className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{reminder.title}</p>
+                          <p className="text-sm text-gray-500">{reminder.description}</p>
+                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {formatDate(reminder.dueDate)}
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <Badge className={reminderPriorityColors[reminder.priority]}>
+                          {reminderPriorityLabels[reminder.priority]}
+                        </Badge>
                       </div>
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Bell className="h-12 w-12 text-gray-300 mb-3" />
+                  <p className="text-gray-500">Nenhum lembrete pendente</p>
+                  <Button
+                    variant="link"
+                    className="mt-2"
+                  >
+                    Criar novo lembrete
+                  </Button>
+                </div>
               )}
             </CardContent>
-            <CardFooter>
-              <Button 
-                variant="ghost" 
-                className="w-full" 
-                onClick={() => setLocation('/appointments')}
-              >
-                Ver todos <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
-        
-        {/* Clientes Recentes */}
-        {hasPermission("clients", "read") && (
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-center">
-                <CardTitle>Clientes Recentes</CardTitle>
+            {reminders && reminders.length > 0 && (
+              <CardFooter className="flex justify-between">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="h-8" 
-                  onClick={() => setLocation('/clients')}
                 >
-                  <Plus className="mr-2 h-4 w-4" /> Novo cliente
+                  Ver tudo
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!recentClients || recentClients.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="mx-auto h-10 w-10 mb-2 text-gray-400" />
-                  <p>Nenhum cliente recente</p>
-                  <p className="text-sm mt-1">Os clientes com visitas recentes aparecerão aqui</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentClients.map(client => (
-                    <div key={client.id} className="flex gap-3 items-center p-2 border rounded-lg hover:bg-gray-50">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <User className="h-5 w-5 text-primary-700" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{client.name || "Cliente sem nome"}</p>
-                        <div className="flex gap-4 text-xs text-gray-500">
-                          <span className="flex items-center">
-                            <Phone className="mr-1 h-3 w-3" /> {client.phone || "Sem telefone"}
-                          </span>
-                          <span className="flex items-center">
-                            <CalendarIcon className="mr-1 h-3 w-3" /> {formatDate(client.lastVisit)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-            <CardFooter>
-              <Button 
-                variant="ghost" 
-                className="w-full" 
-                onClick={() => setLocation('/clients')}
-              >
-                Ver todos <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
-      </div>
-      
-      {/* Gráfico de receita por serviço */}
-      {hasPermission("financial", "read") && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Receita por Serviço</CardTitle>
-            <CardDescription>Faturamento do mês atual por tipo de serviço</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!revenueData || revenueData.length === 0 ? (
-              <div className="text-center py-16 text-gray-500">
-                <DollarSign className="mx-auto h-10 w-10 mb-2 text-gray-400" />
-                <p>Sem dados de receita disponíveis</p>
-                <p className="text-sm mt-1">Os dados financeiros aparecerão aqui quando houver procedimentos concluídos</p>
-              </div>
-            ) : (
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={revenueData}
-                    margin={{ top: 10, right: 30, left: 20, bottom: 40 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fill: '#6B7280' }} />
-                    <YAxis tick={{ fill: '#6B7280' }} />
-                    <Tooltip 
-                      formatter={(value) => {
-                        try {
-                          return [formatCurrency(Number(value)), 'Receita'];
-                        } catch (e) {
-                          return [value, 'Receita'];
-                        }
-                      }}
-                      labelStyle={{ color: '#111827' }}
-                      contentStyle={{ 
-                        backgroundColor: 'white',
-                        border: '1px solid #E5E7EB',
-                        borderRadius: '0.375rem',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                      }}
-                    />
-                    <Bar dataKey="valor" fill="#4F46E5" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                >
+                  Adicionar lembrete <Plus className="h-4 w-4 ml-1" />
+                </Button>
+              </CardFooter>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </Card>
+        </div>
+      </div>
     </div>
   );
+}
+
+// Função auxiliar para obter a cor do status do agendamento
+function getAppointmentStatusColor(status: string): string {
+  switch (status) {
+    case 'scheduled':
+      return 'bg-blue-500';
+    case 'confirmed':
+      return 'bg-green-500';
+    case 'completed':
+      return 'bg-indigo-500';
+    case 'cancelled':
+      return 'bg-red-500';
+    case 'no_show':
+      return 'bg-gray-500';
+    default:
+      return 'bg-gray-300';
+  }
 }

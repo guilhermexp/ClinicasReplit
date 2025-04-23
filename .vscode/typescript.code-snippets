@@ -1,0 +1,145 @@
+{
+  "React Functional Component": {
+    "prefix": "rfc",
+    "body": [
+      "import { FC } from 'react';",
+      "",
+      "interface ${1:ComponentName}Props {",
+      "  $2",
+      "}",
+      "",
+      "export const ${1:ComponentName}: FC<${1:ComponentName}Props> = ({ $3 }) => {",
+      "  return (",
+      "    <div>",
+      "      $4",
+      "    </div>",
+      "  );",
+      "};",
+      ""
+    ],
+    "description": "React Functional Component with TypeScript"
+  },
+  "React Functional Component with useState": {
+    "prefix": "rfcs",
+    "body": [
+      "import { FC, useState } from 'react';",
+      "",
+      "interface ${1:ComponentName}Props {",
+      "  $2",
+      "}",
+      "",
+      "export const ${1:ComponentName}: FC<${1:ComponentName}Props> = ({ $3 }) => {",
+      "  const [${4:state}, set${4/(.*)/${4:/capitalize}/}] = useState<${5:string}>($6);",
+      "",
+      "  return (",
+      "    <div>",
+      "      $7",
+      "    </div>",
+      "  );",
+      "};",
+      ""
+    ],
+    "description": "React Functional Component with useState and TypeScript"
+  },
+  "React Functional Component with useEffect": {
+    "prefix": "rfce",
+    "body": [
+      "import { FC, useEffect } from 'react';",
+      "",
+      "interface ${1:ComponentName}Props {",
+      "  $2",
+      "}",
+      "",
+      "export const ${1:ComponentName}: FC<${1:ComponentName}Props> = ({ $3 }) => {",
+      "  useEffect(() => {",
+      "    $4",
+      "    ",
+      "    return () => {",
+      "      $5",
+      "    };",
+      "  }, [$6]);",
+      "",
+      "  return (",
+      "    <div>",
+      "      $7",
+      "    </div>",
+      "  );",
+      "};",
+      ""
+    ],
+    "description": "React Functional Component with useEffect and TypeScript"
+  },
+  "React Query Hook": {
+    "prefix": "rqh",
+    "body": [
+      "import { useQuery } from '@tanstack/react-query';",
+      "",
+      "export const use${1:QueryName} = ($2) => {",
+      "  return useQuery({",
+      "    queryKey: ['${3:queryKey}', $4],",
+      "    queryFn: async () => {",
+      "      const response = await fetch(`$5`);",
+      "      if (!response.ok) {",
+      "        throw new Error('Network response was not ok');",
+      "      }",
+      "      return response.json();",
+      "    },",
+      "    $6",
+      "  });",
+      "};",
+      ""
+    ],
+    "description": "React Query Hook with TypeScript"
+  },
+  "TypeScript Interface": {
+    "prefix": "tsinterface",
+    "body": [
+      "export interface ${1:InterfaceName} {",
+      "  $2",
+      "}",
+      ""
+    ],
+    "description": "TypeScript Interface"
+  },
+  "TypeScript Type": {
+    "prefix": "tstype",
+    "body": [
+      "export type ${1:TypeName} = {",
+      "  $2",
+      "};",
+      ""
+    ],
+    "description": "TypeScript Type"
+  },
+  "Express Route Handler": {
+    "prefix": "exroute",
+    "body": [
+      "import { Request, Response } from 'express';",
+      "",
+      "export const ${1:handlerName} = async (req: Request, res: Response) => {",
+      "  try {",
+      "    $2",
+      "    ",
+      "    return res.status(200).json({ success: true, data: $3 });",
+      "  } catch (error) {",
+      "    console.error('Error in ${1:handlerName}:', error);",
+      "    return res.status(500).json({ success: false, message: 'Erro interno do servidor' });",
+      "  }",
+      "};",
+      ""
+    ],
+    "description": "Express Route Handler with TypeScript"
+  },
+  "Try Catch Block": {
+    "prefix": "trycatch",
+    "body": [
+      "try {",
+      "  $1",
+      "} catch (error) {",
+      "  console.error('Error:', error);",
+      "  $2",
+      "}"
+    ],
+    "description": "Try Catch Block"
+  }
+}

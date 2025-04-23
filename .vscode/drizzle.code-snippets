@@ -1,0 +1,173 @@
+{
+  "Drizzle Table": {
+    "prefix": "dztable",
+    "body": [
+      "export const ${1:tableName} = pgTable('${2:${1:tableName}}', {",
+      "  id: serial('id').primaryKey(),",
+      "  ${3:name}: text('${3:name}')${4:.notNull()},",
+      "  ${5:description}: text('${5:description}'),",
+      "  createdAt: timestamp('created_at').defaultNow().notNull(),",
+      "  updatedAt: timestamp('updated_at').defaultNow().notNull(),",
+      "  $0",
+      "});"
+    ],
+    "description": "Drizzle table definition"
+  },
+  "Drizzle Relation Table": {
+    "prefix": "dzreltable",
+    "body": [
+      "export const ${1:tableName} = pgTable('${2:${1:tableName}}', {",
+      "  id: serial('id').primaryKey(),",
+      "  ${3:firstTableId}: integer('${3:first_table_id}').notNull().references(() => ${4:firstTable}.id, { onDelete: 'cascade' }),",
+      "  ${5:secondTableId}: integer('${5:second_table_id}').notNull().references(() => ${6:secondTable}.id, { onDelete: 'cascade' }),",
+      "  createdAt: timestamp('created_at').defaultNow().notNull(),",
+      "  $0",
+      "});"
+    ],
+    "description": "Drizzle relation table definition"
+  },
+  "Drizzle Select Query": {
+    "prefix": "dzselect",
+    "body": [
+      "const ${1:result} = await db.select()",
+      "  .from(${2:table})",
+      "  ${3:.where(eq(${2:table}.${4:column}, ${5:value}))};",
+      "$0"
+    ],
+    "description": "Drizzle select query"
+  },
+  "Drizzle Insert Query": {
+    "prefix": "dzinsert",
+    "body": [
+      "const ${1:result} = await db.insert(${2:table})",
+      "  .values({",
+      "    $0",
+      "  })",
+      "  .returning();"
+    ],
+    "description": "Drizzle insert query"
+  },
+  "Drizzle Update Query": {
+    "prefix": "dzupdate",
+    "body": [
+      "const ${1:result} = await db.update(${2:table})",
+      "  .set({",
+      "    $0",
+      "  })",
+      "  .where(eq(${2:table}.${3:id}, ${4:value}))",
+      "  .returning();"
+    ],
+    "description": "Drizzle update query"
+  },
+  "Drizzle Delete Query": {
+    "prefix": "dzdelete",
+    "body": [
+      "const ${1:result} = await db.delete(${2:table})",
+      "  .where(eq(${2:table}.${3:id}, ${4:value}))",
+      "  .returning();"
+    ],
+    "description": "Drizzle delete query"
+  },
+  "Drizzle Join Query": {
+    "prefix": "dzjoin",
+    "body": [
+      "const ${1:result} = await db.select({",
+      "  ${2:table1Field}: ${3:table1}.${4:field1},",
+      "  ${5:table2Field}: ${6:table2}.${7:field2},",
+      "  $0",
+      "})",
+      "  .from(${3:table1})",
+      "  .innerJoin(${6:table2}, eq(${3:table1}.${8:id}, ${6:table2}.${9:foreignKey}))",
+      "  ${10:.where(eq(${3:table1}.${11:column}, ${12:value}))};"
+    ],
+    "description": "Drizzle join query"
+  },
+  "Drizzle Transaction": {
+    "prefix": "dztransaction",
+    "body": [
+      "const ${1:result} = await db.transaction(async (tx) => {",
+      "  try {",
+      "    $0",
+      "    ",
+      "    return { success: true };",
+      "  } catch (error) {",
+      "    console.error('Transaction error:', error);",
+      "    throw error;",
+      "  }",
+      "});"
+    ],
+    "description": "Drizzle transaction"
+  },
+  "Drizzle Schema": {
+    "prefix": "dzschema",
+    "body": [
+      "import { z } from 'zod';",
+      "import { createInsertSchema, createSelectSchema } from 'drizzle-zod';",
+      "import { ${1:table} } from '../${2:path/to/schema}';",
+      "",
+      "// Schema for inserting a ${3:resource}",
+      "export const insert${4:Resource}Schema = createInsertSchema(${1:table}, {",
+      "  $0",
+      "});",
+      "",
+      "// Schema for selecting a ${3:resource}",
+      "export const select${4:Resource}Schema = createSelectSchema(${1:table});",
+      "",
+      "// Type for inserting a ${3:resource}",
+      "export type New${4:Resource} = z.infer<typeof insert${4:Resource}Schema>;",
+      "",
+      "// Type for selecting a ${3:resource}",
+      "export type ${4:Resource} = z.infer<typeof select${4:Resource}Schema>;"
+    ],
+    "description": "Drizzle schema with Zod validation"
+  },
+  "Drizzle Repository": {
+    "prefix": "dzrepository",
+    "body": [
+      "import { eq } from 'drizzle-orm';",
+      "import { db } from '../${1:path/to/db}';",
+      "import { ${2:table} } from '../${3:path/to/schema}';",
+      "import type { New${4:Resource}, ${4:Resource} } from '../${5:path/to/types}';",
+      "",
+      "export class ${4:Resource}Repository {",
+      "  async findAll(): Promise<${4:Resource}[]> {",
+      "    return db.select().from(${2:table});",
+      "  }",
+      "  ",
+      "  async findById(id: number): Promise<${4:Resource} | undefined> {",
+      "    const results = await db.select()",
+      "      .from(${2:table})",
+      "      .where(eq(${2:table}.id, id));",
+      "    ",
+      "    return results[0];",
+      "  }",
+      "  ",
+      "  async create(data: New${4:Resource}): Promise<${4:Resource}> {",
+      "    const results = await db.insert(${2:table})",
+      "      .values(data)",
+      "      .returning();",
+      "    ",
+      "    return results[0];",
+      "  }",
+      "  ",
+      "  async update(id: number, data: Partial<New${4:Resource}>): Promise<${4:Resource} | undefined> {",
+      "    const results = await db.update(${2:table})",
+      "      .set(data)",
+      "      .where(eq(${2:table}.id, id))",
+      "      .returning();",
+      "    ",
+      "    return results[0];",
+      "  }",
+      "  ",
+      "  async delete(id: number): Promise<${4:Resource} | undefined> {",
+      "    const results = await db.delete(${2:table})",
+      "      .where(eq(${2:table}.id, id))",
+      "      .returning();",
+      "    ",
+      "    return results[0];",
+      "  }",
+      "}"
+    ],
+    "description": "Drizzle repository class"
+  }
+}

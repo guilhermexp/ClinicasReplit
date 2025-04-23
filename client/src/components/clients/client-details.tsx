@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { usePermissions } from "@/hooks/use-permissions";
 import { 
@@ -17,7 +17,14 @@ import {
   Edit, 
   X, 
   Save, 
-  User 
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Clock,
+  FileText,
+  Badge,
+  PlusCircle
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -54,6 +61,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ClientDetailsProps {
   client: Client;
@@ -77,7 +85,7 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("info");
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Carregar dados do cliente para o formulário
   const form = useForm<FormData>({
@@ -152,6 +160,62 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
   const birthDate = client.birthdate 
     ? format(new Date(client.birthdate), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : "Não informada";
+
+  // Função para obter as iniciais do nome
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+  
+  // Formatador de data
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Não informado";
+    return format(parseISO(dateString), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+  };
+  
+  // Mapeamento de cores para status de agendamento
+  const statusColors: Record<string, string> = {
+    scheduled: "bg-blue-100 text-blue-800",
+    confirmed: "bg-green-100 text-green-800",
+    completed: "bg-indigo-100 text-indigo-800",
+    cancelled: "bg-red-100 text-red-800",
+    no_show: "bg-amber-100 text-amber-800"
+  };
+  
+  // Tradução dos status
+  const statusLabels: Record<string, string> = {
+    scheduled: "Agendado",
+    confirmed: "Confirmado",
+    completed: "Concluído",
+    cancelled: "Cancelado",
+    no_show: "Não compareceu"
+  };
+  
+  // Dados de exemplo para agendamentos (em desenvolvimento)
+  const appointments: { date: string; startTime: string; }[] = [];
+  
+  // Dados de exemplo para histórico médico (em desenvolvimento)
+  const medicalHistory: { date: string; }[] = [];
+  
+  // Ordenar agendamentos por data (mais recentes primeiro)
+  const sortedAppointments = [...appointments].sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+  
+  // Ordenar histórico médico por data (mais recentes primeiro)
+  const sortedMedicalHistory = [...medicalHistory].sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+  
+  // Verifica se tem agendamentos futuros
+  const hasFutureAppointments = appointments.some((app) => {
+    const appDate = new Date(`${app.date}T${app.startTime}`);
+    return appDate > new Date();
+  });
 
   return (
     <Card className="h-full flex flex-col">
@@ -228,21 +292,24 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <TabsList className="mx-6 mb-2">
-          <TabsTrigger value="info">Informações</TabsTrigger>
-          <TabsTrigger value="appointments">Consultas</TabsTrigger>
-          <TabsTrigger value="history">Histórico</TabsTrigger>
+          <TabsTrigger value="overview">Resumo</TabsTrigger>
+          <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
+          <TabsTrigger value="medical">Prontuário</TabsTrigger>
         </TabsList>
         
         <Separator />
         
-        <TabsContent value="info" className="flex-1 p-0">
+        <TabsContent value="overview" className="flex-1 p-0">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar e informações principais */}
               <div className="flex-shrink-0 flex flex-col items-center">
-                <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <User className="h-12 w-12" />
-                </div>
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src="" alt={client.name} />
+                  <AvatarFallback className="text-xl bg-primary-100 text-primary-800">
+                    {getInitials(client.name)}
+                  </AvatarFallback>
+                </Avatar>
                 <h2 className="mt-4 font-semibold text-lg text-center">{client.name}</h2>
                 <p className="text-sm text-muted-foreground text-center">
                   Cliente desde {createdDate}
@@ -253,10 +320,10 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
               <div className="flex-1">
                 {!isEditing ? (
                   <div className="space-y-1">
-                    <InfoField label="Email" value={client.email} />
-                    <InfoField label="Telefone" value={client.phone} />
-                    <InfoField label="Endereço" value={client.address} />
-                    <InfoField label="Data de Nascimento" value={birthDate} />
+                    <InfoField label="Email" value={client.email} icon={Mail} />
+                    <InfoField label="Telefone" value={client.phone} icon={Phone} />
+                    <InfoField label="Endereço" value={client.address} icon={MapPin} />
+                    <InfoField label="Data de Nascimento" value={birthDate} icon={Calendar} />
                   </div>
                 ) : (
                   <Form {...form}>
@@ -382,21 +449,21 @@ export default function ClientDetails({ client, onClose }: ClientDetailsProps) {
               <p className="text-muted-foreground mb-4">
                 A visualização do histórico de consultas estará disponível em breve.
               </p>
-              <Button variant="outline" onClick={() => setActiveTab("info")}>
+              <Button variant="outline" onClick={() => setActiveTab("overview")}>
                 Voltar para informações
               </Button>
             </div>
           </CardContent>
         </TabsContent>
         
-        <TabsContent value="history" className="flex-1 p-0">
+        <TabsContent value="medical" className="flex-1 p-0">
           <CardContent className="pt-6">
             <div className="text-center py-10">
               <h3 className="text-lg font-medium mb-2">Funcionalidade em desenvolvimento</h3>
               <p className="text-muted-foreground mb-4">
                 A visualização do histórico completo do cliente estará disponível em breve.
               </p>
-              <Button variant="outline" onClick={() => setActiveTab("info")}>
+              <Button variant="outline" onClick={() => setActiveTab("overview")}>
                 Voltar para informações
               </Button>
             </div>
