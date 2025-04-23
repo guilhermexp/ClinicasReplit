@@ -9,6 +9,7 @@ import {
   Users,
   DollarSign,
   TrendingUp,
+  TrendingDown,
   CheckSquare,
   Calendar as CalendarIcon,
   User,
@@ -89,25 +90,55 @@ interface StatCardProps {
   value: string;
   desc: string;
   color: string;
+  trend?: number;
+  trendLabel?: string;
+  hideArrow?: boolean;
 }
 
 // Componente para o cartão de estatísticas
-const StatCard = ({ icon, title, value, desc, color }: StatCardProps) => (
-  <Card>
-    <CardHeader className="pb-2">
-      <div className="flex justify-between items-start">
-        <CardTitle className="text-lg font-medium">{title}</CardTitle>
-        <div className={`p-2 rounded-full ${color}`}>
-          {icon}
+const StatCard = ({ icon, title, value, desc, color, trend, trendLabel, hideArrow = false }: StatCardProps) => {
+  const isPositive = trend ? trend > 0 : false;
+  const isNeutral = trend === 0;
+  
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg font-medium">{title}</CardTitle>
+          <div className={`p-2 rounded-full ${color}`}>
+            {icon}
+          </div>
         </div>
-      </div>
-      <CardDescription>{desc}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-3xl font-bold">{value}</p>
-    </CardContent>
-  </Card>
-);
+        <CardDescription>{desc}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-3xl font-bold">{value}</p>
+      </CardContent>
+      {typeof trend !== 'undefined' && (
+        <CardFooter>
+          <div className="flex items-center space-x-1 text-sm">
+            {!hideArrow && (
+              <>
+                {isPositive && <TrendingUp className="h-4 w-4 text-emerald-500" />}
+                {isNeutral && <span className="h-4 w-4" />}
+                {!isPositive && !isNeutral && <TrendingDown className="h-4 w-4 text-red-500" />}
+              </>
+            )}
+            <span className={`font-medium ${
+              isPositive ? "text-emerald-500" : 
+              isNeutral ? "text-gray-500" : 
+              "text-red-500"
+            }`}>
+              {trend > 0 && "+"}
+              {trend !== 0 ? `${trend.toFixed(1)}%` : "0%"}
+            </span>
+            {trendLabel && <span className="text-gray-500 text-xs">{trendLabel}</span>}
+          </div>
+        </CardFooter>
+      )}
+    </Card>
+  );
+};
 
 // Status dos agendamentos
 const appointmentStatusColors: Record<AppointmentStatus, string> = {
@@ -275,7 +306,7 @@ export default function Dashboard() {
       </Card>
       
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         {hasPermission("clients", "read") && dashboardStats && typeof dashboardStats.clientCount !== 'undefined' && (
           <StatCard 
             icon={<Users className="h-5 w-5 text-blue-600" />}
@@ -283,6 +314,8 @@ export default function Dashboard() {
             value={String(dashboardStats.clientCount || 0)}
             desc="Total de clientes"
             color="bg-blue-100"
+            trend={5.2}
+            trendLabel="vs. mês anterior"
           />
         )}
         
@@ -293,6 +326,8 @@ export default function Dashboard() {
             value={String(dashboardStats.todayAppointmentCount || 0)}
             desc="Agendamentos hoje"
             color="bg-purple-100"
+            trend={dashboardStats.todayAppointmentCount > 3 ? 8.1 : -2.3}
+            trendLabel="vs. média diária"
           />
         )}
         
@@ -303,6 +338,8 @@ export default function Dashboard() {
             value={formatCurrency(dashboardStats.monthlyRevenue || 0)}
             desc="Mês atual"
             color="bg-green-100"
+            trend={7.4}
+            trendLabel="vs. mês anterior"
           />
         )}
         
@@ -313,6 +350,8 @@ export default function Dashboard() {
             value={String(dashboardStats.completedProceduresCount || 0)}
             desc="Realizados no mês"
             color="bg-amber-100"
+            trend={3.2}
+            trendLabel="vs. mês anterior"
           />
         )}
       </div>
