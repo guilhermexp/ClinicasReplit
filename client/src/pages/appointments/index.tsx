@@ -19,7 +19,8 @@ import {
   DialogFooter, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -212,6 +213,77 @@ export default function Appointments() {
     return service ? service.name : "Serviço não encontrado";
   };
   
+  // Mutation para criar um novo agendamento
+  const createAppointmentMutation = useMutation({
+    mutationFn: async (appointmentData: any) => {
+      const response = await apiRequest("POST", "/api/appointments", appointmentData);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erro ao criar agendamento");
+      }
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Limpar campos
+      setSelectedClient("");
+      setSelectedProfessional("");
+      setSelectedService("");
+      setAppointmentDate("");
+      setStartTime("");
+      setEndTime("");
+      setNotes("");
+      setIsCreating(false);
+      
+      // Invalidar cache para forçar recarregamento dos agendamentos
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/clinics", selectedClinic?.id, "appointments"] 
+      });
+      
+      toast({
+        title: "Agendamento criado",
+        description: "O agendamento foi criado com sucesso",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao criar agendamento",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsCreating(false);
+    }
+  });
+  
+  // Função para lidar com a criação de um novo agendamento
+  const handleCreateAppointment = () => {
+    if (!selectedClinic || !user || !selectedClient || !selectedProfessional || !selectedService || !appointmentDate || !startTime || !endTime) {
+      toast({
+        title: "Informações incompletas",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsCreating(true);
+    
+    // Criar objetos de data combinando a data e horários
+    const startDateTime = new Date(`${appointmentDate}T${startTime}`);
+    const endDateTime = new Date(`${appointmentDate}T${endTime}`);
+    
+    createAppointmentMutation.mutate({
+      clinicId: selectedClinic.id,
+      createdBy: user.id,
+      clientId: parseInt(selectedClient),
+      professionalId: parseInt(selectedProfessional),
+      serviceId: parseInt(selectedService),
+      startTime: startDateTime,
+      endTime: endDateTime,
+      status: AppointmentStatus.SCHEDULED,
+      notes: notes || null
+    });
+  };
+  
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
@@ -236,7 +308,7 @@ export default function Appointments() {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="client" className="text-right">Cliente</Label>
                   <div className="col-span-3">
-                    <Select>
+                    <Select value={selectedClient} onValueChange={setSelectedClient}>
                       <SelectTrigger id="client">
                         <SelectValue placeholder="Selecione um cliente" />
                       </SelectTrigger>
@@ -253,7 +325,7 @@ export default function Appointments() {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="professional" className="text-right">Profissional</Label>
                   <div className="col-span-3">
-                    <Select>
+                    <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
                       <SelectTrigger id="professional">
                         <SelectValue placeholder="Selecione um profissional" />
                       </SelectTrigger>
@@ -270,7 +342,7 @@ export default function Appointments() {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="service" className="text-right">Serviço</Label>
                   <div className="col-span-3">
-                    <Select>
+                    <Select value={selectedService} onValueChange={setSelectedService}>
                       <SelectTrigger id="service">
                         <SelectValue placeholder="Selecione um serviço" />
                       </SelectTrigger>
@@ -287,30 +359,65 @@ export default function Appointments() {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="date" className="text-right">Data</Label>
                   <div className="col-span-3">
-                    <Input id="date" type="date" />
+                    <Input 
+                      id="date" 
+                      type="date" 
+                      value={appointmentDate}
+                      onChange={(e) => setAppointmentDate(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="start-time" className="text-right">Hora início</Label>
                   <div className="col-span-3">
-                    <Input id="start-time" type="time" />
+                    <Input 
+                      id="start-time" 
+                      type="time" 
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="end-time" className="text-right">Hora fim</Label>
                   <div className="col-span-3">
-                    <Input id="end-time" type="time" />
+                    <Input 
+                      id="end-time" 
+                      type="time" 
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="notes" className="text-right">Observações</Label>
                   <div className="col-span-3">
-                    <Textarea id="notes" placeholder="Adicione observações sobre o agendamento..." />
+                    <Textarea 
+                      id="notes" 
+                      placeholder="Adicione observações sobre o agendamento..." 
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                    />
                   </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Agendar</Button>
+                <DialogClose asChild>
+                  <Button 
+                    type="button" 
+                    onClick={handleCreateAppointment}
+                    disabled={isCreating || !selectedClient || !selectedProfessional || !selectedService || !appointmentDate || !startTime || !endTime}
+                  >
+                    {isCreating ? (
+                      <span className="flex items-center">
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                        Processando...
+                      </span>
+                    ) : (
+                      "Agendar"
+                    )}
+                  </Button>
+                </DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>

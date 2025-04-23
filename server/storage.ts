@@ -114,9 +114,9 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
+            phone, profile_photo AS "profilePhoto", preferences,
             last_login AS "lastLogin", created_by AS "createdBy", 
-            created_at AS "createdAt", updated_at AS "updatedAt", 
-            stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
+            created_at AS "createdAt", updated_at AS "updatedAt"
           FROM users 
           WHERE id = ${id}`
       );
@@ -142,9 +142,9 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
+            phone, profile_photo AS "profilePhoto", preferences,
             last_login AS "lastLogin", created_by AS "createdBy", 
-            created_at AS "createdAt", updated_at AS "updatedAt", 
-            stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
+            created_at AS "createdAt", updated_at AS "updatedAt"
           FROM users 
           WHERE email = ${email}`
       );
@@ -183,9 +183,9 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
+            phone, profile_photo AS "profilePhoto", preferences,
             last_login AS "lastLogin", created_by AS "createdBy", 
-            created_at AS "createdAt", updated_at AS "updatedAt", 
-            stripe_customer_id AS "stripeCustomerId", stripe_subscription_id AS "stripeSubscriptionId"
+            created_at AS "createdAt", updated_at AS "updatedAt"
           FROM users`
       );
       
