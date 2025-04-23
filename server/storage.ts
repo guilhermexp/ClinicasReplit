@@ -333,29 +333,160 @@ export class DatabaseStorage implements IStorage {
   
   // Client operations
   async getClient(id: number): Promise<Client | undefined> {
-    const [client] = await db.select().from(clients).where(eq(clients.id, id));
-    return client;
+    try {
+      const result = await db.execute(
+        sql`SELECT 
+            id, name, email, phone, address, birthdate, clinic_id AS "clinicId",
+            created_by AS "createdBy", created_at AS "createdAt", updated_at AS "updatedAt"
+          FROM clients
+          WHERE id = ${id}`
+      );
+      
+      if (result.rows.length === 0) return undefined;
+      
+      // Adicionar campos que podem estar ausentes no banco de dados
+      const client = result.rows[0] as any;
+      client.status = client.status || null;
+      client.notes = null;
+      client.gender = null;
+      client.occupation = null;
+      client.source = null;
+      client.documentId = null;
+      client.documentType = null;
+      client.tags = null;
+      
+      return client as Client;
+    } catch (error) {
+      console.error("Erro ao buscar cliente:", error);
+      return undefined;
+    }
   }
   
   async createClient(client: InsertClient): Promise<Client> {
-    const [newClient] = await db.insert(clients).values(client).returning();
-    return newClient;
+    try {
+      // Garantir que os campos existem no banco de dados
+      const dbClient = {
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        address: client.address,
+        birthdate: client.birthdate,
+        clinic_id: client.clinicId,
+        created_by: client.createdBy,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+      
+      const result = await db.execute(
+        sql`INSERT INTO clients (name, email, phone, address, birthdate, clinic_id, created_by, created_at, updated_at)
+            VALUES (${dbClient.name}, ${dbClient.email}, ${dbClient.phone}, ${dbClient.address}, 
+                   ${dbClient.birthdate}, ${dbClient.clinic_id}, ${dbClient.created_by},
+                   ${dbClient.created_at}, ${dbClient.updated_at})
+            RETURNING *`
+      );
+      
+      if (result.rows.length === 0) throw new Error("Falha ao criar cliente");
+      
+      // Converter nomes de colunas para camelCase
+      const newClient = result.rows[0] as any;
+      newClient.clinicId = newClient.clinic_id;
+      newClient.createdBy = newClient.created_by;
+      newClient.createdAt = newClient.created_at;
+      newClient.updatedAt = newClient.updated_at;
+      
+      return newClient as Client;
+    } catch (error) {
+      console.error("Erro ao criar cliente:", error);
+      throw error;
+    }
   }
   
   async updateClient(id: number, updates: Partial<Client>): Promise<Client | undefined> {
-    const [updatedClient] = await db
-      .update(clients)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(clients.id, id))
-      .returning();
-    return updatedClient;
+    try {
+      // Obter o cliente atual
+      const currentClient = await this.getClient(id);
+      if (!currentClient) return undefined;
+      
+      // Preparar os campos a serem atualizados
+      const fields = [];
+      const values = [];
+      
+      if (updates.name !== undefined) {
+        fields.push("name = $" + (values.length + 1));
+        values.push(updates.name);
+      }
+      
+      if (updates.email !== undefined) {
+        fields.push("email = $" + (values.length + 1));
+        values.push(updates.email);
+      }
+      
+      if (updates.phone !== undefined) {
+        fields.push("phone = $" + (values.length + 1));
+        values.push(updates.phone);
+      }
+      
+      if (updates.address !== undefined) {
+        fields.push("address = $" + (values.length + 1));
+        values.push(updates.address);
+      }
+      
+      if (updates.birthdate !== undefined) {
+        fields.push("birthdate = $" + (values.length + 1));
+        values.push(updates.birthdate);
+      }
+      
+      // Adicionar campo de atualização
+      fields.push("updated_at = $" + (values.length + 1));
+      values.push(new Date());
+      
+      // Se não há campos para atualizar, retornar o cliente atual
+      if (fields.length === 1) return currentClient;
+      
+      // Executar a atualização
+      const result = await db.execute(
+        sql`UPDATE clients SET ${sql.raw(fields.join(", "))} WHERE id = ${id} RETURNING *`,
+        ...values
+      );
+      
+      if (result.rows.length === 0) return undefined;
+      
+      // Retornar o cliente atualizado com todos os campos
+      return this.getClient(id);
+    } catch (error) {
+      console.error("Erro ao atualizar cliente:", error);
+      return undefined;
+    }
   }
   
   async listClients(clinicId: number): Promise<Client[]> {
-    return await db
-      .select()
-      .from(clients)
-      .where(eq(clients.clinicId, clinicId));
+    try {
+      const result = await db.execute(
+        sql`SELECT 
+            id, name, email, phone, address, birthdate, clinic_id AS "clinicId",
+            created_by AS "createdBy", created_at AS "createdAt", updated_at AS "updatedAt"
+          FROM clients
+          WHERE clinic_id = ${clinicId}`
+      );
+      
+      // Adicionar campos que podem estar ausentes no banco de dados
+      const clientList = result.rows.map((client: any) => {
+        client.status = client.status || null;
+        client.notes = null;
+        client.gender = null;
+        client.occupation = null;
+        client.source = null;
+        client.documentId = null;
+        client.documentType = null;
+        client.tags = null;
+        return client;
+      });
+      
+      return clientList as Client[];
+    } catch (error) {
+      console.error("Erro ao listar clientes:", error);
+      return [];
+    }
   }
   
   // Professional operations
@@ -423,11 +554,23 @@ export class DatabaseStorage implements IStorage {
   
   // Invitation operations
   async getInvitation(token: string): Promise<Invitation | undefined> {
-    const [invitation] = await db
-      .select()
-      .from(invitations)
-      .where(eq(invitations.token, token));
-    return invitation;
+    try {
+      const result = await db.execute(
+        sql`SELECT 
+            id, email, clinic_id AS "clinicId", role, token, permissions,
+            invited_by AS "invitedBy", expires_at AS "expiresAt", 
+            created_at AS "createdAt"
+          FROM invitations
+          WHERE token = ${token}`
+      );
+      
+      if (result.rows.length === 0) return undefined;
+      
+      return result.rows[0] as Invitation;
+    } catch (error) {
+      console.error("Erro ao buscar convite por token:", error);
+      return undefined;
+    }
   }
   
   async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
@@ -443,10 +586,21 @@ export class DatabaseStorage implements IStorage {
   }
   
   async listInvitations(clinicId: number): Promise<Invitation[]> {
-    return await db
-      .select()
-      .from(invitations)
-      .where(eq(invitations.clinicId, clinicId));
+    try {
+      const result = await db.execute(
+        sql`SELECT 
+            id, email, clinic_id AS "clinicId", role, token, permissions,
+            invited_by AS "invitedBy", expires_at AS "expiresAt", 
+            created_at AS "createdAt"
+          FROM invitations
+          WHERE clinic_id = ${clinicId}`
+      );
+      
+      return result.rows as Invitation[];
+    } catch (error) {
+      console.error("Erro ao listar convites:", error);
+      return [];
+    }
   }
   
   // Payment operations
