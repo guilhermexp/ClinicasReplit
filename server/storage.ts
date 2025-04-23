@@ -114,7 +114,6 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
-            phone, profile_photo AS "profilePhoto", preferences,
             last_login AS "lastLogin", created_by AS "createdBy", 
             created_at AS "createdAt", updated_at AS "updatedAt"
           FROM users 
@@ -142,7 +141,6 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
-            phone, profile_photo AS "profilePhoto", preferences,
             last_login AS "lastLogin", created_by AS "createdBy", 
             created_at AS "createdAt", updated_at AS "updatedAt"
           FROM users 
@@ -183,7 +181,6 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql`SELECT 
             id, name, email, password, role, is_active AS "isActive", 
-            phone, profile_photo AS "profilePhoto", preferences,
             last_login AS "lastLogin", created_by AS "createdBy", 
             created_at AS "createdAt", updated_at AS "updatedAt"
           FROM users`
