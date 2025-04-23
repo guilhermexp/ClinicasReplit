@@ -123,10 +123,12 @@ export class DatabaseStorage implements IStorage {
       if (result.rows.length === 0) return undefined;
       
       const user = result.rows[0] as any;
-      // Adicionar campos vazios para propriedades que não existem no banco
+      // Adicionar campos vazios para propriedades que estão no schema mas não no banco
       user.preferences = {};
-      if (!user.phone) user.phone = null;
-      if (!user.profilePhoto) user.profilePhoto = null;
+      user.phone = null;
+      user.profilePhoto = null;
+      user.stripeCustomerId = null;
+      user.stripeSubscriptionId = null;
       
       return user as User;
     } catch (error) {
@@ -150,10 +152,12 @@ export class DatabaseStorage implements IStorage {
       if (result.rows.length === 0) return undefined;
       
       const user = result.rows[0] as any;
-      // Adicionar campos vazios para propriedades que não existem no banco
+      // Adicionar campos vazios para propriedades que estão no schema mas não no banco
       user.preferences = {};
-      if (!user.phone) user.phone = null;
-      if (!user.profilePhoto) user.profilePhoto = null;
+      user.phone = null;
+      user.profilePhoto = null;
+      user.stripeCustomerId = null;
+      user.stripeSubscriptionId = null;
       
       return user as User;
     } catch (error) {
@@ -186,11 +190,13 @@ export class DatabaseStorage implements IStorage {
           FROM users`
       );
       
-      // Adicionar campos vazios para propriedades que não existem no banco
+      // Adicionar campos vazios para propriedades que estão no schema mas não no banco
       const users = result.rows.map((user: any) => {
         user.preferences = {};
-        if (!user.phone) user.phone = null;
-        if (!user.profilePhoto) user.profilePhoto = null;
+        user.phone = null;
+        user.profilePhoto = null;
+        user.stripeCustomerId = null;
+        user.stripeSubscriptionId = null;
         return user;
       });
       
@@ -203,8 +209,22 @@ export class DatabaseStorage implements IStorage {
   
   // Clinic operations
   async getClinic(id: number): Promise<Clinic | undefined> {
-    const [clinic] = await db.select().from(clinics).where(eq(clinics.id, id));
-    return clinic;
+    try {
+      const result = await db.execute(
+        sql`SELECT 
+            id, name, logo, address, phone, opening_hours AS "openingHours",
+            created_at AS "createdAt", updated_at AS "updatedAt"
+          FROM clinics
+          WHERE id = ${id}`
+      );
+      
+      if (result.rows.length === 0) return undefined;
+      
+      return result.rows[0] as Clinic;
+    } catch (error) {
+      console.error("Erro ao buscar clínica:", error);
+      return undefined;
+    }
   }
   
   async createClinic(clinic: InsertClinic): Promise<Clinic> {
@@ -222,7 +242,19 @@ export class DatabaseStorage implements IStorage {
   }
   
   async listClinics(): Promise<Clinic[]> {
-    return await db.select().from(clinics);
+    try {
+      const result = await db.execute(
+        sql`SELECT 
+            id, name, logo, address, phone, opening_hours AS "openingHours",
+            created_at AS "createdAt", updated_at AS "updatedAt"
+          FROM clinics`
+      );
+      
+      return result.rows as Clinic[];
+    } catch (error) {
+      console.error("Erro ao listar clínicas:", error);
+      return [];
+    }
   }
   
   // ClinicUser operations
