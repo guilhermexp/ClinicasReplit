@@ -66,17 +66,20 @@ export function AdicionarPagamentoDialog({
     enabled: !!form.watch("clientId") && open && !appointmentId,
   });
 
+  // Define o tipo de dados para o pagamento
+  type PaymentData = {
+    amount: number;
+    clinicId: number;
+    clientId: number;
+    createdBy: number;
+    appointmentId?: number;
+    paymentMethod?: string;
+    notes?: string;
+  };
+
   // Mutation para adicionar pagamento
   const createPaymentMutation = useMutation({
-    mutationFn: async (data: {
-      amount: number;
-      clinicId: number;
-      clientId: number;
-      createdBy: number;
-      appointmentId?: number;
-      paymentMethod?: string;
-      notes?: string;
-    }) => {
+    mutationFn: async (data: PaymentData) => {
       const res = await apiRequest("POST", "/api/payments/create", data);
       return res.json();
     },
@@ -141,7 +144,7 @@ export function AdicionarPagamentoDialog({
     }
 
     // Preparar dados para envio
-    const paymentData = {
+    const paymentData: PaymentData = {
       amount: Math.round(amountValue * 100), // Converter para centavos
       clinicId: clinicId,
       clientId: parseInt(values.clientId),

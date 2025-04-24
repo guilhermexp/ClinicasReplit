@@ -1,9 +1,10 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { useAuth } from "@/hooks/use-auth";
 import MainLayout from "@/components/layout/main-layout";
 import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
@@ -17,6 +18,29 @@ import FinanceiroPage from "@/pages/financeiro";
 import CrmPage from "@/pages/crm";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
+import { Loader2 } from "lucide-react";
+
+// Componente para proteger rotas
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+  
+  return <>{children}</>;
+}
 
 function App() {
   return (
@@ -27,52 +51,85 @@ function App() {
           <Switch>
             <Route path="/login" component={Login} />
             <Route path="/register" component={Register} />
-            <Route path="/onboarding" component={Onboarding} />
+            
+            <Route path="/onboarding">
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            </Route>
+            
             <Route path="/dashboard">
-              <MainLayout>
-                <Dashboard />
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  <Dashboard />
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route path="/users">
-              <MainLayout>
-                <Users />
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  <Users />
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route path="/clients">
-              <MainLayout>
-                <Clients />
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  <Clients />
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route path="/appointments">
-              <MainLayout>
-                <Appointments />
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  <Appointments />
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route path="/financial">
-              <MainLayout>
-                <Financial />
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  <Financial />
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route path="/financeiro/:clinicId">
-              <MainLayout>
-                {(params) => <FinanceiroPage clinicId={params.clinicId} />}
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  {(params: any) => <FinanceiroPage clinicId={params.clinicId} />}
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route path="/crm">
-              <MainLayout>
-                <CrmPage />
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  <CrmPage />
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route path="/settings">
-              <MainLayout>
-                <Settings />
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  <Settings />
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route path="/">
-              <MainLayout>
-                <Dashboard />
-              </MainLayout>
+              <ProtectedRoute>
+                <MainLayout>
+                  <Dashboard />
+                </MainLayout>
+              </ProtectedRoute>
             </Route>
+            
             <Route component={NotFound} />
           </Switch>
         </TooltipProvider>
