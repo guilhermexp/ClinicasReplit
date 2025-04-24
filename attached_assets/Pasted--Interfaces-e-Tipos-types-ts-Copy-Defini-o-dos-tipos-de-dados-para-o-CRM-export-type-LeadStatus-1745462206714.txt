@@ -1,0 +1,860 @@
+ Interfaces e Tipos (types.ts)
+Copy// Definição dos tipos de dados para o CRM
+export type LeadStatus = 'Novo' | 'Em contato' | 'Agendado' | 'Convertido' | 'Perdido';
+export type LeadSource = 'Instagram' | 'Facebook' | 'Site' | 'Indicação' | 'Google' | 'Outro';
+
+export interface Lead {
+  id: string;
+  nome: string;
+  telefone: string;
+  fonte: LeadSource;
+  status: LeadStatus;
+  dataCadastro: Date;
+  ultimaAtualizacao: Date;
+  procedimentoInteresse?: string;
+  valorEstimado?: number;
+  responsavel?: string;
+  observacoes?: string;
+}
+
+export interface AgendamentoStatus {
+  id: string;
+  leadId: string;
+  data: Date;
+  horario: string;
+  procedimento: string;
+  status: 'Confirmado' | 'Pendente' | 'Cancelado' | 'Realizado';
+  observacoes?: string;
+}
+
+export interface AcompanhamentoInteracao {
+  id: string;
+  leadId: string;
+  data: Date;
+  tipo: 'Mensagem' | 'Ligação' | 'Email' | 'Atendimento' | 'Outro';
+  descricao: string;
+  responsavel: string;
+}
+2. Componentes do Dashboard (Dashboard.tsx)
+Copyimport React, { useEffect, useState } from 'react';
+import { Lead, LeadStatus } from '../types';
+import { Chart } from 'react-chartjs-2';
+import { fetchLeads } from '../services/leadService';
+import StatusCard from './StatusCard';
+import './Dashboard.css';
+
+const Dashboard: React.FC = () => {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getLeads = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchLeads();
+        setLeads(data);
+        setError(null);
+      } catch (err) {
+        setError('Erro ao carregar dados do dashboard');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getLeads();
+  }, []);
+
+  const getLeadsByStatus = (status: LeadStatus): number => {
+    return leads.filter(lead => lead.status === status).length;
+  };
+
+  const getLeadsBySource = (): Record<string, number> => {
+    return leads.reduce((acc, lead) => {
+      acc[lead.fonte] = (acc[lead.fonte] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  };
+
+  // Configuração dos gráficos
+  const statusChartData = {
+    labels: ['Novo', 'Em contato', 'Agendado', 'Convertido', 'Perdido'],
+    datasets: [
+      {
+        label: 'Leads por Status',
+        data: [
+          getLeadsByStatus('Novo'),
+          getLeadsByStatus('Em contato'),
+          getLeadsByStatus('Agendado'),
+          getLeadsByStatus('Convertido'),
+          getLeadsByStatus('Perdido')
+        ],
+        backgroundColor: [
+          '#4e73df',
+          '#1cc88a',
+          '#f6c23e',
+          '#36b9cc',
+          '#e74a3b'
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const sourceData = getLeadsBySource();
+  const sourceChartData = {
+    labels: Object.keys(sourceData),
+    datasets: [
+      {
+        label: 'Leads por Origem',
+        data: Object.values(sourceData),
+        backgroundColor: [
+          '#4e73df',
+          '#1cc88a',
+          '#f6c23e',
+          '#36b9cc',
+          '#e74a3b',
+          '#fd7e14'
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  if (loading) return <div className="loading-spinner">Carregando...</div>;
+  if (error) return <div className="error-message">{error}</div>;
+
+  return (
+    <div className="dashboard-container">
+      <h1>Dashboard CRM - Clínica de Estética</h1>
+      
+      <div className="status-cards">
+        <StatusCard 
+          title="Total de Leads" 
+          value={leads.length} 
+          icon="users" 
+          color="primary" 
+        />
+        <StatusCard 
+          title="Novos Leads" 
+          value={getLeadsByStatus('Novo')} 
+          icon="user-plus" 
+          color="info" 
+        />
+        <StatusCard 
+          title="Leads Convertidos" 
+          value={getLeadsByStatus('Convertido')} 
+          icon="check-circle" 
+          color="success" 
+        />
+        <StatusCard 
+          title="Taxa de Conversão" 
+          value={`${(getLeadsByStatus('Convertido') / leads.length * 100).toFixed(1)}%`} 
+          icon="chart-line" 
+          color="warning" 
+        />
+      </div>
+
+      <div className="charts-row">
+        <div className="chart-container">
+          <h2>Leads por Status</h2>
+          <div className="chart-wrapper">
+            <Chart type="pie" data={statusChartData} />
+          </div>
+        </div>
+        
+        <div className="chart-container">
+          <h2>Leads por Origem</h2>
+          <div className="chart-wrapper">
+            <Chart type="bar" data={sourceChartData} />
+          </div>
+        </div>
+      </div>
+
+      <div className="recent-leads">
+        <h2>Leads Recentes</h2>
+        <table className="leads-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Origem</th>
+              <th>Status</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leads.slice(0, 5).map(lead => (
+              <tr key={lead.id}>
+                <td>{lead.nome}</td>
+                <td>{lead.telefone}</td>
+                <td>{lead.fonte}</td>
+                <td>
+                  <span className={`status-badge status-${lead.status.toLowerCase().replace(' ', '-')}`}>
+                    {lead.status}
+                  </span>
+                </td>
+                <td>{new Date(lead.dataCadastro).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
+3. Componente de Gerenciamento de Leads (LeadManagement.tsx)
+Copyimport React, { useState, useEffect } from 'react';
+import { Lead, LeadStatus, LeadSource } from '../types';
+import { fetchLeads, updateLead, createLead, deleteLead } from '../services/leadService';
+import LeadForm from './LeadForm';
+import './LeadManagement.css';
+
+const LeadManagement: React.FC = () => {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState<boolean>(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'Todos'>('Todos');
+  const [sourceFilter, setSourceFilter] = useState<LeadSource | 'Todos'>('Todos');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Carregar leads
+  useEffect(() => {
+    const getLeads = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchLeads();
+        setLeads(data);
+        setFilteredLeads(data);
+        setError(null);
+      } catch (err) {
+        setError('Erro ao carregar leads');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getLeads();
+  }, []);
+
+  // Filtrar leads
+  useEffect(() => {
+    let result = [...leads];
+    
+    // Filtrar por status
+    if (statusFilter !== 'Todos') {
+      result = result.filter(lead => lead.status === statusFilter);
+    }
+    
+    // Filtrar por origem
+    if (sourceFilter !== 'Todos') {
+      result = result.filter(lead => lead.fonte === sourceFilter);
+    }
+    
+    // Filtrar por texto de busca
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(lead => 
+        lead.nome.toLowerCase().includes(query) || 
+        lead.telefone.includes(query) ||
+        (lead.observacoes && lead.observacoes.toLowerCase().includes(query))
+      );
+    }
+    
+    setFilteredLeads(result);
+  }, [leads, statusFilter, sourceFilter, searchQuery]);
+
+  // Manipuladores de eventos
+  const handleAddLead = () => {
+    setEditingLead(null);
+    setShowForm(true);
+  };
+
+  const handleEditLead = (lead: Lead) => {
+    setEditingLead(lead);
+    setShowForm(true);
+  };
+
+  const handleDeleteLead = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este lead?')) {
+      try {
+        await deleteLead(id);
+        setLeads(leads.filter(lead => lead.id !== id));
+      } catch (err) {
+        setError('Erro ao excluir lead');
+        console.error(err);
+      }
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: LeadStatus) => {
+    try {
+      const leadToUpdate = leads.find(lead => lead.id === id);
+      if (!leadToUpdate) return;
+      
+      const updatedLead = { 
+        ...leadToUpdate, 
+        status: newStatus,
+        ultimaAtualizacao: new Date()
+      };
+      
+      await updateLead(updatedLead);
+      
+      setLeads(leads.map(lead => 
+        lead.id === id ? updatedLead : lead
+      ));
+    } catch (err) {
+      setError('Erro ao atualizar status');
+      console.error(err);
+    }
+  };
+
+  const handleSaveLead = async (lead: Lead) => {
+    try {
+      if (editingLead) {
+        // Atualizando lead existente
+        const updatedLead = {
+          ...lead,
+          ultimaAtualizacao: new Date()
+        };
+        await updateLead(updatedLead);
+        setLeads(leads.map(l => l.id === lead.id ? updatedLead : l));
+      } else {
+        // Criando novo lead
+        const newLead = {
+          ...lead,
+          id: `lead-${Date.now()}`,
+          dataCadastro: new Date(),
+          ultimaAtualizacao: new Date()
+        };
+        await createLead(newLead);
+        setLeads([...leads, newLead]);
+      }
+      setShowForm(false);
+    } catch (err) {
+      setError('Erro ao salvar lead');
+      console.error(err);
+    }
+  };
+
+  if (loading) return <div className="loading-spinner">Carregando...</div>;
+
+  return (
+    <div className="lead-management-container">
+      <div className="lead-header">
+        <h1>Gerenciamento de Leads</h1>
+        <button className="btn-add-lead" onClick={handleAddLead}>
+          Adicionar Novo Lead
+        </button>
+      </div>
+
+      {error && <div className="error-message">{error}</div>}
+
+      <div className="filters-container">
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="Buscar leads..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="filter-controls">
+          <div className="filter-group">
+            <label>Status:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as LeadStatus | 'Todos')}
+            >
+              <option value="Todos">Todos</option>
+              <option value="Novo">Novo</option>
+              <option value="Em contato">Em contato</option>
+              <option value="Agendado">Agendado</option>
+              <option value="Convertido">Convertido</option>
+              <option value="Perdido">Perdido</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Origem:</label>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value as LeadSource | 'Todos')}
+            >
+              <option value="Todos">Todos</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Facebook">Facebook</option>
+              <option value="Site">Site</option>
+              <option value="Indicação">Indicação</option>
+              <option value="Google">Google</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {filteredLeads.length === 0 ? (
+        <div className="no-leads-message">
+          Nenhum lead encontrado com os filtros selecionados.
+        </div>
+      ) : (
+        <div className="leads-table-container">
+          <table className="leads-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Origem</th>
+                <th>Status</th>
+                <th>Data</th>
+                <th>Procedimento</th>
+                <th>Responsável</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLeads.map(lead => (
+                <tr key={lead.id}>
+                  <td>{lead.nome}</td>
+                  <td>{lead.telefone}</td>
+                  <td>{lead.fonte}</td>
+                  <td>
+                    <select
+                      value={lead.status}
+                      onChange={(e) => handleUpdateStatus(lead.id, e.target.value as LeadStatus)}
+                      className={`status-select status-${lead.status.toLowerCase().replace(' ', '-')}`}
+                    >
+                      <option value="Novo">Novo</option>
+                      <option value="Em contato">Em contato</option>
+                      <option value="Agendado">Agendado</option>
+                      <option value="Convertido">Convertido</option>
+                      <option value="Perdido">Perdido</option>
+                    </select>
+                  </td>
+                  <td>{new Date(lead.dataCadastro).toLocaleDateString()}</td>
+                  <td>{lead.procedimentoInteresse || '-'}</td>
+                  <td>{lead.responsavel || '-'}</td>
+                  <td className="actions-cell">
+                    <button 
+                      className="btn-edit" 
+                      onClick={() => handleEditLead(lead)}
+                      aria-label="Editar"
+                      title="Editar"
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      className="btn-delete" 
+                      onClick={() => handleDeleteLead(lead.id)}
+                      aria-label="Excluir"
+                      title="Excluir"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button className="close-modal" onClick={() => setShowForm(false)}>×</button>
+            <LeadForm 
+              lead={editingLead} 
+              onSave={handleSaveLead} 
+              onCancel={() => setShowForm(false)} 
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LeadManagement;
+4. Componente de Formulário de Lead (LeadForm.tsx)
+Copyimport React, { useState, useEffect } from 'react';
+import { Lead, LeadStatus, LeadSource } from '../types';
+import './LeadForm.css';
+
+interface LeadFormProps {
+  lead: Lead | null;
+  onSave: (lead: Lead) => void;
+  onCancel: () => void;
+}
+
+const LeadForm: React.FC<LeadFormProps> = ({ lead, onSave, onCancel }) => {
+  const [formData, setFormData] = useState<Omit<Lead, 'id' | 'dataCadastro' | 'ultimaAtualizacao'> & { id?: string }>({
+    nome: '',
+    telefone: '',
+    fonte: 'Instagram' as LeadSource,
+    status: 'Novo' as LeadStatus,
+    procedimentoInteresse: '',
+    valorEstimado: undefined,
+    responsavel: '',
+    observacoes: ''
+  });
+
+  useEffect(() => {
+    if (lead) {
+      setFormData({
+        id: lead.id,
+        nome: lead.nome,
+        telefone: lead.telefone,
+        fonte: lead.fonte,
+        status: lead.status,
+        procedimentoInteresse: lead.procedimentoInteresse || '',
+        valorEstimado: lead.valorEstimado,
+        responsavel: lead.responsavel || '',
+        observacoes: lead.observacoes || ''
+      });
+    }
+  }, [lead]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'valorEstimado' ? (value ? parseFloat(value) : undefined) : value
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validação básica
+    if (!formData.nome || !formData.telefone) {
+      alert('Nome e telefone são campos obrigatórios');
+      return;
+    }
+    
+    // Validação do telefone (formato brasileiro)
+    const phoneRegex = /^\(?([0-9]{2})\)?[-. ]?([0-9]{4,5})[-. ]?([0-9]{4})$/;
+    if (!phoneRegex.test(formData.telefone)) {
+      alert('Formato de telefone inválido. Use: (99) 99999-9999');
+      return;
+    }
+    
+    // Preparar dados para salvar
+    const saveData = {
+      id: formData.id || `lead-${Date.now()}`,
+      nome: formData.nome,
+      telefone: formData.telefone,
+      fonte: formData.fonte,
+      status: formData.status,
+      dataCadastro: lead?.dataCadastro || new Date(),
+      ultimaAtualizacao: new Date(),
+      procedimentoInteresse: formData.procedimentoInteresse || undefined,
+      valorEstimado: formData.valorEstimado,
+      responsavel: formData.responsavel || undefined,
+      observacoes: formData.observacoes || undefined
+    };
+    
+    onSave(saveData);
+  };
+
+  return (
+    <div className="lead-form-container">
+      <h2>{lead ? 'Editar Lead' : 'Adicionar Novo Lead'}</h2>
+      
+      <form onSubmit={handleSubmit} className="lead-form">
+        <div className="form-group">
+          <label htmlFor="nome">Nome do Paciente*</label>
+          <input 
+            type="text" 
+            id="nome" 
+            name="nome" 
+            value={formData.nome} 
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="telefone">Telefone*</label>
+          <input 
+            type="tel" 
+            id="telefone" 
+            name="telefone" 
+            value={formData.telefone} 
+            onChange={handleChange}
+            placeholder="(99) 99999-9999"
+            required
+          />
+        </div>
+        
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="fonte">Origem do Lead</label>
+            <select 
+              id="fonte" 
+              name="fonte" 
+              value={formData.fonte} 
+              onChange={handleChange}
+            >
+              <option value="Instagram">Instagram</option>
+              <option value="Facebook">Facebook</option>
+              <option value="Site">Site</option>
+              <option value="Indicação">Indicação</option>
+              <option value="Google">Google</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="status">Status</label>
+            <select 
+              id="status" 
+              name="status" 
+              value={formData.status} 
+              onChange={handleChange}
+            >
+              <option value="Novo">Novo</option>
+              <option value="Em contato">Em contato</option>
+              <option value="Agendado">Agendado</option>
+              <option value="Convertido">Convertido</option>
+              <option value="Perdido">Perdido</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="procedimentoInteresse">Procedimento de Interesse</label>
+          <input 
+            type="text" 
+            id="procedimentoInteresse" 
+            name="procedimentoInteresse" 
+            value={formData.procedimentoInteresse} 
+            onChange={handleChange}
+          />
+        </div>
+        
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="valorEstimado">Valor Estimado (R$)</label>
+            <input 
+              type="number" 
+              id="valorEstimado" 
+              name="valorEstimado" 
+              value={formData.valorEstimado || ''} 
+              onChange={handleChange}
+              min="0"
+              step="0.01"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="responsavel">Responsável</label>
+            <input 
+              type="text" 
+              id="responsavel" 
+              name="responsavel" 
+              value={formData.responsavel} 
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="observacoes">Observações</label>
+          <textarea 
+            id="observacoes" 
+            name="observacoes" 
+            value={formData.observacoes} 
+            onChange={handleChange}
+            rows={4}
+          ></textarea>
+        </div>
+        
+        <div className="form-buttons">
+          <button type="button" className="btn-cancel" onClick={onCancel}>
+            Cancelar
+          </button>
+          <button type="submit" className="btn-save">
+            Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default LeadForm;
+5. Serviço de Integração com Instagram (instagramService.ts)
+Copyimport { Lead } from '../types';
+
+// Interface para mensagens do Instagram
+interface InstagramMessage {
+  id: string;
+  timestamp: string;
+  sender: {
+    id: string;
+    username: string;
+    name?: string;
+  };
+  message: string;
+}
+
+// Função para escutar novas mensagens do Instagram
+// Esta é uma simulação de webhook - na implementação real, você usaria a API oficial do Instagram
+export const setupInstagramWebhook = (callback: (lead: Lead) => void) => {
+  console.log('Webhook do Instagram configurado e escutando por novas mensagens');
+  
+  // Em uma implementação real, você registraria um webhook com a API do Instagram
+  // e processaria as notificações recebidas
+  
+  // Simulação para fins de demonstração
+  const mockWebhookListener = () => {
+    // Simular uma nova mensagem a cada 1 minuto
+    const intervalId = setInterval(() => {
+      const mockMessage: InstagramMessage = {
+        id: `msg-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        sender: {
+          id: `user-${Math.floor(Math.random() * 100000)}`,
+          username: `usuario_${Math.floor(Math.random() * 1000)}`,
+          name: `Nome Teste ${Math.floor(Math.random() * 100)}`
+        },
+        message: 'Olá, gostaria de informações sobre procedimentos estéticos.'
+      };
+      
+      // Processar a mensagem e criar um lead
+      processInstagramMessage(mockMessage, callback);
+    }, 60000); // Simula uma nova mensagem a cada 1 minuto
+    
+    // Retornar o ID do intervalo para que possa ser limpo quando necessário
+    return intervalId;
+  };
+  
+  const webhookId = mockWebhookListener();
+  
+  // Retornar uma função para limpar o webhook quando necessário
+  return () => {
+    clearInterval(webhookId);
+    console.log('Webhook do Instagram desconectado');
+  };
+};
+
+// Processar mensagem do Instagram e converter em lead
+const processInstagramMessage = (message: InstagramMessage, callback: (lead: Lead) => void) => {
+  // Extrair informações básicas da mensagem
+  const { sender, timestamp } = message;
+  
+  // Criar um novo lead com base na mensagem
+  const newLead: Lead = {
+    id: `lead-${Date.now()}`,
+    nome: sender.name || sender.username,
+    telefone: '', // Será preenchido manualmente posteriormente
+    fonte: 'Instagram',
+    status: 'Novo',
+    dataCadastro: new Date(timestamp),
+    ultimaAtualizacao: new Date(timestamp),
+    observacoes: `Primeira mensagem: "${message.message}"\nUsuário do Instagram: @${sender.username}`
+  };
+  
+  // Notificar sobre o novo lead
+  callback(newLead);
+  
+  console.log(`Novo lead criado a partir de mensagem do Instagram: ${newLead.nome}`);
+  
+  return newLead;
+};
+
+// Obter histórico de conversas (simulado)
+export const getInstagramConversationHistory = async (leadId: string): Promise<InstagramMessage[]> => {
+  // Simulação - em uma implementação real, você usaria a API do Instagram
+  console.log(`Buscando histórico de conversas do Instagram para o lead: ${leadId}`);
+  
+  // Simular um atraso de rede
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Retornar histórico simulado
+  return [
+    {
+      id: 'msg-1',
+      timestamp: new Date(Date.now() - 86400000).toISOString(), // 24 horas atrás
+      sender: {
+        id: 'user-123',
+        username: 'cliente_exemplo',
+      },
+      message: 'Olá, gostaria de informações sobre tratamentos faciais.'
+    },
+    {
+      id: 'msg-2',
+      timestamp: new Date(Date.now() - 85000000).toISOString(),
+      sender: {
+        id: 'page-456',
+        username: 'clinica_estetica',
+      },
+      message: 'Olá! Temos diversos tratamentos faciais. Qual é o seu interesse específico?'
+    },
+    {
+      id: 'msg-3',
+      timestamp: new Date(Date.now() - 84000000).toISOString(),
+      sender: {
+        id: 'user-123',
+        username: 'cliente_exemplo',
+      },
+      message: 'Estou interessada em tratamentos para manchas na pele.'
+    }
+  ];
+};
+6. Serviço de Integração com Google Sheets (sheetsService.ts)
+Copyimport { Lead } from '../types';
+
+// Configurações de conexão (em uma implementação real, isso viria de variáveis de ambiente)
+const GOOGLE_SHEETS_CONFIG = {
+  apiKey: process.env.REACT_APP_GOOGLE_API_KEY,
+  clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+  spreadsheetId: process.env.REACT_APP_SPREADSHEET_ID || 'sua-spreadsheet-id',
+  range: 'Leads!A2:L' // Intervalo onde os dados são armazenados
+};
+
+// Inicializar Google Sheets API
+export const initGoogleSheetsApi = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    console.log('Inicializando Google Sheets API...');
+    
+    // Em uma implementação real, você carregaria a API do Google Sheets
+    // e faria a autenticação usando gapi.client.init
+    
+    // Simulação para fins de demonstração
+    setTimeout(() => {
+      console.log('Google Sheets API inicializada com sucesso!');
+      resolve(true);
+    }, 1000);
+  });
+};
+
+// Converter lead para formato de linha do Google Sheets
+const leadToSheetRow = (lead: Lead): string[] => {
+  return [
+    lead.id,
+    lead.nome,
+    lead.telefone,
+    lead.fonte,
+    lead.status,
+    new Date(lead.dataCadastro).toLocaleDateString('pt-BR'),
+    new Date(lead.ultimaAtualizacao).toLocaleDateString('pt-BR'),
+    lead.procedimentoInteresse || '',
+    lead.valorEstimado?.toString() || '',
+    lead.responsavel || '',
+    lead.observacoes || ''
+  ];
+};
+
+// Converter linha do Google Sheets para lead
+const sheetRowToLead = (row

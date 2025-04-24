@@ -1,433 +1,458 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { usePermissions } from "@/hooks/use-permissions";
-import { useQuery } from "@tanstack/react-query";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  MessageSquare, 
-  Plus, 
-  Search, 
-  Users, 
-  BarChart, 
-  Calendar, 
-  UserPlus, 
-  Mail, 
-  Send, 
-  Filter 
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LeadStatus, LeadSource } from "@shared/crm";
+import {
+  User,
+  Phone,
+  Calendar,
+  PieChart,
+  BarChart3,
+  Users,
+  UserPlus,
+  CheckCircle,
+  ArrowUpRight,
+  Search,
+  Filter,
+  Plus,
+  Instagram,
+  Facebook,
+  Globe,
+  UserCheck,
+  MessageSquare,
+  ChevronDown
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 
-export default function CrmPage() {
-  const { selectedClinic } = useAuth();
-  const { hasPermission } = usePermissions();
-  
-  // Query to get clients
-  const { data: clients = [], isLoading } = useQuery({
-    queryKey: ["/api/clinics", selectedClinic?.id, "clients"],
-    enabled: !!selectedClinic,
-  });
-  
+// Mock data até conectarmos com a API real
+const mockLeads = [
+  {
+    id: 1,
+    nome: "Maria Silva",
+    telefone: "(11) 98765-4321",
+    email: "maria@exemplo.com",
+    fonte: "Instagram" as LeadSource,
+    status: "Novo" as LeadStatus,
+    dataCadastro: new Date(2023, 2, 15),
+    ultimaAtualizacao: new Date(2023, 2, 15),
+    procedimentoInteresse: "Botox",
+    valorEstimado: 1500,
+    responsavel: "Dr. Ana"
+  },
+  {
+    id: 2,
+    nome: "João Santos",
+    telefone: "(11) 91234-5678",
+    email: "joao@exemplo.com",
+    fonte: "Facebook" as LeadSource,
+    status: "Em contato" as LeadStatus,
+    dataCadastro: new Date(2023, 2, 10),
+    ultimaAtualizacao: new Date(2023, 2, 12),
+    procedimentoInteresse: "Preenchimento Facial",
+    valorEstimado: 2000,
+    responsavel: "Dr. Ricardo"
+  },
+  {
+    id: 3,
+    nome: "Carla Oliveira",
+    telefone: "(11) 99876-5432",
+    email: "carla@exemplo.com",
+    fonte: "Site" as LeadSource,
+    status: "Agendado" as LeadStatus,
+    dataCadastro: new Date(2023, 2, 5),
+    ultimaAtualizacao: new Date(2023, 2, 14),
+    procedimentoInteresse: "Limpeza de Pele",
+    valorEstimado: 800,
+    responsavel: "Dr. Ana"
+  },
+  {
+    id: 4,
+    nome: "Pedro Almeida",
+    telefone: "(11) 97654-3210",
+    email: "pedro@exemplo.com",
+    fonte: "Indicação" as LeadSource,
+    status: "Convertido" as LeadStatus,
+    dataCadastro: new Date(2023, 1, 28),
+    ultimaAtualizacao: new Date(2023, 2, 10),
+    procedimentoInteresse: "Harmonização Facial",
+    valorEstimado: 3500,
+    responsavel: "Dr. Roberto"
+  },
+  {
+    id: 5,
+    nome: "Sofia Lima",
+    telefone: "(11) 94321-8765",
+    email: "sofia@exemplo.com",
+    fonte: "Google" as LeadSource,
+    status: "Perdido" as LeadStatus,
+    dataCadastro: new Date(2023, 1, 20),
+    ultimaAtualizacao: new Date(2023, 2, 5),
+    procedimentoInteresse: "Criolipólise",
+    valorEstimado: 2800,
+    responsavel: "Dr. Roberto"
+  },
+  {
+    id: 6,
+    nome: "Lucia Fernandes",
+    telefone: "(11) 92345-6789",
+    email: "lucia@exemplo.com",
+    fonte: "Instagram" as LeadSource,
+    status: "Novo" as LeadStatus,
+    dataCadastro: new Date(2023, 2, 17),
+    ultimaAtualizacao: new Date(2023, 2, 17),
+    procedimentoInteresse: "Microagulhamento",
+    valorEstimado: 1200,
+    responsavel: "Dr. Ricardo"
+  }
+];
+
+function CRMDashboard() {
+  const [leads, setLeads] = useState(mockLeads);
+  const [filteredLeads, setFilteredLeads] = useState(mockLeads);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | "Todos">("Todos");
+  const [sourceFilter, setSourceFilter] = useState<LeadSource | "Todos">("Todos");
+
+  // Filtrar leads quando os filtros mudarem
+  useEffect(() => {
+    let result = [...leads];
+    
+    // Filtrar por status
+    if (statusFilter !== "Todos") {
+      result = result.filter(lead => lead.status === statusFilter);
+    }
+    
+    // Filtrar por origem
+    if (sourceFilter !== "Todos") {
+      result = result.filter(lead => lead.fonte === sourceFilter);
+    }
+    
+    // Filtrar por texto de busca
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(lead => 
+        lead.nome.toLowerCase().includes(query) || 
+        lead.telefone.includes(query) ||
+        (lead.email && lead.email.toLowerCase().includes(query))
+      );
+    }
+    
+    setFilteredLeads(result);
+  }, [leads, statusFilter, sourceFilter, searchQuery]);
+
+  // Contadores para o dashboard
+  const getLeadsByStatus = (status: LeadStatus): number => {
+    return leads.filter(lead => lead.status === status).length;
+  };
+
+  const getLeadsBySource = (): Record<string, number> => {
+    return leads.reduce((acc, lead) => {
+      acc[lead.fonte] = (acc[lead.fonte] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  };
+
+  // Funções auxiliares
+  const getStatusColor = (status: LeadStatus): string => {
+    const colors: Record<LeadStatus, string> = {
+      "Novo": "bg-blue-100 text-blue-800",
+      "Em contato": "bg-indigo-100 text-indigo-800",
+      "Agendado": "bg-yellow-100 text-yellow-800",
+      "Convertido": "bg-green-100 text-green-800",
+      "Perdido": "bg-red-100 text-red-800"
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const getSourceIcon = (source: LeadSource) => {
+    const icons: Record<LeadSource, JSX.Element> = {
+      "Instagram": <Instagram size={16} className="text-pink-500" />,
+      "Facebook": <Facebook size={16} className="text-blue-600" />,
+      "Site": <Globe size={16} className="text-purple-500" />,
+      "Indicação": <UserCheck size={16} className="text-green-500" />,
+      "Google": <Search size={16} className="text-red-500" />,
+      "WhatsApp": <MessageSquare size={16} className="text-green-600" />,
+      "Outro": <ChevronDown size={16} className="text-gray-500" />
+    };
+    return icons[source] || <ChevronDown size={16} />;
+  };
+
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('pt-BR');
+  };
+
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl md:text-3xl font-heading font-bold text-gray-900">CRM</h1>
-        
-        {hasPermission("crm", "create") && (
-          <div className="flex space-x-2 mt-3 sm:mt-0">
-            <Button variant="outline">
-              <Mail className="mr-2 h-4 w-4" />
-              Campanhas
-            </Button>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Nova Mensagem
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>Enviar Mensagem</DialogTitle>
-                  <DialogDescription>
-                    Crie e envie uma mensagem para clientes ou grupos.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="recipient" className="text-right">Para:</Label>
-                    <div className="col-span-3">
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um destinatário" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos os clientes</SelectItem>
-                          <SelectItem value="premium">Clientes Premium</SelectItem>
-                          <SelectItem value="inactive">Clientes Inativos</SelectItem>
-                          <SelectItem value="new">Novos Clientes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="subject" className="text-right">Assunto:</Label>
-                    <Input id="subject" placeholder="Assunto da mensagem" className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="message" className="text-right pt-2">Mensagem:</Label>
-                    <Textarea
-                      id="message"
-                      placeholder="Digite sua mensagem aqui..."
-                      className="col-span-3 min-h-[120px]"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Enviar</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        )}
+    <div className="container p-6">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold gradient-text">CRM - Gestão de Leads</h1>
+        <Button className="gap-2">
+          <Plus size={16} />
+          Novo Lead
+        </Button>
       </div>
-      
-      {/* CRM Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card variant="glass" className="border-none shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Total de Clientes</p>
-                <h3 className="text-2xl font-bold text-primary-600 mt-1">{clients.length}</h3>
+                <p className="text-sm text-muted-foreground">Total de Leads</p>
+                <h2 className="text-3xl font-bold">{leads.length}</h2>
               </div>
-              <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
-                <Users className="h-6 w-6 text-primary-600" />
+              <div className="bg-primary-100 p-3 rounded-full">
+                <Users className="h-6 w-6 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card variant="glass" className="border-none shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Novos Clientes (Mês)</p>
-                <h3 className="text-2xl font-bold text-blue-600 mt-1">12</h3>
+                <p className="text-sm text-muted-foreground">Novos Leads</p>
+                <h2 className="text-3xl font-bold">{getLeadsByStatus("Novo")}</h2>
               </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <div className="bg-blue-100 p-3 rounded-full">
                 <UserPlus className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card variant="glass" className="border-none shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Taxa de Retorno</p>
-                <h3 className="text-2xl font-bold text-green-600 mt-1">68%</h3>
+                <p className="text-sm text-muted-foreground">Leads Convertidos</p>
+                <h2 className="text-3xl font-bold">{getLeadsByStatus("Convertido")}</h2>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-green-600" />
+              <div className="bg-green-100 p-3 rounded-full">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card variant="glass" className="border-none shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Campanhas Ativas</p>
-                <h3 className="text-2xl font-bold text-purple-600 mt-1">3</h3>
+                <p className="text-sm text-muted-foreground">Taxa de Conversão</p>
+                <h2 className="text-3xl font-bold">
+                  {leads.length > 0 
+                    ? `${(getLeadsByStatus("Convertido") / leads.length * 100).toFixed(1)}%` 
+                    : "0%"}
+                </h2>
               </div>
-              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <Send className="h-6 w-6 text-purple-600" />
+              <div className="bg-yellow-100 p-3 rounded-full">
+                <ArrowUpRight className="h-6 w-6 text-yellow-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-      
-      <Tabs defaultValue="clients">
-        <TabsList>
-          <TabsTrigger value="clients">Clientes</TabsTrigger>
-          <TabsTrigger value="campaigns">Campanhas</TabsTrigger>
-          <TabsTrigger value="analytics">Análise</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="clients">
-          <Card className="mt-6">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Gerenciamento de Clientes</CardTitle>
-                <div className="flex space-x-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar clientes..."
-                      className="pl-9 w-[250px]"
-                    />
-                  </div>
-                  <Button variant="outline" size="icon">
-                    <Filter className="h-4 w-4" />
-                  </Button>
+
+      {/* Gráficos (simulados com visualização básica) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card variant="glass" className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle>Leads por Status</CardTitle>
+            <CardDescription>Distribuição de leads por status atual</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <PieChart className="h-40 w-40 mx-auto mb-4 opacity-25" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span>Novo ({getLeadsByStatus("Novo")})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+                  <span>Em contato ({getLeadsByStatus("Em contato")})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <span>Agendado ({getLeadsByStatus("Agendado")})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span>Convertido ({getLeadsByStatus("Convertido")})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span>Perdido ({getLeadsByStatus("Perdido")})</span>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Serviços</TableHead>
-                    <TableHead>Último Contato</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Valor Total</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-10">
-                        <div className="flex justify-center">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : clients.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                        Nenhum cliente encontrado.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    clients.slice(0, 5).map((client: any, index: number) => (
-                      <TableRow key={client.id}>
-                        <TableCell className="font-medium">{client.name}</TableCell>
-                        <TableCell>{index % 3 === 0 ? "Limpeza de Pele" : index % 3 === 1 ? "Botox" : "Peeling"}</TableCell>
-                        <TableCell>{new Date(client.updatedAt).toLocaleDateString("pt-BR")}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <div className={`w-2 h-2 rounded-full mr-2 ${index % 3 === 0 ? "bg-green-500" : index % 3 === 1 ? "bg-amber-500" : "bg-red-500"}`}></div>
-                            {index % 3 === 0 ? "Ativo" : index % 3 === 1 ? "Pendente" : "Inativo"}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card variant="glass" className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle>Leads por Origem</CardTitle>
+            <CardDescription>Distribuição de leads por canal de origem</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BarChart3 className="h-40 w-full mx-auto mb-4 opacity-25" />
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(getLeadsBySource()).map(([source, count]) => (
+                <div key={source} className="flex items-center gap-2">
+                  {getSourceIcon(source as LeadSource)}
+                  <span>
+                    {source} ({count})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card variant="glass" className="border-none shadow-lg">
+        <CardHeader>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <CardTitle>Gerenciamento de Leads</CardTitle>
+              <CardDescription>
+                Gerencie todos os leads da sua clínica
+              </CardDescription>
+            </div>
+            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+              <div className="relative flex-1 md:w-80">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar leads..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value as LeadStatus | "Todos")}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar por status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Todos">Todos os Status</SelectItem>
+                    <SelectItem value="Novo">Novo</SelectItem>
+                    <SelectItem value="Em contato">Em contato</SelectItem>
+                    <SelectItem value="Agendado">Agendado</SelectItem>
+                    <SelectItem value="Convertido">Convertido</SelectItem>
+                    <SelectItem value="Perdido">Perdido</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={sourceFilter}
+                  onValueChange={(value) => setSourceFilter(value as LeadSource | "Todos")}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar por origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Todos">Todas as Origens</SelectItem>
+                    <SelectItem value="Instagram">Instagram</SelectItem>
+                    <SelectItem value="Facebook">Facebook</SelectItem>
+                    <SelectItem value="Site">Site</SelectItem>
+                    <SelectItem value="Indicação">Indicação</SelectItem>
+                    <SelectItem value="Google">Google</SelectItem>
+                    <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <div className="w-full overflow-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="py-3 px-4 text-left font-medium text-xs">Nome</th>
+                    <th className="py-3 px-4 text-left font-medium text-xs">Contato</th>
+                    <th className="py-3 px-4 text-left font-medium text-xs">Origem</th>
+                    <th className="py-3 px-4 text-left font-medium text-xs">Status</th>
+                    <th className="py-3 px-4 text-left font-medium text-xs">Interesse</th>
+                    <th className="py-3 px-4 text-left font-medium text-xs">Responsável</th>
+                    <th className="py-3 px-4 text-left font-medium text-xs">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLeads.map((lead) => (
+                    <tr key={lead.id} className="border-t hover:bg-muted/50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-primary-100 p-2 rounded-full">
+                            <User className="h-4 w-4 text-primary" />
                           </div>
-                        </TableCell>
-                        <TableCell>R$ {(Math.floor(Math.random() * 5000) + 500).toFixed(2)}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter className="flex justify-center">
-              <Button variant="outline">Ver todos os clientes</Button>
-            </CardFooter>
-          </Card>
-          
-          {/* Client Segments */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Segmentação de Clientes</CardTitle>
-              <CardDescription>
-                Acompanhe e gerencie seus segmentos de clientes para campanhas direcionadas.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex-1">
-                      <span className="text-sm font-medium">Clientes Premium</span>
-                      <div className="text-xs text-muted-foreground">Gastaram mais de R$ 2.000 no último trimestre</div>
-                    </div>
-                    <span className="text-sm font-medium">28 clientes</span>
-                  </div>
-                  <Progress value={28} className="h-2" />
+                          <div>
+                            <p className="font-medium">{lead.nome}</p>
+                            <p className="text-xs text-muted-foreground">{lead.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span>{lead.telefone}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          {getSourceIcon(lead.fonte)}
+                          <span>{lead.fonte}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(lead.status)}`}>
+                          {lead.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="font-medium">{lead.procedimentoInteresse}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {lead.valorEstimado ? `R$ ${lead.valorEstimado.toLocaleString('pt-BR')}` : '-'}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">{lead.responsavel || "-"}</td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Cadastro:</p>
+                          <p className="text-sm">{formatDate(lead.dataCadastro)}</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredLeads.length === 0 && (
+                <div className="py-8 text-center text-muted-foreground">
+                  Nenhum lead encontrado com os filtros aplicados.
                 </div>
-                
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex-1">
-                      <span className="text-sm font-medium">Clientes Recorrentes</span>
-                      <div className="text-xs text-muted-foreground">Frequência mensal nos últimos 6 meses</div>
-                    </div>
-                    <span className="text-sm font-medium">42 clientes</span>
-                  </div>
-                  <Progress value={42} className="h-2" />
-                </div>
-                
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex-1">
-                      <span className="text-sm font-medium">Clientes Inativos</span>
-                      <div className="text-xs text-muted-foreground">Sem visitas nos últimos 3 meses</div>
-                    </div>
-                    <span className="text-sm font-medium">15 clientes</span>
-                  </div>
-                  <Progress value={15} className="h-2" />
-                </div>
-                
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex-1">
-                      <span className="text-sm font-medium">Novos Clientes</span>
-                      <div className="text-xs text-muted-foreground">Primeira visita nos últimos 30 dias</div>
-                    </div>
-                    <span className="text-sm font-medium">12 clientes</span>
-                  </div>
-                  <Progress value={12} className="h-2" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="campaigns">
-          <Card className="mt-6">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Campanhas de Marketing</CardTitle>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Campanha
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome da Campanha</TableHead>
-                    <TableHead>Segmento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Enviados</TableHead>
-                    <TableHead>Taxa de Abertura</TableHead>
-                    <TableHead>Conversões</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Verão 2023</TableCell>
-                    <TableCell>Todos os clientes</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                        Ativa
-                      </div>
-                    </TableCell>
-                    <TableCell>145</TableCell>
-                    <TableCell>68%</TableCell>
-                    <TableCell>24</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Promoção de Aniversário</TableCell>
-                    <TableCell>Clientes Premium</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                        Ativa
-                      </div>
-                    </TableCell>
-                    <TableCell>28</TableCell>
-                    <TableCell>85%</TableCell>
-                    <TableCell>12</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Reativação</TableCell>
-                    <TableCell>Clientes Inativos</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                        Ativa
-                      </div>
-                    </TableCell>
-                    <TableCell>15</TableCell>
-                    <TableCell>32%</TableCell>
-                    <TableCell>3</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Black Friday</TableCell>
-                    <TableCell>Todos os clientes</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <div className="w-2 h-2 rounded-full bg-gray-300 mr-2"></div>
-                        Agendada
-                      </div>
-                    </TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="analytics">
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Análise de Desempenho</CardTitle>
-              <CardDescription>
-                Visualize métricas importantes sobre o desempenho de suas campanhas e engajamento dos clientes.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <BarChart className="mx-auto h-16 w-16 text-muted-foreground" />
-                <h3 className="mt-2 text-lg font-medium text-gray-900">Análises em Desenvolvimento</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Esta funcionalidade estará disponível em breve.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
+export default CRMDashboard;
