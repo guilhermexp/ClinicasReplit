@@ -28,6 +28,7 @@ import { format, isSameDay, parseISO, startOfMonth, endOfMonth, addDays, subDays
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Link, useLocation } from "wouter";
+import { PerformanceHeatmapSimplified } from "@/components/dashboard/performance-heatmap-simplified";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useState } from "react";
 
