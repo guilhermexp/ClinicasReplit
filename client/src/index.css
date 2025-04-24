@@ -2,6 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Estilos para o calendar heatmap */
+.react-calendar-heatmap .react-calendar-heatmap-small-text {
+  font-size: 6px;
+}
+
+.react-calendar-heatmap rect:hover {
+  stroke: #222;
+  stroke-width: 1px;
+}
+
+.react-calendar-heatmap .color-empty {
+  fill: #f3f4f6;
+}
+
+.react-calendar-heatmap .color-scale-0 {
+  fill: #f3f4f6;
+}
+
+.react-calendar-heatmap .color-scale-1 {
+  fill: #dbeafe;
+}
+
+.react-calendar-heatmap .color-scale-2 {
+  fill: #93c5fd;
+}
+
+.react-calendar-heatmap .color-scale-3 {
+  fill: #3b82f6;
+}
+
+.react-calendar-heatmap .color-scale-4 {
+  fill: #1d4ed8;
+}
+
+.heatmap-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.heatmap-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
 @layer base {
   :root {
     /* Base colors */
