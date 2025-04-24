@@ -21,14 +21,14 @@ export function ConfirmarPagamentoDialog({
   const queryClient = useQueryClient();
   
   const confirmPagamentoMutation = useMutation({
-    mutationFn: async (data: { paymentId: number }) => {
-      const res = await apiRequest("POST", "/api/payments/confirm", data);
+    mutationFn: async (paymentId: number) => {
+      const res = await apiRequest("POST", "/api/payments/confirm", { paymentId });
       return res.json();
     },
     onSuccess: () => {
       toast({
         title: "Pagamento confirmado com sucesso",
-        description: "O status do pagamento foi atualizado para Pago.",
+        description: "O status do pagamento foi atualizado.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/payments/clinic", payment.clinicId] });
       queryClient.invalidateQueries({ queryKey: ["/api/payments/client", payment.clientId] });
@@ -47,7 +47,7 @@ export function ConfirmarPagamentoDialog({
   });
   
   const handleConfirmar = () => {
-    confirmPagamentoMutation.mutate({ paymentId: payment.id });
+    confirmPagamentoMutation.mutate(payment.id);
   };
   
   // Formatar valor para moeda brasileira
@@ -60,11 +60,11 @@ export function ConfirmarPagamentoDialog({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-white/95 border border-slate-200 shadow-md backdrop-blur-sm">
+      <DialogContent className="sm:max-w-[450px] bg-white/95 border border-slate-200 shadow-md backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-blue-800">Confirmar Pagamento</DialogTitle>
           <DialogDescription>
-            Você está prestes a confirmar o recebimento do pagamento.
+            Você está prestes a confirmar este pagamento como recebido. Esta ação não pode ser desfeita.
           </DialogDescription>
         </DialogHeader>
         
@@ -79,18 +79,15 @@ export function ConfirmarPagamentoDialog({
             <div className="font-semibold text-slate-700">Cliente:</div>
             <div>ID: {payment.clientId}</div>
             
+            <div className="font-semibold text-slate-700">Método:</div>
+            <div>{payment.paymentMethod || "Não informado"}</div>
+            
             {payment.appointmentId && (
               <>
                 <div className="font-semibold text-slate-700">Agendamento:</div>
                 <div>ID: {payment.appointmentId}</div>
               </>
             )}
-          </div>
-          
-          <div className="mt-4 bg-yellow-50 p-3 rounded-md text-yellow-800 text-sm">
-            <p>
-              <strong>Importante:</strong> Ao confirmar este pagamento, você está declarando que o valor foi recebido com sucesso.
-            </p>
           </div>
         </div>
         
@@ -117,7 +114,7 @@ export function ConfirmarPagamentoDialog({
             ) : (
               <>
                 <CheckCircle className="mr-2 h-4 w-4" />
-                Confirmar Pagamento
+                Confirmar Recebimento
               </>
             )}
           </Button>
