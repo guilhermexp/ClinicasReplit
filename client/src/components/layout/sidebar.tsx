@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -156,6 +157,12 @@ export function Sidebar({ className }: SidebarProps) {
       path: "/financeiro",
       icon: <DollarSign className="h-5 w-5" aria-hidden="true" />,
       isActive: location === "/financial" || location.startsWith("/financeiro")
+    },
+    {
+      name: "Controle de Ponto",
+      path: "/attendance",
+      icon: <Clock className="h-5 w-5" aria-hidden="true" />,
+      isActive: location === "/attendance"
     },
     {
       name: "CRM",
