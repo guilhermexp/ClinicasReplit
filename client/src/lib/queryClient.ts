@@ -1,7 +1,29 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Helpers para gerenciar o redirecionamento em caso de 401
+let isRedirectingToLogin = false;
+const redirectToLogin = () => {
+  if (isRedirectingToLogin) return;
+  isRedirectingToLogin = true;
+  // Salvar a URL atual para retornar após o login
+  const currentPath = window.location.pathname;
+  if (currentPath !== '/login' && currentPath !== '/auth') {
+    localStorage.setItem('redirectAfterLogin', currentPath);
+  }
+  // Pequeno delay para evitar múltiplos redirecionamentos
+  setTimeout(() => {
+    window.location.href = '/login';
+    isRedirectingToLogin = false;
+  }, 100);
+};
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    // Redirecionamento específico para erros 401 (Não autorizado)
+    if (res.status === 401) {
+      redirectToLogin();
+    }
+    
     const text = (await res.text()) || res.statusText;
     throw new Error(`${res.status}: ${text}`);
   }

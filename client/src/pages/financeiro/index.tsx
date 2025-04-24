@@ -7,6 +7,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ListaPagamentos } from "@/components/financeiro/lista-pagamentos";
 import { Loader2, AlertTriangle } from "lucide-react";
 
+// Interfaces
+interface Clinic {
+  id: number;
+  name: string;
+  logo: string | null;
+  address: string | null;
+  phone: string | null;
+  openingHours: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function FinanceiroPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -16,7 +28,7 @@ export default function FinanceiroPage() {
   const [activeTab, setActiveTab] = useState("pagamentos");
 
   // Verificar se a clínica existe
-  const { data: clinic, isLoading: isLoadingClinic, error: clinicError } = useQuery({
+  const { data: clinic, isLoading: isLoadingClinic, error: clinicError } = useQuery<Clinic>({
     queryKey: [`/api/clinics/${clinicId}`],
     enabled: !!clinicId && !isNaN(clinicId),
   });

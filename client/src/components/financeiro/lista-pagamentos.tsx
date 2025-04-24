@@ -190,15 +190,22 @@ export function ListaPagamentos({ clinicId, titulo, clientId, appointmentId }: L
             </div>
           ) : filteredPayments.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[300px] text-center">
-              <div className="bg-blue-50 text-blue-700 p-4 rounded-full mb-4">
-                <Search className="h-10 w-10" />
+              <div className="bg-blue-50 text-blue-700 p-6 rounded-full mb-4">
+                <Plus className="h-12 w-12" />
               </div>
-              <h3 className="text-lg font-medium text-slate-800 mb-1">Nenhum pagamento encontrado</h3>
-              <p className="text-slate-500 max-w-md">
+              <h3 className="text-xl font-semibold text-blue-800 mb-2">Nenhum pagamento encontrado</h3>
+              <p className="text-slate-600 max-w-lg mb-6">
                 {search || statusFilter !== "todos"
                   ? "Tente ajustar os filtros para encontrar o que procura."
-                  : "Não há pagamentos registrados. Clique em 'Novo Pagamento' para adicionar."}
+                  : "Você ainda não tem nenhum pagamento registrado nesta clínica. Clique no botão abaixo para começar a registrar pagamentos."}
               </p>
+              <Button 
+                onClick={() => setAdicionarPagamentoOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Registrar Primeiro Pagamento
+              </Button>
             </div>
           ) : (
             <div className="overflow-x-auto">
