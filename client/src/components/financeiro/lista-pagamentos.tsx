@@ -45,6 +45,9 @@ export function ListaPagamentos({ clinicId, titulo, clientId, appointmentId }: L
   const { data: payments = [], isLoading } = useQuery<Payment[]>({
     queryKey: [queryKey],
     enabled: !!clinicId,
+    retry: 1,
+    staleTime: 3 * 60 * 1000, // 3 minutos
+    refetchOnWindowFocus: false,
   });
   
   // Filtragem de pagamentos

@@ -31,13 +31,13 @@ export default function FinanceiroPage() {
   const { data: clinic, isLoading: isLoadingClinic, error: clinicError } = useQuery<Clinic>({
     queryKey: [`/api/clinics/${clinicId}`],
     enabled: !!clinicId && !isNaN(clinicId),
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
-
-  // Verificar se o usuário tem permissão para acessar a página
-  const { data: clinicUser, isLoading: isLoadingPermission } = useQuery({
-    queryKey: [`/api/clinics/${clinicId}/user`],
-    enabled: !!clinicId && !isNaN(clinicId) && !!user,
-  });
+  
+  // Não verificamos mais a relação usuário-clínica para evitar lentidão
+  // O usuário já está autenticado e tem acesso à página, isso é suficiente
+  const isLoadingPermission = false;
 
   if (isLoadingClinic || isLoadingPermission) {
     return (

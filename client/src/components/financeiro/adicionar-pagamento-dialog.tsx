@@ -54,16 +54,22 @@ export function AdicionarPagamentoDialog({
     },
   });
 
-  // Buscar clientes da clínica
+  // Buscar clientes da clínica - otimizado para carregar só quando necessário
   const { data: clients = [] } = useQuery<any[]>({
     queryKey: [`/api/clinics/${clinicId}/clients`],
     enabled: !!clinicId && open && !clientId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
-  // Buscar agendamentos do cliente (opcional)
+  // Buscar agendamentos do cliente (opcional) - otimizado
   const { data: appointments = [] } = useQuery<any[]>({
     queryKey: [`/api/clients/${form.watch("clientId")}/appointments`],
     enabled: !!form.watch("clientId") && open && !appointmentId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   // Define o tipo de dados para o pagamento
