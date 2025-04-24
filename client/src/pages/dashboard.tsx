@@ -679,6 +679,14 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+      
+      {/* Seção de Análise de Desempenho - Heatmap */}
+      <div className="mt-6">
+        <h2 className="text-xl font-bold mb-4 gradient-text">Análise de Desempenho Anual</h2>
+        <div className="grid grid-cols-1">
+          <PerformanceHeatmapSimplified />
+        </div>
+      </div>
     </div>
   );
 }
