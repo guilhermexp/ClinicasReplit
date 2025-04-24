@@ -2,19 +2,30 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Applies glassmorphism effect to the card */
+  variant?: "default" | "glass";
+  /** Adds a subtle floating animation */
+  floating?: boolean;
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant = "default", floating = false, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-xl text-card-foreground shadow-md transition-all duration-300",
+        {
+          "border bg-card": variant === "default",
+          "glass-card backdrop-blur-[8px] border-0": variant === "glass",
+          "floating": floating
+        },
+        className
+      )}
+      {...props}
+    />
+  )
+)
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
@@ -31,12 +42,13 @@ CardHeader.displayName = "CardHeader"
 
 const CardTitle = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & { gradient?: boolean }
+>(({ className, gradient = false, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
       "text-2xl font-semibold leading-none tracking-tight",
+      { "gradient-text": gradient },
       className
     )}
     {...props}

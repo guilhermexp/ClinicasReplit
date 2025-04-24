@@ -101,11 +101,11 @@ const StatCard = ({ icon, title, value, desc, color, trend, trendLabel, hideArro
   const isNeutral = trend === 0;
   
   return (
-    <Card>
+    <Card variant="glass" className="overflow-hidden border-0 hover:shadow-lg transition-all">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-medium">{title}</CardTitle>
-          <div className={`p-2 rounded-full ${color}`}>
+          <CardTitle gradient={true} className="text-lg font-medium">{title}</CardTitle>
+          <div className={`p-3 rounded-full shadow-md ${color} backdrop-blur-sm`}>
             {icon}
           </div>
         </div>
@@ -281,9 +281,9 @@ export default function Dashboard() {
       </div>
       
       {/* Welcome Card */}
-      <Card className="mb-6">
+      <Card variant="glass" className="mb-6 border-0 overflow-hidden shadow-lg floating">
         <CardHeader className="pb-2">
-          <CardTitle className="text-2xl">Bem-vindo{user?.name ? `, ${user.name}` : ''}!</CardTitle>
+          <CardTitle gradient={true} className="text-2xl">Bem-vindo{user?.name ? `, ${user.name}` : ''}!</CardTitle>
           <CardDescription>
             {selectedClinic 
               ? `Você está gerenciando a clínica ${selectedClinic.name}.` 
@@ -291,13 +291,13 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-primary-50 p-4 rounded-lg border border-primary-100 flex items-start gap-4">
-            <div className="p-3 bg-primary-100 rounded-full text-primary-700">
+          <div className="bg-primary/10 p-4 rounded-xl backdrop-blur-sm flex items-start gap-4 border border-primary/20">
+            <div className="p-3 bg-primary/20 rounded-full text-primary shadow-md">
               <TrendingUp className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="font-medium text-primary-900">Desempenho da clínica</h3>
-              <p className="text-sm text-primary-700 mt-1">
+              <h3 className="font-medium gradient-text">Desempenho da clínica</h3>
+              <p className="text-sm text-foreground/80 mt-1">
                 {dashboardStats && `Você tem ${dashboardStats.todayAppointmentCount} agendamentos para hoje.`}
               </p>
             </div>
@@ -359,9 +359,9 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Calendário */}
         <div className="lg:col-span-1">
-          <Card className="h-full">
+          <Card variant="glass" className="h-full border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
             <CardHeader>
-              <CardTitle className="flex items-center text-lg">
+              <CardTitle gradient={true} className="flex items-center text-lg">
                 <CalendarIcon className="h-5 w-5 mr-2" /> Calendário
               </CardTitle>
             </CardHeader>
@@ -375,14 +375,14 @@ export default function Dashboard() {
                   hasAppointment: (date) => hasDayAppointment(date),
                 }}
                 modifiersClassNames={{
-                  hasAppointment: "bg-primary-100 text-primary-800 font-bold",
+                  hasAppointment: "bg-primary/15 text-primary font-bold",
                 }}
               />
             </CardContent>
             <CardFooter>
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="w-full border-primary/20 hover:bg-primary/10"
                 onClick={() => {
                   setLocation("/appointments");
                 }}
@@ -396,9 +396,9 @@ export default function Dashboard() {
         {/* Agendamentos do dia */}
         {hasPermission("appointments", "read") && (
           <div className="lg:col-span-2">
-            <Card className="h-full">
+            <Card variant="glass" className="h-full border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center text-lg">
+                <CardTitle gradient={true} className="flex items-center text-lg">
                   <Clock className="h-5 w-5 mr-2" /> 
                   {selectedDate && isSameDay(selectedDate, new Date()) 
                     ? "Agendamentos de Hoje" 
@@ -417,13 +417,13 @@ export default function Dashboard() {
                     {selectedDateAppointments.map((appointment) => (
                       <div 
                         key={appointment.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                        className="flex items-center justify-between p-3 bg-background/50 backdrop-blur-sm rounded-xl border border-border/30 hover:shadow-md transition-all"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className={`w-2 h-full min-h-[40px] ${getAppointmentStatusColor(appointment.status)}`}></div>
+                          <div className={`w-2 h-full min-h-[40px] rounded-full ${getAppointmentStatusColor(appointment.status)}`}></div>
                           <div>
                             <p className="font-medium">{appointment.client}</p>
-                            <div className="flex items-center text-sm text-gray-500">
+                            <div className="flex items-center text-sm text-muted-foreground">
                               <Clock className="h-3 w-3 mr-1" />
                               {appointment.startTime && appointment.endTime ? (
                                 <>
@@ -436,7 +436,7 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div>
-                          <Badge className={appointmentStatusColors[appointment.status]}>
+                          <Badge className={`${appointmentStatusColors[appointment.status]} shadow-sm`}>
                             {appointmentStatusLabels[appointment.status]}
                           </Badge>
                         </div>
@@ -445,11 +445,11 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <Calendar className="h-12 w-12 text-gray-300 mb-3" />
-                    <p className="text-gray-500">Nenhum agendamento para esta data</p>
+                    <Calendar className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground">Nenhum agendamento para esta data</p>
                     <Button
                       variant="link"
-                      className="mt-2"
+                      className="mt-2 text-primary"
                       onClick={() => setLocation("/appointments")}
                     >
                       Criar novo agendamento
@@ -462,7 +462,7 @@ export default function Dashboard() {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="w-full"
+                    className="w-full border-primary/20 hover:bg-primary/10"
                     onClick={() => setLocation("/appointments")}
                   >
                     Gerenciar agendamentos <ArrowRight className="h-4 w-4 ml-1" />
@@ -476,9 +476,9 @@ export default function Dashboard() {
         {/* Gráfico de receita por serviço */}
         {hasPermission("financial", "read") && (
           <div className="md:col-span-2 lg:col-span-2">
-            <Card className="h-full">
+            <Card variant="glass" className="h-full border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
               <CardHeader>
-                <CardTitle className="flex items-center text-lg">
+                <CardTitle gradient={true} className="flex items-center text-lg">
                   <BarChartIcon className="h-5 w-5 mr-2" /> Receita por serviço
                 </CardTitle>
                 <CardDescription>Análise de receita por tipo de serviço</CardDescription>
@@ -488,29 +488,43 @@ export default function Dashboard() {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={revenueData}>
-                        <CartesianGrid strokeDasharray="3 3" />
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                         <XAxis dataKey="name" />
                         <YAxis 
                           tickFormatter={(value) => `R$${value}`}
                         />
                         <Tooltip 
                           formatter={(value) => [`R$${value}`, 'Valor']}
+                          contentStyle={{ 
+                            borderRadius: '8px', 
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            backdropFilter: 'blur(8px)',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid rgba(0, 0, 0, 0.1)'
+                          }}
                         />
-                        <Bar dataKey="valor" fill="#4F46E5" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="valor" fill="url(#barGradient)" radius={[6, 6, 0, 0]}>
+                          <defs>
+                            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="hsl(var(--primary-start))" stopOpacity={0.9} />
+                              <stop offset="100%" stopColor="hsl(var(--primary-end))" stopOpacity={0.8} />
+                            </linearGradient>
+                          </defs>
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <BarChartIcon className="h-12 w-12 text-gray-300 mb-3" />
-                    <p className="text-gray-500">Sem dados disponíveis</p>
+                    <BarChartIcon className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground">Sem dados disponíveis</p>
                   </div>
                 )}
               </CardContent>
               <CardFooter>
                 <Button 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full border-primary/20 hover:bg-primary/10"
                   onClick={() => setLocation("/financial")}
                 >
                   Ver relatório financeiro completo
@@ -523,9 +537,9 @@ export default function Dashboard() {
         {/* Clientes recentes */}
         {hasPermission("clients", "read") && (
           <div className="md:col-span-2 lg:col-span-1">
-            <Card className="h-full">
+            <Card variant="glass" className="h-full border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
               <CardHeader>
-                <CardTitle className="flex items-center text-lg">
+                <CardTitle gradient={true} className="flex items-center text-lg">
                   <Users className="h-5 w-5 mr-2" /> Clientes Recentes
                 </CardTitle>
                 <CardDescription>Últimos atendimentos</CardDescription>
@@ -534,19 +548,22 @@ export default function Dashboard() {
                 {recentClients.length > 0 ? (
                   <div className="space-y-4">
                     {recentClients.slice(0, 5).map((client) => (
-                      <div key={client.id} className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center">
-                          <User className="h-5 w-5 text-gray-500" />
+                      <div 
+                        key={client.id} 
+                        className="flex items-start space-x-3 p-3 rounded-xl bg-background/50 backdrop-blur-sm border border-border/30 hover:shadow-md transition-all"
+                      >
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 shadow-md flex items-center justify-center">
+                          <User className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-sm font-medium truncate">
                             {client.name}
                           </p>
-                          <div className="flex items-center text-xs text-gray-500">
+                          <div className="flex items-center text-xs text-muted-foreground">
                             <Phone className="h-3 w-3 mr-1" />
                             <span className="truncate">{client.phone}</span>
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-muted-foreground mt-1">
                             Última visita: {formatDate(client.lastVisit)}
                           </div>
                         </div>
@@ -555,15 +572,15 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <Users className="h-12 w-12 text-gray-300 mb-3" />
-                    <p className="text-gray-500">Sem clientes recentes</p>
+                    <Users className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground">Sem clientes recentes</p>
                   </div>
                 )}
               </CardContent>
               <CardFooter>
                 <Button 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full border-primary/20 hover:bg-primary/10"
                   onClick={() => setLocation("/clients")}
                 >
                   Ver todos os clientes
