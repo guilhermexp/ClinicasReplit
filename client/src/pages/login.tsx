@@ -42,8 +42,8 @@ export default function Login() {
         {/* Lado esquerdo - Hero section */}
         <div className="lg:w-1/2 bg-gradient-to-br from-primary-600 to-primary-800 p-8 text-white hidden lg:flex flex-col justify-center relative overflow-hidden">
           <div className="relative z-10 max-w-md mx-auto">
-            <h1 className="text-5xl font-bold mb-6 font-heading gradient-text">Clinicas.com</h1>
-            <p className="text-xl mb-10 text-white/90">Sistema de Gestão para Clínicas de Estética</p>
+            <h1 className="text-5xl font-bold mb-6 font-heading text-teal-300">Clinicas.com</h1>
+            <p className="text-xl mb-10 text-teal-200">Sistema de Gestão para Clínicas de Estética</p>
             
             <div className="space-y-8">
               <div className="flex items-start space-x-4 backdrop-blur-sm bg-primary-700 p-4 rounded-xl hover:bg-primary-800 transition-colors">
@@ -53,8 +53,8 @@ export default function Login() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-white">Gestão completa de clientes</h3>
-                  <p className="text-white">Cadastro, histórico e acompanhamento</p>
+                  <h3 className="font-semibold text-lg text-teal-200">Gestão completa de clientes</h3>
+                  <p className="text-teal-100">Cadastro, histórico e acompanhamento</p>
                 </div>
               </div>
               
@@ -65,8 +65,8 @@ export default function Login() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-white">Agendamento inteligente</h3>
-                  <p className="text-white">Controle total da agenda de profissionais</p>
+                  <h3 className="font-semibold text-lg text-teal-200">Agendamento inteligente</h3>
+                  <p className="text-teal-100">Controle total da agenda de profissionais</p>
                 </div>
               </div>
               
@@ -77,8 +77,8 @@ export default function Login() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-white">Relatórios financeiros</h3>
-                  <p className="text-white">Acompanhe o desempenho do seu negócio</p>
+                  <h3 className="font-semibold text-lg text-teal-200">Relatórios financeiros</h3>
+                  <p className="text-teal-100">Acompanhe o desempenho do seu negócio</p>
                 </div>
               </div>
             </div>
