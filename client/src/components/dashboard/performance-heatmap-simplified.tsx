@@ -5,7 +5,7 @@ import { startOfYear, endOfYear, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Info } from "lucide-react";
+import { Loader2, Info, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 // Importar o CSS base da biblioteca
@@ -31,6 +31,13 @@ export function PerformanceHeatmapSimplified() {
   // Dados para o heatmap - carregar do backend
   const { data: heatmapData = [], isLoading, error } = useQuery<HeatmapData[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "performance-heatmap", startDate, endDate],
+    queryFn: async () => {
+      const resp = await fetch(`/api/clinics/${selectedClinic?.id}/performance-heatmap?startDate=${startDate}&endDate=${endDate}`);
+      if (!resp.ok) {
+        throw new Error('Falha ao carregar dados do heatmap');
+      }
+      return resp.json();
+    },
     enabled: !!selectedClinic?.id,
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
@@ -159,17 +166,28 @@ export function PerformanceHeatmapSimplified() {
       </CardHeader>
       
       <CardContent>
-        <div className="rounded-md overflow-hidden p-2">
-          <ReactCalendarHeatmap
-            startDate={startDate}
-            endDate={endDate}
-            values={sampleData}
-            classForValue={getClassForValue}
-            tooltipDataAttrs={getTooltipDataAttrs}
-            showWeekdayLabels={true}
-            gutterSize={2}
-          />
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-48">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col justify-center items-center h-48 text-center">
+            <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
+            <p className="text-sm text-red-500">Erro ao carregar dados do heatmap</p>
+          </div>
+        ) : (
+          <div className="rounded-md overflow-hidden p-2">
+            <ReactCalendarHeatmap
+              startDate={startDate}
+              endDate={endDate}
+              values={sampleData}
+              classForValue={getClassForValue}
+              tooltipDataAttrs={getTooltipDataAttrs}
+              showWeekdayLabels={true}
+              gutterSize={2}
+            />
+          </div>
+        )}
         
         <div className="flex justify-center mt-4">
           <div className="flex items-center gap-1 text-sm">
