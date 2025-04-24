@@ -1065,9 +1065,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const start = startDate as string;
       const end = endDate as string;
       
-      // Gerar dados simulados para o heatmap (como fallback seguro enquanto resolvemos os problemas de banco)
-      // Isso será substituído por dados reais assim que a consulta ao banco estiver funcionando
-      
       // Agregar dados por dia
       type DailyPerformance = {
         date: string;
@@ -1075,35 +1072,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         value: number;
       };
       
-      // Vamos trabalhar com os dados do Drizzle de uma forma mais segura
       try {
-        // Buscar os agendamentos do período
-        const appointmentsData = await db.query.appointments.findMany({
-          where: and(
-            eq(appointments.clinicId, clinicId)
-          )
-        });
+        // Buscar os agendamentos diretamente com SQL para evitar problemas de schema
+        const appointmentsResult = await pool.query(`
+          SELECT 
+            id, start_time, client_id, professional_id 
+          FROM 
+            appointments 
+          WHERE 
+            clinic_id = $1 
+            AND start_time BETWEEN $2 AND $3
+        `, [clinicId, start, end]);
         
-        // Buscar os pagamentos do período
-        const paymentsData = await db.query.payments.findMany({
-          where: and(
-            eq(payments.clinicId, clinicId)
-          )
-        });
+        // Buscar os pagamentos diretamente com SQL
+        const paymentsResult = await pool.query(`
+          SELECT 
+            id, amount, created_at, client_id 
+          FROM 
+            payments 
+          WHERE 
+            clinic_id = $1 
+            AND created_at BETWEEN $2 AND $3
+        `, [clinicId, start, end]);
+        
+        const appointmentsData = appointmentsResult.rows || [];
+        const paymentsData = paymentsResult.rows || [];
         
         const performanceMap = new Map<string, DailyPerformance>();
         
         // Processar agendamentos
         for (const appointment of appointmentsData) {
-          // Filtrar para o período solicitado
-          const appointmentDate = new Date(appointment.startTime);
-          const startDateObj = new Date(start);
-          const endDateObj = new Date(end);
-          
-          if (appointmentDate < startDateObj || appointmentDate > endDateObj) {
-            continue;
-          }
-          
+          const appointmentDate = new Date(appointment.start_time);
           const dateStr = format(appointmentDate, 'yyyy-MM-dd');
           
           if (!performanceMap.has(dateStr)) {
@@ -1116,17 +1115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Processar pagamentos
         for (const payment of paymentsData) {
-          if (!payment.createdAt) continue;
+          if (!payment.created_at) continue;
           
-          // Filtrar para o período solicitado
-          const paymentDate = new Date(payment.createdAt);
-          const startDateObj = new Date(start);
-          const endDateObj = new Date(end);
-          
-          if (paymentDate < startDateObj || paymentDate > endDateObj) {
-            continue;
-          }
-          
+          const paymentDate = new Date(payment.created_at);
           const dateStr = format(paymentDate, 'yyyy-MM-dd');
           
           if (!performanceMap.has(dateStr)) {
@@ -1144,15 +1135,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           value: day.value
         }));
         
-        // Se não houver dados, retornamos um array vazio
-        // O frontend vai tratar isso de forma apropriada
-        
         res.json(heatmapData);
       } catch (dbError) {
         console.error("Erro na consulta do banco:", dbError);
-        
-        // Responder com dados vazios como fallback
-        res.json([]);
+        res.status(500).json({ message: "Erro na consulta ao banco de dados", error: (dbError as Error).message });
       }
     } catch (error: any) {
       console.error("Erro ao buscar dados de desempenho para heatmap:", error);
