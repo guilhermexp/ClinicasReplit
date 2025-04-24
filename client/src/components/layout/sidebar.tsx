@@ -153,9 +153,9 @@ export function Sidebar({ className }: SidebarProps) {
     },
     {
       name: "Financeiro",
-      path: "/financial",
+      path: selectedClinic ? `/financeiro/${selectedClinic.id}` : "/financial",
       icon: <DollarSign className="h-5 w-5" aria-hidden="true" />,
-      isActive: location === "/financial"
+      isActive: location === "/financial" || location.startsWith("/financeiro/")
     },
     {
       name: "CRM",

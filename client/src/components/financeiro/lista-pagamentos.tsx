@@ -42,21 +42,21 @@ export function ListaPagamentos({ clinicId, titulo, clientId, appointmentId }: L
   }
   
   // Buscar pagamentos
-  const { data: payments = [], isLoading } = useQuery({
+  const { data: payments = [], isLoading } = useQuery<Payment[]>({
     queryKey: [queryKey],
     enabled: !!clinicId,
   });
   
   // Filtragem de pagamentos
   const filteredPayments = payments
-    .filter((payment: Payment) => {
+    .filter((payment) => {
       // Filtro de status
       if (statusFilter !== "todos") {
         return payment.status === statusFilter;
       }
       return true;
     })
-    .filter((payment: Payment) => {
+    .filter((payment) => {
       // Filtro de busca
       if (!search) return true;
       
@@ -90,15 +90,15 @@ export function ListaPagamentos({ clinicId, titulo, clientId, appointmentId }: L
   };
   
   // Função para formatar data
-  const formatarData = (dataString: string) => {
-    const data = new Date(dataString);
+  const formatarData = (data: Date | string) => {
+    const dataObj = data instanceof Date ? data : new Date(data);
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    }).format(data);
+    }).format(dataObj);
   };
   
   // Função para obter cor do badge de status

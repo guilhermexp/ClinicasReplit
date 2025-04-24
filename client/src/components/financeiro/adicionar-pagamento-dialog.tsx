@@ -55,13 +55,13 @@ export function AdicionarPagamentoDialog({
   });
 
   // Buscar clientes da clínica
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [] } = useQuery<any[]>({
     queryKey: [`/api/clinics/${clinicId}/clients`],
     enabled: !!clinicId && open && !clientId,
   });
 
   // Buscar agendamentos do cliente (opcional)
-  const { data: appointments = [] } = useQuery({
+  const { data: appointments = [] } = useQuery<any[]>({
     queryKey: [`/api/clients/${form.watch("clientId")}/appointments`],
     enabled: !!form.watch("clientId") && open && !appointmentId,
   });
