@@ -53,14 +53,15 @@ export function CalendarView({ appointments, onDateSelect, selectedDate, isLoadi
   };
 
   return (
-    <Card className="h-full">
+    <Card variant="glass" className="h-full border-0 overflow-hidden shadow-lg hover:shadow-xl transition-all">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
-          <CardTitle>Calendário de Agendamentos</CardTitle>
+          <CardTitle gradient={true}>Calendário de Agendamentos</CardTitle>
           <div className="flex space-x-2">
             <Button
               variant="outline"
               size="sm"
+              className="border-primary/20 hover:bg-primary/10"
               onClick={toggleView}
             >
               {calendarView === "month" ? "Visualização diária" : "Visualização mensal"}
@@ -68,6 +69,7 @@ export function CalendarView({ appointments, onDateSelect, selectedDate, isLoadi
             <Button
               variant="outline"
               size="icon"
+              className="border-primary/20 hover:bg-primary/10"
               onClick={handlePreviousMonth}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -75,6 +77,7 @@ export function CalendarView({ appointments, onDateSelect, selectedDate, isLoadi
             <Button
               variant="outline"
               size="icon"
+              className="border-primary/20 hover:bg-primary/10"
               onClick={handleNextMonth}
             >
               <ChevronRight className="h-4 w-4" />
@@ -98,19 +101,26 @@ export function CalendarView({ appointments, onDateSelect, selectedDate, isLoadi
               daysWithAppointments.some(d => isSameDay(d, date)),
           }}
           modifiersClassNames={{
-            hasBusy: "font-bold bg-primary-100 text-primary-900 relative",
+            hasBusy: "font-bold bg-primary/15 text-primary relative backdrop-blur-sm",
           }}
           locale={ptBR}
+          classNames={{
+            day_selected: "bg-gradient-to-br from-[hsl(var(--primary-start))] to-[hsl(var(--primary-end))] text-primary-foreground",
+            day_today: "border border-primary/30 bg-primary/5 text-accent-foreground",
+            day_outside: "text-muted-foreground/50",
+            day: "h-9 w-9 p-0 font-normal rounded-md aria-selected:opacity-100"
+          }}
         />
       </CardContent>
       <CardFooter className="flex justify-between">
         <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-primary-100"></div>
-          <span className="text-xs text-gray-500">Dias com agendamentos</span>
+          <div className="w-3 h-3 rounded-full bg-primary/30 backdrop-blur-sm"></div>
+          <span className="text-xs text-muted-foreground">Dias com agendamentos</span>
         </div>
         <Button
           variant="outline"
           size="sm"
+          className="border-primary/20 hover:bg-primary/10"
           onClick={() => onDateSelect(new Date())}
         >
           Hoje
@@ -151,34 +161,45 @@ export function DailyView({ appointments, selectedDate, isLoading }: {
   });
 
   return (
-    <Card className="h-full">
+    <Card variant="glass" className="h-full border-0 overflow-hidden shadow-lg hover:shadow-xl transition-all">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle gradient={true} className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
           <span>{format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}</span>
         </CardTitle>
         <CardDescription>
-          {dailyAppointments.length} agendamentos para hoje
+          {dailyAppointments.length} agendamentos para {isSameDay(selectedDate, new Date()) ? 'hoje' : 'este dia'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {isLoading ? (
           <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : (
           <>
             {dailyAppointments.length === 0 ? (
               <div className="text-center py-10">
-                <CalendarIcon className="h-10 w-10 mx-auto text-gray-300 mb-2" />
-                <p className="text-gray-500">Nenhum agendamento para esta data</p>
+                <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground">Nenhum agendamento para esta data</p>
+                <Button
+                  variant="link"
+                  className="mt-2 text-primary"
+                >
+                  Criar novo agendamento
+                </Button>
               </div>
             ) : (
               <>
                 {morningAppointments.length > 0 && (
                   <div>
-                    <h3 className="font-medium text-sm text-gray-500 mb-2">Manhã</h3>
-                    <div className="space-y-2">
+                    <h3 className="font-medium text-sm text-muted-foreground mb-2 pl-1">
+                      <span className="flex items-center">
+                        <div className="w-1 h-4 bg-yellow-400/50 rounded-full mr-2"></div>
+                        Manhã
+                      </span>
+                    </h3>
+                    <div className="space-y-3">
                       {morningAppointments.map(appointment => (
                         <AppointmentCard key={appointment.id} appointment={appointment} />
                       ))}
@@ -187,8 +208,13 @@ export function DailyView({ appointments, selectedDate, isLoading }: {
                 )}
                 {afternoonAppointments.length > 0 && (
                   <div>
-                    <h3 className="font-medium text-sm text-gray-500 mb-2">Tarde</h3>
-                    <div className="space-y-2">
+                    <h3 className="font-medium text-sm text-muted-foreground mb-2 pl-1">
+                      <span className="flex items-center">
+                        <div className="w-1 h-4 bg-orange-400/50 rounded-full mr-2"></div>
+                        Tarde
+                      </span>
+                    </h3>
+                    <div className="space-y-3">
                       {afternoonAppointments.map(appointment => (
                         <AppointmentCard key={appointment.id} appointment={appointment} />
                       ))}
@@ -197,8 +223,13 @@ export function DailyView({ appointments, selectedDate, isLoading }: {
                 )}
                 {eveningAppointments.length > 0 && (
                   <div>
-                    <h3 className="font-medium text-sm text-gray-500 mb-2">Noite</h3>
-                    <div className="space-y-2">
+                    <h3 className="font-medium text-sm text-muted-foreground mb-2 pl-1">
+                      <span className="flex items-center">
+                        <div className="w-1 h-4 bg-purple-400/50 rounded-full mr-2"></div>
+                        Noite
+                      </span>
+                    </h3>
+                    <div className="space-y-3">
                       {eveningAppointments.map(appointment => (
                         <AppointmentCard key={appointment.id} appointment={appointment} />
                       ))}
@@ -216,11 +247,11 @@ export function DailyView({ appointments, selectedDate, isLoading }: {
 
 // Status dos agendamentos (cores e nomes)
 const appointmentStatusColors: Record<string, string> = {
-  scheduled: "bg-blue-100 text-blue-800",
-  confirmed: "bg-green-100 text-green-800",
-  completed: "bg-indigo-100 text-indigo-800",
-  cancelled: "bg-red-100 text-red-800",
-  no_show: "bg-amber-100 text-amber-800"
+  scheduled: "bg-blue-100/70 text-blue-700 border-blue-200/50 hover:bg-blue-200/70",
+  confirmed: "bg-green-100/70 text-green-700 border-green-200/50 hover:bg-green-200/70",
+  completed: "bg-indigo-100/70 text-indigo-700 border-indigo-200/50 hover:bg-indigo-200/70",
+  cancelled: "bg-red-100/70 text-red-700 border-red-200/50 hover:bg-red-200/70",
+  no_show: "bg-amber-100/70 text-amber-700 border-amber-200/50 hover:bg-amber-200/70"
 };
 
 const appointmentStatusLabels: Record<string, string> = {
@@ -234,13 +265,13 @@ const appointmentStatusLabels: Record<string, string> = {
 // Componente de cartão de agendamento
 function AppointmentCard({ appointment }: { appointment: Appointment }) {
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+    <div className="flex items-center justify-between p-3 bg-background/50 backdrop-blur-sm rounded-xl border border-border/30 hover:shadow-md transition-all">
       <div className="flex items-center space-x-3">
-        <div className={`w-1 self-stretch ${getStatusBarColor(appointment.status)}`}></div>
+        <div className={`w-1 h-full min-h-[40px] rounded-full ${getStatusBarColor(appointment.status)}`}></div>
         <div>
           <p className="font-medium">Cliente #{appointment.clientId}</p>
-          <p className="text-sm text-gray-500">Serviço #{appointment.serviceId}</p>
-          <div className="flex items-center text-xs text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground">Serviço #{appointment.serviceId}</p>
+          <div className="flex items-center text-xs text-muted-foreground mt-1">
             <Clock className="h-3 w-3 mr-1" />
             <span>
               {appointment.startTime && format(parseISO(appointment.startTime.toString()), "HH:mm")} - 
@@ -249,7 +280,7 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
           </div>
         </div>
       </div>
-      <Badge className={appointmentStatusColors[appointment.status]}>
+      <Badge className={`shadow-sm backdrop-blur-sm ${appointmentStatusColors[appointment.status]}`}>
         {appointmentStatusLabels[appointment.status]}
       </Badge>
     </div>
@@ -260,16 +291,16 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
 function getStatusBarColor(status: string): string {
   switch (status) {
     case 'scheduled':
-      return 'bg-blue-500';
+      return 'bg-blue-400 shadow-md';
     case 'confirmed':
-      return 'bg-green-500';
+      return 'bg-green-400 shadow-md';
     case 'completed':
-      return 'bg-indigo-500';
+      return 'bg-indigo-400 shadow-md';
     case 'cancelled':
-      return 'bg-red-500';
+      return 'bg-red-400 shadow-md';
     case 'no_show':
-      return 'bg-amber-500';
+      return 'bg-amber-400 shadow-md';
     default:
-      return 'bg-gray-300';
+      return 'bg-gray-300 shadow-md';
   }
 }

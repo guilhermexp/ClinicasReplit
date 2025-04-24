@@ -5,6 +5,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -245,14 +246,16 @@ export default function Appointments() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl md:text-3xl font-heading font-bold text-gray-900">Agendamentos</h1>
-        <div className="flex items-center space-x-2">
-          <div className="flex space-x-1 bg-secondary rounded-md p-1">
+        <h1 className="text-2xl md:text-3xl font-heading font-bold gradient-text">Agendamentos</h1>
+        <div className="flex items-center space-x-3">
+          <div className="flex space-x-1 bg-background/50 backdrop-blur-sm border border-border/30 rounded-full p-1 shadow-md">
             <Button
               variant={viewMode === "calendar" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("calendar")}
-              className="h-8"
+              className={`h-8 rounded-full ${viewMode === "calendar" ? 
+                "bg-gradient-to-r from-[hsl(var(--primary-start))] to-[hsl(var(--primary-end))] text-white shadow-md" : 
+                "text-muted-foreground hover:text-foreground hover:bg-background/80"}`}
             >
               <CalendarIcon className="h-4 w-4 mr-1" />
               Calendário
@@ -261,7 +264,9 @@ export default function Appointments() {
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className="h-8"
+              className={`h-8 rounded-full ${viewMode === "list" ? 
+                "bg-gradient-to-r from-[hsl(var(--primary-start))] to-[hsl(var(--primary-end))] text-white shadow-md" : 
+                "text-muted-foreground hover:text-foreground hover:bg-background/80"}`}
             >
               <List className="h-4 w-4 mr-1" />
               Lista
@@ -270,14 +275,14 @@ export default function Appointments() {
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="shadow-md hover:shadow-lg bg-gradient-to-r from-[hsl(var(--primary-start))] to-[hsl(var(--primary-end))] rounded-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Agendamento
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px] bg-background/95 backdrop-blur-md border border-border/50 shadow-xl">
               <DialogHeader>
-                <DialogTitle>Novo Agendamento</DialogTitle>
+                <DialogTitle className="gradient-text">Novo Agendamento</DialogTitle>
                 <DialogDescription>
                   Preencha os dados para criar um novo agendamento
                 </DialogDescription>
@@ -315,11 +320,11 @@ export default function Appointments() {
           </div>
         </div>
       ) : (
-        <Card>
+        <Card variant="glass" className="border-0 overflow-hidden shadow-lg hover:shadow-xl transition-all">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b border-border/20">
                   <th className="px-4 py-3 text-left font-medium">Data e Hora</th>
                   <th className="px-4 py-3 text-left font-medium">Cliente</th>
                   <th className="px-4 py-3 text-left font-medium">Profissional</th>
@@ -333,20 +338,20 @@ export default function Appointments() {
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center">
                       <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
-                      <p className="mt-2 text-gray-500">Carregando agendamentos...</p>
+                      <p className="mt-2 text-muted-foreground">Carregando agendamentos...</p>
                     </td>
                   </tr>
                 ) : appointments.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center">
-                      <CalendarIcon className="h-10 w-10 mx-auto text-gray-300 mb-2" />
-                      <p className="text-gray-500">Nenhum agendamento encontrado</p>
+                      <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-muted-foreground">Nenhum agendamento encontrado</p>
                       <Button
                         variant="link"
                         onClick={() => setIsCreateDialogOpen(true)}
-                        className="mt-2"
+                        className="mt-2 text-primary"
                       >
                         Criar novo agendamento
                       </Button>
@@ -354,14 +359,14 @@ export default function Appointments() {
                   </tr>
                 ) : (
                   appointments.map(appointment => (
-                    <tr key={appointment.id} className="border-b hover:bg-gray-50">
+                    <tr key={appointment.id} className="border-b border-border/20 hover:bg-background/50 backdrop-blur-sm transition-colors">
                       <td className="px-4 py-3">
                         {appointment.startTime && (
                           <>
                             <div className="font-medium">
                               {format(parseISO(appointment.startTime.toString()), "dd/MM/yyyy")}
                             </div>
-                            <div className="text-gray-500">
+                            <div className="text-muted-foreground">
                               {format(parseISO(appointment.startTime.toString()), "HH:mm")} - 
                               {appointment.endTime && format(parseISO(appointment.endTime.toString()), "HH:mm")}
                             </div>
@@ -378,15 +383,16 @@ export default function Appointments() {
                         {services.find(s => s.id === appointment.serviceId)?.name || "Serviço não encontrado"}
                       </td>
                       <td className="px-4 py-3">
-                        <div className={`inline-block px-2 py-1 rounded-full text-xs ${appointmentStatusColors[appointment.status]}`}>
+                        <Badge className={`shadow-sm backdrop-blur-sm ${appointmentStatusColors[appointment.status]}`}>
                           {appointmentStatusLabels[appointment.status]}
-                        </div>
+                        </Badge>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
+                            className="border-primary/20 hover:bg-primary/10"
                             onClick={() => setSelectedAppointmentId(appointment.id)}
                           >
                             Editar
