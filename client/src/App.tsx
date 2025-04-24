@@ -13,6 +13,7 @@ import Users from "@/pages/users";
 import Clients from "@/pages/clients";
 import Appointments from "@/pages/appointments";
 import Financial from "@/pages/financial";
+import FinanceiroPage from "@/pages/financeiro";
 import CrmPage from "@/pages/crm";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
@@ -50,6 +51,11 @@ function App() {
             <Route path="/financial">
               <MainLayout>
                 <Financial />
+              </MainLayout>
+            </Route>
+            <Route path="/financeiro/:clinicId">
+              <MainLayout>
+                {(params) => <FinanceiroPage clinicId={params.clinicId} />}
               </MainLayout>
             </Route>
             <Route path="/crm">
