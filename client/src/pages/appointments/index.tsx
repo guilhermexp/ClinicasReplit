@@ -10,10 +10,13 @@ import { apiRequest } from "@/lib/queryClient";
 import { 
   Plus,
   Calendar as CalendarIcon,
-  List
+  List,
+  ArrowRight
 } from "lucide-react";
+import { ptBR } from "date-fns/locale";
 import { format, parseISO } from "date-fns";
 import { AppointmentStatus } from "@shared/schema";
+import { AgendaHero } from "@/components/ui/agenda-hero";
 
 // Definindo tipos mais flexíveis para contornar erros de tipo
 type Appointment = any;
