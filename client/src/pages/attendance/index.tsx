@@ -763,7 +763,11 @@ export default function AttendancePage() {
           <div className="p-6 flex flex-col items-center justify-center">
             <div className="relative w-16 h-16 mb-6">
               <Skeleton className="h-16 w-16 rounded-full absolute animate-pulse" />
-              <Loader2 className="h-8 w-8 animate-spin absolute inset-0 m-auto text-primary/30" />
+              <div className="h-8 w-8 absolute inset-0 m-auto flex items-center justify-center text-primary/30">
+                <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+              </div>
             </div>
             <Skeleton className="h-5 w-64 mb-2" />
             <Skeleton className="h-4 w-48 mb-6" />
@@ -973,10 +977,24 @@ export default function AttendancePage() {
           </CardHeader>
           <CardContent className="p-6">
             {isLoadingMonthlyReport ? (
-              <div className="space-y-4">
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
+              <div className="space-y-6">
+                <div className="flex flex-col items-center justify-center py-4">
+                  <div className="relative w-14 h-14 mb-4">
+                    <Skeleton className="h-14 w-14 rounded-full absolute animate-pulse" />
+                    <div className="h-6 w-6 absolute inset-0 m-auto flex items-center justify-center text-primary/30">
+                      <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                    </div>
+                  </div>
+                  <Skeleton className="h-5 w-48 mb-2" />
+                  <Skeleton className="h-4 w-32 mb-6" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Skeleton className="h-24 w-full rounded-md animate-pulse" />
+                  <Skeleton className="h-24 w-full rounded-md animate-pulse" />
+                  <Skeleton className="h-24 w-full rounded-md animate-pulse" />
+                </div>
               </div>
             ) : monthlyReport ? (
               <div className="space-y-6">
