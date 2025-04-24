@@ -22,9 +22,9 @@ interface Clinic {
 export default function FinanceiroPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const params = useParams();
+  const params = useParams<{ clinicId?: string }>();
   const { selectedClinic } = useAuth();
-  const clinicId = parseInt(params.clinicId) || selectedClinic?.id || 0;
+  const clinicId = params.clinicId ? parseInt(params.clinicId) : (selectedClinic?.id || 0);
   const [activeTab, setActiveTab] = useState("pagamentos");
 
   // Verificar se a clínica existe

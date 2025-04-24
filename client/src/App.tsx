@@ -98,10 +98,18 @@ function App() {
               </ProtectedRoute>
             </Route>
             
+            <Route path="/financeiro">
+              <ProtectedRoute>
+                <MainLayout>
+                  <FinanceiroPage />
+                </MainLayout>
+              </ProtectedRoute>
+            </Route>
+            
             <Route path="/financeiro/:clinicId">
               <ProtectedRoute>
                 <MainLayout>
-                  {(params: any) => <FinanceiroPage clinicId={params.clinicId} />}
+                  <FinanceiroPage />
                 </MainLayout>
               </ProtectedRoute>
             </Route>
