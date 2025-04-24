@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LeadStatus, LeadSource } from "@shared/crm";
+import { LeadStatus, LeadSource, InteractionType, AppointmentStatus } from "@shared/crm";
 import {
   User,
   Phone,
