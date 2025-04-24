@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, inArray } from "drizzle-orm";
+import { registerCRMRoutes } from "./routes-crm";
 import { 
   insertUserSchema, 
   insertClinicSchema,
@@ -1039,6 +1040,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Registrar as rotas do CRM
+  registerCRMRoutes(app, isAuthenticated);
+
   // Create HTTP server
   const httpServer = createServer(app);
   

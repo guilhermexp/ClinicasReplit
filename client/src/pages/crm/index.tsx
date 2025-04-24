@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -11,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeadStatus, LeadSource, InteractionType, AppointmentStatus } from "@shared/crm";
+import { Lead } from "@shared/schema";
+import { AddLeadDialog } from "@/components/crm/add-lead-dialog";
+import { LeadDetailsDialog } from "@/components/crm/lead-details-dialog";
 import {
   User,
   Phone,
@@ -115,11 +119,56 @@ const mockLeads = [
 ];
 
 function CRMDashboard() {
-  const [leads, setLeads] = useState(mockLeads);
-  const [filteredLeads, setFilteredLeads] = useState(mockLeads);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "Todos">("Todos");
   const [sourceFilter, setSourceFilter] = useState<LeadSource | "Todos">("Todos");
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [addLeadDialogOpen, setAddLeadDialogOpen] = useState(false);
+  const [leadDetailsDialogOpen, setLeadDetailsDialogOpen] = useState(false);
+  
+  // Get active clinic
+  const { data: clinics } = useQuery({
+    queryKey: ["/api/clinics"],
+    queryFn: async () => {
+      const res = await fetch("/api/clinics");
+      if (!res.ok) throw new Error("Failed to fetch clinics");
+      return await res.json();
+    }
+  });
+  
+  const activeClinic = clinics?.[0];
+  
+  // Fetch leads for active clinic
+  const { 
+    data: leads = [],
+    isLoading: isLoadingLeads,
+    isError: isLeadsError,
+    error: leadsError
+  } = useQuery({
+    queryKey: [`/api/clinics/${activeClinic?.id}/leads`],
+    queryFn: async () => {
+      if (!activeClinic?.id) return [];
+      const res = await fetch(`/api/clinics/${activeClinic.id}/leads`);
+      if (!res.ok) throw new Error("Failed to fetch leads");
+      return await res.json() as Lead[];
+    },
+    enabled: !!activeClinic?.id
+  });
+  
+  // Fetch CRM stats
+  const {
+    data: crmStats,
+    isLoading: isLoadingStats
+  } = useQuery({
+    queryKey: [`/api/clinics/${activeClinic?.id}/crm/stats`],
+    queryFn: async () => {
+      if (!activeClinic?.id) return null;
+      const res = await fetch(`/api/clinics/${activeClinic.id}/crm/stats`);
+      if (!res.ok) throw new Error("Failed to fetch CRM stats");
+      return await res.json();
+    },
+    enabled: !!activeClinic?.id
+  });
 
   // Filtrar leads quando os filtros mudarem
   useEffect(() => {
@@ -149,7 +198,7 @@ function CRMDashboard() {
   }, [leads, statusFilter, sourceFilter, searchQuery]);
 
   // Contadores para o dashboard
-  const getLeadsByStatus = (status: LeadStatus): number => {
+  const getLeadsByStatus = (status: string): number => {
     return leads.filter(lead => lead.status === status).length;
   };
 
@@ -161,26 +210,26 @@ function CRMDashboard() {
   };
 
   // Funções auxiliares
-  const getStatusColor = (status: LeadStatus): string => {
-    const colors: Record<LeadStatus, string> = {
-      "Novo": "bg-blue-100 text-blue-800",
-      "Em contato": "bg-indigo-100 text-indigo-800",
-      "Agendado": "bg-yellow-100 text-yellow-800",
-      "Convertido": "bg-green-100 text-green-800",
-      "Perdido": "bg-red-100 text-red-800"
+  const getStatusColor = (status: string): string => {
+    const colors: Record<string, string> = {
+      [LeadStatus.NOVO]: "bg-blue-100 text-blue-800",
+      [LeadStatus.EM_CONTATO]: "bg-indigo-100 text-indigo-800",
+      [LeadStatus.AGENDADO]: "bg-yellow-100 text-yellow-800",
+      [LeadStatus.CONVERTIDO]: "bg-green-100 text-green-800",
+      [LeadStatus.PERDIDO]: "bg-red-100 text-red-800"
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  const getSourceIcon = (source: LeadSource) => {
-    const icons: Record<LeadSource, JSX.Element> = {
-      "Instagram": <Instagram size={16} className="text-pink-500" />,
-      "Facebook": <Facebook size={16} className="text-blue-600" />,
-      "Site": <Globe size={16} className="text-purple-500" />,
-      "Indicação": <UserCheck size={16} className="text-green-500" />,
-      "Google": <Search size={16} className="text-red-500" />,
-      "WhatsApp": <MessageSquare size={16} className="text-green-600" />,
-      "Outro": <ChevronDown size={16} className="text-gray-500" />
+  const getSourceIcon = (source: string) => {
+    const icons: Record<string, JSX.Element> = {
+      [LeadSource.INSTAGRAM]: <Instagram size={16} className="text-pink-500" />,
+      [LeadSource.FACEBOOK]: <Facebook size={16} className="text-blue-600" />,
+      [LeadSource.SITE]: <Globe size={16} className="text-purple-500" />,
+      [LeadSource.INDICACAO]: <UserCheck size={16} className="text-green-500" />,
+      [LeadSource.GOOGLE]: <Search size={16} className="text-red-500" />,
+      [LeadSource.WHATSAPP]: <MessageSquare size={16} className="text-green-600" />,
+      [LeadSource.OUTRO]: <ChevronDown size={16} className="text-gray-500" />
     };
     return icons[source] || <ChevronDown size={16} />;
   };
