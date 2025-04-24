@@ -983,23 +983,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/payments/refund", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { paymentIntentId, amount, reason } = req.body;
+      const { paymentId, amount, reason } = req.body;
       
-      if (!paymentIntentId) {
+      if (!paymentId) {
         return res.status(400).json({ message: "ID de pagamento inválido" });
       }
       
-      // Processar reembolso no Stripe
-      const refund = await stripeService.createRefund(paymentIntentId, amount, reason);
+      // Processar reembolso usando nosso serviço local
+      const payment = await paymentService.createRefund(paymentId, amount, reason);
       
-      // Atualizar status do pagamento na base de dados
-      await storage.updatePaymentByStripeId(paymentIntentId, {
-        status: amount ? PaymentStatus.PARTIAL : PaymentStatus.REFUNDED,
-        refundedAt: new Date(),
-        refundAmount: amount
-      });
-      
-      res.json({ success: true, refund });
+      res.json({ success: true, payment });
     } catch (error: any) {
       console.error("Erro ao processar reembolso:", error);
       res.status(500).json({ message: error.message || "Erro ao processar reembolso" });
@@ -1009,7 +1002,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/payments/clinic/:clinicId", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const clinicId = parseInt(req.params.clinicId);
-      const payments = await storage.listPaymentsByClinic(clinicId);
+      const payments = await paymentService.listPaymentsByClinic(clinicId);
       res.json(payments);
     } catch (error: any) {
       console.error("Erro ao buscar pagamentos da clínica:", error);
@@ -1020,11 +1013,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/payments/appointment/:appointmentId", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const appointmentId = parseInt(req.params.appointmentId);
-      const payments = await storage.listPaymentsByAppointment(appointmentId);
+      const payments = await paymentService.listPaymentsByAppointment(appointmentId);
       res.json(payments);
     } catch (error: any) {
       console.error("Erro ao buscar pagamentos do agendamento:", error);
       res.status(500).json({ message: error.message || "Erro ao buscar pagamentos" });
+    }
+  });
+  
+  app.get("/api/payments/client/:clientId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const payments = await paymentService.listPaymentsByClient(clientId);
+      res.json(payments);
+    } catch (error: any) {
+      console.error("Erro ao buscar pagamentos do cliente:", error);
+      res.status(500).json({ message: error.message || "Erro ao buscar pagamentos" });
+    }
+  });
+  
+  app.get("/api/payments/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const paymentId = parseInt(req.params.id);
+      const payment = await paymentService.getPayment(paymentId);
+      
+      if (!payment) {
+        return res.status(404).json({ message: "Pagamento não encontrado" });
+      }
+      
+      res.json(payment);
+    } catch (error: any) {
+      console.error("Erro ao buscar pagamento:", error);
+      res.status(500).json({ message: error.message || "Erro ao buscar pagamento" });
     }
   });
   
