@@ -592,9 +592,9 @@ export default function Dashboard() {
 
         {/* Lembretes */}
         <div className="md:col-span-2 lg:col-span-3">
-          <Card className="h-full">
+          <Card variant="glass" className="h-full border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
             <CardHeader>
-              <CardTitle className="flex items-center text-lg">
+              <CardTitle gradient={true} className="flex items-center text-lg">
                 <Bell className="h-5 w-5 mr-2" /> Lembretes e Tarefas
               </CardTitle>
               <CardDescription>Seus lembretes e tarefas pendentes</CardDescription>
@@ -605,10 +605,16 @@ export default function Dashboard() {
                   {reminders.slice(0, 5).map((reminder) => (
                     <div 
                       key={reminder.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                      className="flex items-center justify-between p-3 bg-background/50 backdrop-blur-sm rounded-xl border border-border/30 hover:shadow-md transition-all"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-full ${reminderPriorityColors[reminder.priority]}`}>
+                        <div className={`p-2 rounded-full shadow-md ${
+                          reminder.priority === 'high' 
+                            ? 'bg-red-100/60 backdrop-blur-sm text-red-500' 
+                            : reminder.priority === 'medium'
+                              ? 'bg-yellow-100/60 backdrop-blur-sm text-yellow-600'
+                              : 'bg-blue-100/60 backdrop-blur-sm text-blue-500'
+                        }`}>
                           {reminder.priority === 'high' ? (
                             <AlertTriangle className="h-4 w-4" />
                           ) : (
@@ -617,15 +623,21 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <p className="font-medium">{reminder.title}</p>
-                          <p className="text-sm text-gray-500">{reminder.description}</p>
-                          <div className="flex items-center text-xs text-gray-500 mt-1">
+                          <p className="text-sm text-muted-foreground">{reminder.description}</p>
+                          <div className="flex items-center text-xs text-muted-foreground mt-1">
                             <Clock className="h-3 w-3 mr-1" />
                             {formatDate(reminder.dueDate)}
                           </div>
                         </div>
                       </div>
                       <div>
-                        <Badge className={reminderPriorityColors[reminder.priority]}>
+                        <Badge className={`shadow-sm ${
+                          reminder.priority === 'high' 
+                            ? 'bg-red-100/90 text-red-700 hover:bg-red-200/90' 
+                            : reminder.priority === 'medium'
+                              ? 'bg-yellow-100/90 text-yellow-700 hover:bg-yellow-200/90'
+                              : 'bg-blue-100/90 text-blue-700 hover:bg-blue-200/90'
+                        }`}>
                           {reminderPriorityLabels[reminder.priority]}
                         </Badge>
                       </div>
@@ -634,11 +646,11 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Bell className="h-12 w-12 text-gray-300 mb-3" />
-                  <p className="text-gray-500">Nenhum lembrete pendente</p>
+                  <Bell className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                  <p className="text-muted-foreground">Nenhum lembrete pendente</p>
                   <Button
                     variant="link"
-                    className="mt-2"
+                    className="mt-2 text-primary"
                   >
                     Criar novo lembrete
                   </Button>
@@ -649,13 +661,15 @@ export default function Dashboard() {
               <CardFooter className="flex justify-between">
                 <Button 
                   variant="outline" 
-                  size="sm" 
+                  size="sm"
+                  className="border-primary/20 hover:bg-primary/10"
                 >
                   Ver tudo
                 </Button>
                 <Button 
                   variant="default" 
-                  size="sm" 
+                  size="sm"
+                  className="bg-gradient-to-r from-[hsl(var(--primary-start))] to-[hsl(var(--primary-end))] shadow-md hover:shadow-lg transition-shadow"
                 >
                   Adicionar lembrete <Plus className="h-4 w-4 ml-1" />
                 </Button>
