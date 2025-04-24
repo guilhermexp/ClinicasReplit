@@ -275,7 +275,7 @@ export default function Appointments() {
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="shadow-md hover:shadow-lg bg-gradient-to-r from-[hsl(var(--primary-start))] to-[hsl(var(--primary-end))] rounded-full">
+              <Button variant="gradient" className="rounded-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Agendamento
               </Button>
