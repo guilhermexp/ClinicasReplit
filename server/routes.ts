@@ -27,7 +27,7 @@ import {
   PaymentStatus
 } from "@shared/schema";
 import { z } from "zod";
-import { stripeService } from "./stripe";
+import { paymentService } from "./payment-service";
 import passport from "passport";
 import { setupAuth } from "./auth";
 import bcrypt from "bcryptjs";
@@ -925,68 +925,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Stripe Payment Routes
-  app.post("/api/payments/create-intent", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/payments/create", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { amount, currency = 'brl', appointmentId, clinicId, serviceId, clientId } = req.body;
+      const { amount, appointmentId, clinicId, serviceId, clientId, paymentMethod = 'dinheiro', notes } = req.body;
       
       if (!amount || amount <= 0) {
         return res.status(400).json({ message: "Valor do pagamento inválido" });
       }
       
-      // Metadata para o pagamento
-      const metadata: Record<string, any> = {
-        userId: req.user?.id,
-        appointmentId,
-        clinicId,
-        serviceId,
-        clientId
-      };
+      if (!clinicId) {
+        return res.status(400).json({ message: "ID da clínica é obrigatório" });
+      }
       
-      // Criar intenção de pagamento no Stripe
-      const paymentIntent = await stripeService.createPaymentIntent(amount, currency, metadata);
+      if (!clientId) {
+        return res.status(400).json({ message: "ID do cliente é obrigatório" });
+      }
       
-      // Registrar o pagamento na base de dados
-      const payment = await storage.createPayment({
+      // Criar registro de pagamento usando nosso serviço local
+      const payment = await paymentService.createPayment({
         amount,
-        currency,
-        status: PaymentStatus.PENDING,
-        stripePaymentIntentId: paymentIntent.id,
-        appointmentId: appointmentId,
-        clinicId: clinicId,
-        clientId: clientId,
-        serviceId: serviceId,
-        createdBy: req.user?.id as number
+        clinicId,
+        clientId,
+        createdBy: req.user!.id,
+        appointmentId,
+        paymentMethod,
+        notes
       });
       
+      // Retornar as informações do pagamento
       res.json({
-        paymentId: payment.id,
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id
+        payment,
+        success: true
       });
     } catch (error: any) {
-      console.error("Erro ao criar intenção de pagamento:", error);
+      console.error("Erro ao criar pagamento:", error);
       res.status(500).json({ message: error.message || "Erro ao processar pagamento" });
     }
   });
   
   app.post("/api/payments/confirm", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { paymentIntentId } = req.body;
+      const { paymentId } = req.body;
       
-      if (!paymentIntentId) {
+      if (!paymentId) {
         return res.status(400).json({ message: "ID de pagamento inválido" });
       }
       
-      // Confirmar pagamento no Stripe
-      const paymentIntent = await stripeService.confirmPayment(paymentIntentId);
+      // Confirmar pagamento usando nosso serviço local
+      const payment = await paymentService.confirmPayment(paymentId);
       
-      // Atualizar status do pagamento na base de dados
-      await storage.updatePaymentByStripeId(paymentIntentId, {
-        status: PaymentStatus.PAID,
-        paidAt: new Date()
-      });
-      
-      res.json({ success: true, paymentIntent });
+      res.json({ success: true, payment });
     } catch (error: any) {
       console.error("Erro ao confirmar pagamento:", error);
       res.status(500).json({ message: error.message || "Erro ao confirmar pagamento" });

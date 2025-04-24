@@ -2,15 +2,17 @@ import { Payment, PaymentStatus } from '@shared/schema';
 import { storage } from './storage';
 
 export interface PaymentService {
-  // Criar uma intenção de pagamento 
+  // Criar um pagamento
   createPayment(
-    amount: number, 
-    clinicId: number, 
-    clientId: number, 
-    appointmentId?: number, 
-    paymentMethod?: string, 
-    notes?: string, 
-    createdBy: number
+    data: {
+      amount: number, 
+      clinicId: number, 
+      clientId: number, 
+      createdBy: number,
+      appointmentId?: number, 
+      paymentMethod?: string, 
+      notes?: string
+    }
   ): Promise<Payment>;
   
   // Confirmar um pagamento
@@ -35,15 +37,20 @@ export interface PaymentService {
 // Implementação do serviço de pagamento local
 export class LocalPaymentService implements PaymentService {
   async createPayment(
-    amount: number, 
-    clinicId: number, 
-    clientId: number, 
-    appointmentId?: number, 
-    paymentMethod: string = 'dinheiro', 
-    notes?: string, 
-    createdBy: number
+    data: {
+      amount: number, 
+      clinicId: number, 
+      clientId: number, 
+      createdBy: number,
+      appointmentId?: number, 
+      paymentMethod?: string, 
+      notes?: string
+    }
   ): Promise<Payment> {
     try {
+      const { amount, clinicId, clientId, createdBy, appointmentId, notes } = data;
+      const paymentMethod = data.paymentMethod || 'dinheiro';
+      
       const payment = await storage.createPayment({
         clinicId,
         clientId,
