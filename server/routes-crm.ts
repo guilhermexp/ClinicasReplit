@@ -1,6 +1,6 @@
 import { Request, Response, type Express, NextFunction } from "express";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { storage } from "./storage";
 import { requirePermission } from "./middleware";
 import { 
@@ -9,30 +9,26 @@ import {
   insertLeadAppointmentSchema,
   leads,
   leadInteractions,
-  leadAppointments
+  leadAppointments,
+  permissions
 } from "@shared/schema";
 
 export function registerCRMRoutes(app: Express, isAuthenticated: (req: Request, res: Response, next: Function) => void) {
   // Leads routes
-  app.get("/api/clinics/:clinicId/leads", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const clinicId = parseInt(req.params.clinicId);
-      
-      // Verifica se o usuário tem acesso à clínica
-      const user = req.user as any;
-      const clinicUser = await storage.getClinicUser(clinicId, user.id);
-      
-      if (!clinicUser) {
-        return res.status(403).json({ message: "Você não tem acesso a esta clínica" });
+  app.get(
+    "/api/clinics/:clinicId/leads", 
+    isAuthenticated, 
+    requirePermission("leads", "view"),
+    async (req: Request, res: Response) => {
+      try {
+        const clinicId = parseInt(req.params.clinicId);        
+        const leadsResult = await db.select().from(leads).where(eq(leads.clinicId, clinicId));
+        res.json(leadsResult);
+      } catch (error: any) {
+        console.error("Erro ao buscar leads:", error);
+        res.status(500).json({ message: error.message || "Erro ao buscar leads" });
       }
-      
-      const leadsResult = await db.select().from(leads).where(eq(leads.clinicId, clinicId));
-      res.json(leadsResult);
-    } catch (error: any) {
-      console.error("Erro ao buscar leads:", error);
-      res.status(500).json({ message: error.message || "Erro ao buscar leads" });
-    }
-  });
+    });
   
   app.post("/api/leads", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -45,11 +41,29 @@ export function registerCRMRoutes(app: Express, isAuthenticated: (req: Request, 
       const user = req.user as any;
       const clinicId = result.data.clinicId;
       
-      // Verifica se o usuário tem acesso à clínica
+      // Verifica se o usuário tem acesso à clínica e permissão para criar leads
       const clinicUser = await storage.getClinicUser(clinicId, user.id);
       
       if (!clinicUser) {
         return res.status(403).json({ message: "Você não tem acesso a esta clínica" });
+      }
+      
+      // Verifica permissão para criar leads se não for OWNER ou MANAGER
+      if (clinicUser.role !== "OWNER" && clinicUser.role !== "MANAGER") {
+        const [permissionExists] = await db
+          .select()
+          .from(permissions)
+          .where(
+            and(
+              eq(permissions.clinicUserId, clinicUser.id),
+              eq(permissions.module, "leads"),
+              eq(permissions.action, "create")
+            )
+          );
+          
+        if (!permissionExists) {
+          return res.status(403).json({ message: "Você não tem permissão para criar leads" });
+        }
       }
       
       const [lead] = await db.insert(leads).values({
@@ -64,6 +78,7 @@ export function registerCRMRoutes(app: Express, isAuthenticated: (req: Request, 
     }
   });
   
+  // Get lead by ID
   app.get("/api/leads/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const leadId = parseInt(req.params.id);
@@ -81,6 +96,24 @@ export function registerCRMRoutes(app: Express, isAuthenticated: (req: Request, 
         return res.status(403).json({ message: "Você não tem acesso a este lead" });
       }
       
+      // Verifica permissão para visualizar leads se não for OWNER ou MANAGER
+      if (clinicUser.role !== "OWNER" && clinicUser.role !== "MANAGER") {
+        const [permissionExists] = await db
+          .select()
+          .from(permissions)
+          .where(
+            and(
+              eq(permissions.clinicUserId, clinicUser.id),
+              eq(permissions.module, "leads"),
+              eq(permissions.action, "view")
+            )
+          );
+          
+        if (!permissionExists) {
+          return res.status(403).json({ message: "Você não tem permissão para visualizar leads" });
+        }
+      }
+      
       res.json(lead);
     } catch (error: any) {
       console.error("Erro ao buscar lead:", error);
@@ -88,6 +121,7 @@ export function registerCRMRoutes(app: Express, isAuthenticated: (req: Request, 
     }
   });
   
+  // Update lead
   app.patch("/api/leads/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const leadId = parseInt(req.params.id);
@@ -103,6 +137,24 @@ export function registerCRMRoutes(app: Express, isAuthenticated: (req: Request, 
       
       if (!clinicUser) {
         return res.status(403).json({ message: "Você não tem acesso a este lead" });
+      }
+      
+      // Verifica permissão para editar leads se não for OWNER ou MANAGER
+      if (clinicUser.role !== "OWNER" && clinicUser.role !== "MANAGER") {
+        const [permissionExists] = await db
+          .select()
+          .from(permissions)
+          .where(
+            and(
+              eq(permissions.clinicUserId, clinicUser.id),
+              eq(permissions.module, "leads"),
+              eq(permissions.action, "edit")
+            )
+          );
+          
+        if (!permissionExists) {
+          return res.status(403).json({ message: "Você não tem permissão para editar leads" });
+        }
       }
       
       // Atualiza apenas os campos enviados
@@ -257,48 +309,43 @@ export function registerCRMRoutes(app: Express, isAuthenticated: (req: Request, 
   });
   
   // Dashboard CRM stats
-  app.get("/api/clinics/:clinicId/crm/stats", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const clinicId = parseInt(req.params.clinicId);
-      
-      // Verifica se o usuário tem acesso à clínica
-      const user = req.user as any;
-      const clinicUser = await storage.getClinicUser(clinicId, user.id);
-      
-      if (!clinicUser) {
-        return res.status(403).json({ message: "Você não tem acesso a esta clínica" });
+  app.get(
+    "/api/clinics/:clinicId/crm/stats", 
+    isAuthenticated, 
+    requirePermission("crm", "view"),
+    async (req: Request, res: Response) => {
+      try {
+        const clinicId = parseInt(req.params.clinicId);        
+        const allLeads = await db.select().from(leads).where(eq(leads.clinicId, clinicId));
+        
+        // Estatísticas básicas
+        const stats = {
+          totalLeads: allLeads.length,
+          byStatus: {
+            novo: allLeads.filter(lead => lead.status === "Novo").length,
+            emContato: allLeads.filter(lead => lead.status === "Em contato").length,
+            agendado: allLeads.filter(lead => lead.status === "Agendado").length,
+            convertido: allLeads.filter(lead => lead.status === "Convertido").length,
+            perdido: allLeads.filter(lead => lead.status === "Perdido").length
+          },
+          bySource: {
+            instagram: allLeads.filter(lead => lead.fonte === "Instagram").length,
+            facebook: allLeads.filter(lead => lead.fonte === "Facebook").length,
+            site: allLeads.filter(lead => lead.fonte === "Site").length,
+            indicacao: allLeads.filter(lead => lead.fonte === "Indicação").length,
+            google: allLeads.filter(lead => lead.fonte === "Google").length,
+            whatsapp: allLeads.filter(lead => lead.fonte === "WhatsApp").length,
+            outro: allLeads.filter(lead => lead.fonte === "Outro").length
+          },
+          conversionRate: allLeads.length > 0 
+            ? (allLeads.filter(lead => lead.status === "Convertido").length / allLeads.length * 100).toFixed(1) 
+            : 0
+        };
+        
+        res.json(stats);
+      } catch (error: any) {
+        console.error("Erro ao buscar estatísticas do CRM:", error);
+        res.status(500).json({ message: error.message || "Erro ao buscar estatísticas" });
       }
-      
-      const allLeads = await db.select().from(leads).where(eq(leads.clinicId, clinicId));
-      
-      // Estatísticas básicas
-      const stats = {
-        totalLeads: allLeads.length,
-        byStatus: {
-          novo: allLeads.filter(lead => lead.status === "Novo").length,
-          emContato: allLeads.filter(lead => lead.status === "Em contato").length,
-          agendado: allLeads.filter(lead => lead.status === "Agendado").length,
-          convertido: allLeads.filter(lead => lead.status === "Convertido").length,
-          perdido: allLeads.filter(lead => lead.status === "Perdido").length
-        },
-        bySource: {
-          instagram: allLeads.filter(lead => lead.fonte === "Instagram").length,
-          facebook: allLeads.filter(lead => lead.fonte === "Facebook").length,
-          site: allLeads.filter(lead => lead.fonte === "Site").length,
-          indicacao: allLeads.filter(lead => lead.fonte === "Indicação").length,
-          google: allLeads.filter(lead => lead.fonte === "Google").length,
-          whatsapp: allLeads.filter(lead => lead.fonte === "WhatsApp").length,
-          outro: allLeads.filter(lead => lead.fonte === "Outro").length
-        },
-        conversionRate: allLeads.length > 0 
-          ? (allLeads.filter(lead => lead.status === "Convertido").length / allLeads.length * 100).toFixed(1) 
-          : 0
-      };
-      
-      res.json(stats);
-    } catch (error: any) {
-      console.error("Erro ao buscar estatísticas do CRM:", error);
-      res.status(500).json({ message: error.message || "Erro ao buscar estatísticas" });
-    }
-  });
+    });
 }
