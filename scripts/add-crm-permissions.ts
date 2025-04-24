@@ -9,7 +9,7 @@ import { eq, and } from "drizzle-orm";
 async function main() {
   try {
     // Parâmetros
-    const userId = 999; // ID do usuário (guilherme-varela@hotmail.com) conforme retornado pela API
+    const userId = 3; // ID real do usuário no banco de dados (guilherme-varela@hotmail.com)
     const clinicId = 2; // ID da clínica (Gardenia Clinic)
     const clinicUserId = 2; // ID da relação clinic_user
     
