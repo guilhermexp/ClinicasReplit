@@ -82,7 +82,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="glass-card p-8 shadow-lg floating">
+        <div className="glass-card p-8 shadow-lg">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <p className="gradient-text text-lg font-medium animate-pulse" aria-live="polite">Carregando...</p>
         </div>
