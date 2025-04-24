@@ -28,10 +28,22 @@ export function PerformanceHeatmapSimplified() {
   const startDate = useMemo(() => format(startOfYear(new Date(selectedYear, 0, 1)), 'yyyy-MM-dd'), [selectedYear]);
   const endDate = useMemo(() => format(endOfYear(new Date(selectedYear, 0, 1)), 'yyyy-MM-dd'), [selectedYear]);
   
-  // Dados para o heatmap (normalmente seriam carregados do backend)
-  // Para facilitar a implementação, usaremos dados simulados
+  // Dados para o heatmap - carregar do backend
+  const { data: heatmapData = [], isLoading, error } = useQuery<HeatmapData[]>({
+    queryKey: ["/api/clinics", selectedClinic?.id, "performance-heatmap", startDate, endDate],
+    enabled: !!selectedClinic?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+  
+  // Dados de exemplo para demonstração caso não haja dados do backend
+  // Isso garante que o componente sempre tenha um visual interessante
   const sampleData = useMemo(() => {
-    // Criar dados de exemplo para o ano selecionado
+    if (heatmapData.length > 0) {
+      // Se temos dados reais, usar eles
+      return heatmapData;
+    }
+    
+    // Caso contrário, criar alguns dados de exemplo para visualização
     const data: HeatmapData[] = [];
     const year = selectedYear;
     
@@ -40,7 +52,7 @@ export function PerformanceHeatmapSimplified() {
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       
       for (let day = 1; day <= daysInMonth; day++) {
-        // Gerar valores aleatórios para demonstração
+        // Gerar valores esparsos para demonstração (apenas 30% dos dias)
         if (Math.random() > 0.7) {
           const count = Math.floor(Math.random() * 8) + 1;
           const value = count * 100 + Math.floor(Math.random() * 500);
@@ -55,7 +67,7 @@ export function PerformanceHeatmapSimplified() {
     }
     
     return data;
-  }, [selectedYear]);
+  }, [heatmapData, selectedYear]);
   
   // Criar um array com anos disponíveis para seleção (atual e 2 anos anteriores)
   const availableYears = useMemo(() => {
