@@ -2,7 +2,8 @@ import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and, gte, lte } from "drizzle-orm";
+import { format } from "date-fns";
 import { registerCRMRoutes } from "./routes-crm";
 import { 
   insertUserSchema, 
@@ -24,6 +25,8 @@ import {
   leads,
   leadInteractions,
   leadAppointments,
+  appointments,
+  payments,
   PaymentStatus
 } from "@shared/schema";
 import { z } from "zod";
@@ -1048,6 +1051,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para obter dados de desempenho da clínica para o heatmap
+  app.get("/api/clinics/:clinicId/performance-heatmap", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      const { startDate, endDate } = req.query;
+      
+      // Validar parâmetros
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Data inicial e final são obrigatórias" });
+      }
+      
+      // Consultar dados de agendamentos por dia
+      const appointmentsQuery = await db.query.appointments.findMany({
+        where: and(
+          eq(appointments.clinicId, clinicId),
+          gte(appointments.startTime, new Date(startDate as string)),
+          lte(appointments.startTime, new Date(endDate as string))
+        )
+      });
+      
+      // Consultar dados de pagamentos por dia
+      const paymentsQuery = await db.query.payments.findMany({
+        where: and(
+          eq(payments.clinicId, clinicId),
+          gte(payments.createdAt, new Date(startDate as string)),
+          lte(payments.createdAt, new Date(endDate as string))
+        )
+      });
+      
+      // Agregar dados por dia
+      type DailyPerformance = {
+        date: string;
+        count: number;
+        value: number;
+      };
+      
+      const performanceMap = new Map<string, DailyPerformance>();
+      
+      // Processar agendamentos
+      appointmentsQuery.forEach(appointment => {
+        const dateStr = format(new Date(appointment.startTime), 'yyyy-MM-dd');
+        
+        if (!performanceMap.has(dateStr)) {
+          performanceMap.set(dateStr, { date: dateStr, count: 0, value: 0 });
+        }
+        
+        const dayData = performanceMap.get(dateStr)!;
+        dayData.count += 1;
+      });
+      
+      // Processar pagamentos
+      paymentsQuery.forEach(payment => {
+        const dateStr = format(new Date(payment.createdAt), 'yyyy-MM-dd');
+        
+        if (!performanceMap.has(dateStr)) {
+          performanceMap.set(dateStr, { date: dateStr, count: 0, value: 0 });
+        }
+        
+        const dayData = performanceMap.get(dateStr)!;
+        dayData.value += payment.amount;
+      });
+      
+      // Converter para array de resultados formatados para o heatmap
+      const heatmapData = Array.from(performanceMap.values()).map(day => ({
+        date: day.date,
+        count: day.count,
+        value: day.value
+      }));
+      
+      res.json(heatmapData);
+    } catch (error: any) {
+      console.error("Erro ao buscar dados de desempenho para heatmap:", error);
+      res.status(500).json({ message: error.message || "Erro ao buscar dados de desempenho" });
+    }
+  });
+
   // Registrar as rotas do CRM
   registerCRMRoutes(app, isAuthenticated);
 
