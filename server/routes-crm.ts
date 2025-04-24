@@ -1,7 +1,8 @@
-import { Request, Response, type Express } from "express";
+import { Request, Response, type Express, NextFunction } from "express";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { storage } from "./storage";
+import { requirePermission } from "./middleware";
 import { 
   insertLeadSchema,
   insertLeadInteractionSchema,
