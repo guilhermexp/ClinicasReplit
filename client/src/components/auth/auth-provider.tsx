@@ -87,7 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
   
   // Get current user com caching otimizado
-  const { data: userData, isLoading } = useQuery<{user: User}>({
+  const { 
+    data: userData, 
+    isLoading,
+    isError: isAuthError 
+  } = useQuery<{user: User}>({
     queryKey: ["/api/auth/me"],
     retry: false, // Don't retry auth requests
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -115,6 +119,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Set default selected clinic if not already set
   // Redirect behavior based on user's clinic association status
   useEffect(() => {
+    const currentPath = window.location.pathname;
+    
+    // Redirecionar para login se não estiver autenticado
+    if (isAuthError && currentPath !== "/login" && currentPath !== "/register") {
+      const redirectUrl = currentPath !== "/" ? currentPath : "/dashboard";
+      localStorage.setItem("redirectAfterLogin", redirectUrl);
+      navigate("/login");
+      return;
+    }
+    
     if (userData?.user) {
       if (clinics?.length > 0) {
         // Usuário já tem clínicas associadas
@@ -123,19 +137,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         
         // Se estiver na página de onboarding, redirecionar para o dashboard
-        const currentPath = window.location.pathname;
         if (currentPath === "/onboarding") {
           navigate("/dashboard");
         }
+        
+        // Se estiver na página de login, redirecionar para a página salva ou dashboard
+        if (currentPath === "/login" || currentPath === "/register") {
+          const savedRedirect = localStorage.getItem("redirectAfterLogin");
+          if (savedRedirect) {
+            localStorage.removeItem("redirectAfterLogin");
+            navigate(savedRedirect);
+          } else {
+            navigate("/dashboard");
+          }
+        }
       } else {
         // Usuário está logado mas não tem clínicas - redirecionar para onboarding
-        const currentPath = window.location.pathname;
         if (currentPath !== "/onboarding" && currentPath !== "/login" && currentPath !== "/register") {
           navigate("/onboarding");
         }
       }
     }
-  }, [clinics, selectedClinic, userData, navigate]);
+  }, [clinics, selectedClinic, userData, navigate, isAuthError]);
   
   // Login mutation
   const loginMutation = useMutation({

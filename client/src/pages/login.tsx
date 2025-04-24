@@ -18,10 +18,16 @@ export default function Login() {
   const [password, setPassword] = useState("adoado01");
   const [rememberMe, setRememberMe] = useState(true);
   
-  // Redirecionar para o dashboard se já estiver autenticado
+  // Redirecionar para o dashboard ou a página salva se já estiver autenticado
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/dashboard");
+      const savedRedirect = localStorage.getItem("redirectAfterLogin");
+      if (savedRedirect) {
+        localStorage.removeItem("redirectAfterLogin");
+        navigate(savedRedirect);
+      } else {
+        navigate("/dashboard");
+      }
     }
   }, [isAuthenticated, navigate]);
   
