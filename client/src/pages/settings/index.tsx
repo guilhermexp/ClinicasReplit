@@ -402,6 +402,474 @@ export default function Settings() {
           </Card>
         </TabsContent>
         
+        {/* Procedures Settings */}
+        <TabsContent value="procedures">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gerenciamento de Procedimentos</CardTitle>
+              <CardDescription>
+                Cadastre e gerencie os procedimentos oferecidos pela clínica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium">Procedimentos Cadastrados</h3>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Novo Procedimento
+                  </Button>
+                </div>
+                
+                <div className="border rounded-md overflow-hidden">
+                  <div className="bg-gray-50 p-3 flex items-center font-medium text-sm">
+                    <div className="w-1/3">Nome</div>
+                    <div className="w-1/6">Duração</div>
+                    <div className="w-1/4">Categoria</div>
+                    <div className="w-1/6">Valor</div>
+                    <div className="w-1/12 text-right">Ações</div>
+                  </div>
+                  <div className="divide-y">
+                    <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                      <div className="w-1/3 font-medium">Botox Facial</div>
+                      <div className="w-1/6">45 min</div>
+                      <div className="w-1/4">Estética Facial</div>
+                      <div className="w-1/6">R$ 450,00</div>
+                      <div className="w-1/12 flex justify-end">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                      <div className="w-1/3 font-medium">Preenchimento Labial</div>
+                      <div className="w-1/6">60 min</div>
+                      <div className="w-1/4">Estética Facial</div>
+                      <div className="w-1/6">R$ 800,00</div>
+                      <div className="w-1/12 flex justify-end">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                      <div className="w-1/3 font-medium">Limpeza de Pele</div>
+                      <div className="w-1/6">90 min</div>
+                      <div className="w-1/4">Estética Facial</div>
+                      <div className="w-1/6">R$ 180,00</div>
+                      <div className="w-1/12 flex justify-end">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Categorias de Procedimentos</h3>
+                <div className="flex flex-wrap gap-2">
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center">
+                    Estética Facial
+                    <button className="ml-2 text-primary/70 hover:text-primary">
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center">
+                    Estética Corporal
+                    <button className="ml-2 text-primary/70 hover:text-primary">
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center">
+                    Massoterapia
+                    <button className="ml-2 text-primary/70 hover:text-primary">
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <Button variant="outline" size="sm" className="rounded-full">
+                    <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Nova Categoria
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline">
+                Exportar Lista
+              </Button>
+              <Button>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        {/* Employees Settings */}
+        <TabsContent value="employees">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gerenciamento de Colaboradores</CardTitle>
+              <CardDescription>
+                Cadastre e gerencie informações dos colaboradores da clínica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium">Colaboradores Cadastrados</h3>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Novo Colaborador
+                  </Button>
+                </div>
+                
+                <div className="border rounded-md overflow-hidden">
+                  <div className="bg-gray-50 p-3 flex items-center font-medium text-sm">
+                    <div className="w-2/5">Nome</div>
+                    <div className="w-1/5">Cargo</div>
+                    <div className="w-1/5">Departamento</div>
+                    <div className="w-1/5 text-right">Ações</div>
+                  </div>
+                  <div className="divide-y">
+                    <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                      <div className="w-2/5 font-medium flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-purple-100 text-purple-600 mr-2 flex items-center justify-center font-medium">AM</div>
+                        Ana Mendes
+                      </div>
+                      <div className="w-1/5">Esteticista</div>
+                      <div className="w-1/5">Estética Facial</div>
+                      <div className="w-1/5 flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 10H3M16 2v8M8 2v8M1 10h22v9a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3v-9Z" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                      <div className="w-2/5 font-medium flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 mr-2 flex items-center justify-center font-medium">RS</div>
+                        Ricardo Santos
+                      </div>
+                      <div className="w-1/5">Massoterapeuta</div>
+                      <div className="w-1/5">Massoterapia</div>
+                      <div className="w-1/5 flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 10H3M16 2v8M8 2v8M1 10h22v9a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3v-9Z" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                      <div className="w-2/5 font-medium flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-pink-100 text-pink-600 mr-2 flex items-center justify-center font-medium">JL</div>
+                        Juliana Lima
+                      </div>
+                      <div className="w-1/5">Esteticista</div>
+                      <div className="w-1/5">Estética Corporal</div>
+                      <div className="w-1/5 flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600">
+                          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 10H3M16 2v8M8 2v8M1 10h22v9a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3v-9Z" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Departamentos</h3>
+                <div className="flex flex-wrap gap-2">
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center">
+                    Estética Facial
+                    <button className="ml-2 text-primary/70 hover:text-primary">
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center">
+                    Estética Corporal
+                    <button className="ml-2 text-primary/70 hover:text-primary">
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center">
+                    Massoterapia
+                    <button className="ml-2 text-primary/70 hover:text-primary">
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm flex items-center">
+                    Administração
+                    <button className="ml-2 text-primary/70 hover:text-primary">
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <Button variant="outline" size="sm" className="rounded-full">
+                    <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Novo Departamento
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline">
+                Relatório de Colaboradores
+              </Button>
+              <Button>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        {/* Inventory Settings */}
+        <TabsContent value="inventory">
+          <Card>
+            <CardHeader>
+              <CardTitle>Controle de Estoque</CardTitle>
+              <CardDescription>
+                Gerencie o estoque de produtos e insumos da clínica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Produtos em Estoque</h3>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-64">
+                    <svg className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <Input className="w-full pl-9" placeholder="Buscar produto..." />
+                  </div>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Adicionar Produto
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-gray-50 p-3 flex items-center font-medium text-sm">
+                  <div className="w-1/3">Produto</div>
+                  <div className="w-1/6">Categoria</div>
+                  <div className="w-1/6">Quantidade</div>
+                  <div className="w-1/6">Valor Unit.</div>
+                  <div className="w-1/6">Status</div>
+                  <div className="w-1/12 text-right">Ações</div>
+                </div>
+                <div className="divide-y">
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Ácido Hialurônico 10ml</div>
+                    <div className="w-1/6">Injetáveis</div>
+                    <div className="w-1/6">18 unidades</div>
+                    <div className="w-1/6">R$ 280,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Normal
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Luvas Descartáveis (caixa)</div>
+                    <div className="w-1/6">Descartáveis</div>
+                    <div className="w-1/6">5 unidades</div>
+                    <div className="w-1/6">R$ 32,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                        Baixo
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Creme Hidratante Corporal 1L</div>
+                    <div className="w-1/6">Cosméticos</div>
+                    <div className="w-1/6">12 unidades</div>
+                    <div className="w-1/6">R$ 75,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Normal
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Agulhas para Aplicação</div>
+                    <div className="w-1/6">Descartáveis</div>
+                    <div className="w-1/6">0 unidades</div>
+                    <div className="w-1/6">R$ 15,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                        Esgotado
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Produtos cadastrados</p>
+                        <h4 className="text-2xl font-bold">42</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
+                          <path d="M4 6v12c0 1.1.9 2 2 2h14v-4" />
+                          <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Produtos com estoque baixo</p>
+                        <h4 className="text-2xl font-bold">7</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-yellow-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Valor total em estoque</p>
+                        <h4 className="text-2xl font-bold">R$ 12.480</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="1" x2="12" y2="23" />
+                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline">
+                Relatório de Estoque
+              </Button>
+              <Button>
+                <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Solicitar Compra
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
         {/* Profile Settings */}
         <TabsContent value="profile">
           <Card>
@@ -495,6 +963,194 @@ export default function Settings() {
               <Button>
                 <Save className="mr-2 h-4 w-4" />
                 Salvar Alterações
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        {/* Inventory Settings */}
+        <TabsContent value="inventory">
+          <Card>
+            <CardHeader>
+              <CardTitle>Controle de Estoque</CardTitle>
+              <CardDescription>
+                Gerencie o estoque de produtos e insumos da clínica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Produtos em Estoque</h3>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-64">
+                    <svg className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <Input className="w-full pl-9" placeholder="Buscar produto..." />
+                  </div>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Adicionar Produto
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-gray-50 p-3 flex items-center font-medium text-sm">
+                  <div className="w-1/3">Produto</div>
+                  <div className="w-1/6">Categoria</div>
+                  <div className="w-1/6">Quantidade</div>
+                  <div className="w-1/6">Valor Unit.</div>
+                  <div className="w-1/6">Status</div>
+                  <div className="w-1/12 text-right">Ações</div>
+                </div>
+                <div className="divide-y">
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Ácido Hialurônico 10ml</div>
+                    <div className="w-1/6">Injetáveis</div>
+                    <div className="w-1/6">18 unidades</div>
+                    <div className="w-1/6">R$ 280,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Normal
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Luvas Descartáveis (caixa)</div>
+                    <div className="w-1/6">Descartáveis</div>
+                    <div className="w-1/6">5 unidades</div>
+                    <div className="w-1/6">R$ 32,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                        Baixo
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Creme Hidratante Corporal 1L</div>
+                    <div className="w-1/6">Cosméticos</div>
+                    <div className="w-1/6">12 unidades</div>
+                    <div className="w-1/6">R$ 75,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Normal
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Agulhas para Aplicação</div>
+                    <div className="w-1/6">Descartáveis</div>
+                    <div className="w-1/6">0 unidades</div>
+                    <div className="w-1/6">R$ 15,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                        Esgotado
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Produtos cadastrados</p>
+                        <h4 className="text-2xl font-bold">42</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
+                          <path d="M4 6v12c0 1.1.9 2 2 2h14v-4" />
+                          <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Produtos com estoque baixo</p>
+                        <h4 className="text-2xl font-bold">7</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-yellow-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Valor total em estoque</p>
+                        <h4 className="text-2xl font-bold">R$ 12.480</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="1" x2="12" y2="23" />
+                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline">
+                Relatório de Estoque
+              </Button>
+              <Button>
+                <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Solicitar Compra
               </Button>
             </CardFooter>
           </Card>
