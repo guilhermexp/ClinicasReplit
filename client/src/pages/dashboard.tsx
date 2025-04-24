@@ -281,7 +281,7 @@ export default function Dashboard() {
       </div>
       
       {/* Welcome Card */}
-      <Card variant="glass" className="mb-6 border-0 overflow-hidden shadow-lg floating">
+      <Card variant="glass" className="mb-6 border-0 overflow-hidden shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle gradient={true} className="text-2xl">Bem-vindo{user?.name ? `, ${user.name}` : ''}!</CardTitle>
           <CardDescription>

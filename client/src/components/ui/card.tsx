@@ -5,20 +5,17 @@ import { cn } from "@/lib/utils"
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Applies glassmorphism effect to the card */
   variant?: "default" | "glass";
-  /** Adds a subtle floating animation */
-  floating?: boolean;
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = "default", floating = false, ...props }, ref) => (
+  ({ className, variant = "default", ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
         "rounded-xl text-card-foreground shadow-md transition-all duration-300",
         {
           "border bg-card": variant === "default",
-          "glass-card backdrop-blur-[8px] border-0": variant === "glass",
-          "floating": floating
+          "glass-card backdrop-blur-[8px] border-0": variant === "glass"
         },
         className
       )}
