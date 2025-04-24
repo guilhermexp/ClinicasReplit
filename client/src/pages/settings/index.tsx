@@ -38,7 +38,10 @@ import {
   Smartphone, 
   Mail,
   Save,
-  Loader2
+  Loader2,
+  Scissors,
+  Users,
+  Package
 } from "lucide-react";
 
 export default function Settings() {
@@ -131,7 +134,7 @@ export default function Settings() {
       </div>
       
       <Tabs defaultValue="clinic">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex flex-wrap">
           <TabsTrigger value="clinic" className="flex items-center">
             <Building className="mr-2 h-4 w-4" />
             Clínica
@@ -139,6 +142,18 @@ export default function Settings() {
           <TabsTrigger value="profile" className="flex items-center">
             <User className="mr-2 h-4 w-4" />
             Perfil
+          </TabsTrigger>
+          <TabsTrigger value="procedures" className="flex items-center">
+            <Scissors className="mr-2 h-4 w-4" />
+            Procedimentos
+          </TabsTrigger>
+          <TabsTrigger value="employees" className="flex items-center">
+            <Users className="mr-2 h-4 w-4" />
+            Colaboradores
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="flex items-center">
+            <Package className="mr-2 h-4 w-4" />
+            Estoque
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center">
             <Bell className="mr-2 h-4 w-4" />
