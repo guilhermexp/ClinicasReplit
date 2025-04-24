@@ -44,17 +44,17 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: getQueryFn({ on401: "returnNull" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       // Aumentar o tempo de cache para melhorar performance
-      staleTime: 15 * 60 * 1000, // 15 minutos
-      retry: false,
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      retry: 1,
       // O parâmetro cacheTime foi renomeado para gcTime no React Query v5
-      gcTime: 30 * 60 * 1000, // 30 minutos
+      gcTime: 10 * 60 * 1000, // 10 minutos
     },
     mutations: {
-      retry: false,
+      retry: 1,
     },
   },
 });

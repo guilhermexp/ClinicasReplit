@@ -14,9 +14,9 @@ export default function Login() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState("guilherme-varela@hotmail.com");
+  const [password, setPassword] = useState("adoado01");
+  const [rememberMe, setRememberMe] = useState(true);
   
   // Redirecionar para o dashboard se já estiver autenticado
   useEffect(() => {

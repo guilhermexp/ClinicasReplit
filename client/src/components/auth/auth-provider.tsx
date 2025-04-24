@@ -92,6 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retry: false, // Don't retry auth requests
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
   
   // Get clinics for current user com caching otimizado
