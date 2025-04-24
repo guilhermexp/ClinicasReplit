@@ -209,4 +209,79 @@
   * {
     @apply transition-colors duration-200;
   }
+  
+  /* FullCalendar iOS-style customization */
+  .fc {
+    @apply font-sans;
+  }
+  
+  .fc .fc-toolbar-title {
+    @apply text-lg md:text-xl font-semibold gradient-text;
+  }
+  
+  .fc .fc-col-header-cell-cushion {
+    @apply font-medium;
+  }
+  
+  .fc .fc-timegrid-slot-label-cushion,
+  .fc .fc-timegrid-axis-cushion {
+    @apply text-xs text-muted-foreground;
+  }
+  
+  /* iOS style calendar headers */
+  .fc .fc-col-header {
+    @apply bg-background/50 backdrop-blur-md;
+  }
+  
+  .fc .fc-col-header-cell {
+    @apply py-3;
+  }
+  
+  /* iOS style events */
+  .fc .fc-event {
+    @apply rounded-md border-none shadow-sm overflow-hidden backdrop-blur-sm;
+    padding: 0.15rem 0.3rem;
+  }
+  
+  .fc .fc-event-main {
+    @apply px-0 py-0 text-xs;
+  }
+  
+  .fc .fc-event-time {
+    @apply font-normal opacity-90;
+  }
+  
+  .fc .fc-event-title {
+    @apply font-medium;
+  }
+  
+  /* iOS style timeline */
+  .fc .fc-timegrid-now-indicator-line {
+    @apply border-2 border-red-500 z-20;
+  }
+  
+  .fc .fc-timegrid-now-indicator-arrow {
+    @apply border-red-500;
+  }
+  
+  /* iOS style current day highlight */
+  .fc .fc-day-today {
+    @apply bg-primary/5 backdrop-blur-sm;
+  }
+  
+  /* iOS style time slots */
+  .fc .fc-timegrid-slot {
+    @apply border-muted;
+    height: 3em;
+  }
+  
+  /* Hover effects for interaction */
+  .fc .fc-day:hover {
+    @apply bg-primary/5;
+  }
+  
+  /* Animation for event dragging */
+  .fc .fc-event.fc-event-dragging {
+    @apply shadow-lg scale-105 z-50 opacity-80;
+  }
 }

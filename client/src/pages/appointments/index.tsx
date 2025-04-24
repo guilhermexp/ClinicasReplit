@@ -22,6 +22,7 @@ type Client = any;
 type Professional = any;
 type Service = any;
 import { CalendarView, DailyView } from "@/components/appointments/calendar-view";
+import { AdvancedCalendar } from "@/components/appointments/advanced-calendar";
 import { AppointmentForm } from "@/components/appointments/appointment-form";
 
 // Dialog para criar/editar agendamentos
@@ -62,6 +63,7 @@ export default function Appointments() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [calendarStyle, setCalendarStyle] = useState<"simple" | "ios">("ios");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
   
@@ -302,22 +304,64 @@ export default function Appointments() {
       </div>
 
       {viewMode === "calendar" ? (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <CalendarView
+        <div>
+          <div className="mb-4 p-2 bg-background/50 backdrop-blur-sm border border-border/30 rounded-full inline-flex items-center shadow-sm">
+            <div className="flex items-center space-x-2">
+              <span className={`text-sm font-medium ${calendarStyle === 'simple' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                Simples
+              </span>
+              
+              <label htmlFor="toggle-calendar-view" className="relative inline-block cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  id="toggle-calendar-view" 
+                  className="sr-only peer" 
+                  checked={calendarStyle === "ios"}
+                  onChange={(e) => setCalendarStyle(e.target.checked ? "ios" : "simple")}
+                />
+                <div className="w-11 h-6 bg-background border border-border/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-muted-foreground after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[hsl(var(--primary-start))] peer-checked:to-[hsl(var(--primary-end))]"></div>
+              </label>
+              
+              <span className={`text-sm font-medium ${calendarStyle === 'ios' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                iPhone
+              </span>
+            </div>
+          </div>
+          
+          {calendarStyle === "ios" ? (
+            <AdvancedCalendar
               appointments={appointments}
-              onDateSelect={setSelectedDate}
-              selectedDate={selectedDate}
+              clients={clients}
+              professionals={professionals}
+              services={services}
+              onAppointmentChange={(id, changes) => {
+                const appointment = appointments.find(a => a.id === id);
+                if (appointment) {
+                  updateAppointmentMutation.mutate({ ...appointment, ...changes });
+                }
+              }}
+              onAppointmentCreate={handleAppointmentSubmit}
               isLoading={isLoading}
             />
-          </div>
-          <div className="lg:col-span-2">
-            <DailyView
-              appointments={appointments}
-              selectedDate={selectedDate}
-              isLoading={isLoading}
-            />
-          </div>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-1">
+                <CalendarView
+                  appointments={appointments}
+                  onDateSelect={setSelectedDate}
+                  selectedDate={selectedDate}
+                  isLoading={isLoading}
+                />
+              </div>
+              <div className="lg:col-span-2">
+                <DailyView
+                  appointments={appointments}
+                  selectedDate={selectedDate}
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <Card variant="glass" className="border-0 overflow-hidden shadow-lg hover:shadow-xl transition-all">
