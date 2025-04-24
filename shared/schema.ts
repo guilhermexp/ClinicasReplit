@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, uniqueIndex, primaryKey, jsonb, date, decimal, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, uniqueIndex, primaryKey, jsonb, date, decimal, real, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { leadSourceEnum, leadStatusEnum, interactionTypeEnum, appointmentStatusEnum } from "./crm";
 
 // User Role enum
 export enum UserRole {
@@ -364,6 +365,47 @@ export const invitations = pgTable("invitations", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// CRM - Leads table
+export const leads = pgTable("leads", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  nome: text("nome").notNull(),
+  email: text("email"),
+  telefone: text("telefone").notNull(),
+  fonte: text("fonte").$type<string>().notNull(),
+  status: text("status").$type<string>().notNull().default("Novo"),
+  dataCadastro: timestamp("data_cadastro").notNull().defaultNow(),
+  ultimaAtualizacao: timestamp("ultima_atualizacao").notNull().defaultNow(),
+  procedimentoInteresse: text("procedimento_interesse"),
+  valorEstimado: integer("valor_estimado"),
+  responsavel: text("responsavel"),
+  observacoes: text("observacoes"),
+  createdBy: integer("created_by").references(() => users.id),
+});
+
+// CRM - Lead Interactions table
+export const leadInteractions = pgTable("lead_interactions", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").notNull().references(() => leads.id),
+  data: timestamp("data").notNull().defaultNow(),
+  tipo: text("tipo").$type<string>().notNull(),
+  descricao: text("descricao").notNull(),
+  responsavel: text("responsavel").notNull(),
+  createdBy: integer("created_by").references(() => users.id),
+});
+
+// CRM - Lead Appointments table
+export const leadAppointments = pgTable("lead_appointments", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").notNull().references(() => leads.id),
+  data: timestamp("data").notNull(),
+  horario: text("horario").notNull(),
+  procedimento: text("procedimento").notNull(),
+  status: text("status").$type<string>().notNull().default("Pendente"),
+  observacoes: text("observacoes"),
+  createdBy: integer("created_by").references(() => users.id),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, lastLogin: true, createdAt: true, updatedAt: true });
 export const insertClinicSchema = createInsertSchema(clinics).omit({ id: true, createdAt: true, updatedAt: true });
@@ -380,6 +422,9 @@ export const insertInventoryProductSchema = createInsertSchema(inventoryProducts
 export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaigns).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertInvitationSchema = createInsertSchema(invitations).omit({ id: true, createdAt: true });
+export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, dataCadastro: true, ultimaAtualizacao: true });
+export const insertLeadInteractionSchema = createInsertSchema(leadInteractions).omit({ id: true, data: true });
+export const insertLeadAppointmentSchema = createInsertSchema(leadAppointments).omit({ id: true });
 
 // Typescript types
 export type User = typeof users.$inferSelect;
@@ -426,3 +471,12 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type Invitation = typeof invitations.$inferSelect;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
+
+export type LeadInteraction = typeof leadInteractions.$inferSelect;
+export type InsertLeadInteraction = z.infer<typeof insertLeadInteractionSchema>;
+
+export type LeadAppointment = typeof leadAppointments.$inferSelect;
+export type InsertLeadAppointment = z.infer<typeof insertLeadAppointmentSchema>;

@@ -13,10 +13,16 @@ import {
   insertAppointmentSchema,
   insertInvitationSchema,
   insertPaymentSchema,
+  insertLeadSchema,
+  insertLeadInteractionSchema,
+  insertLeadAppointmentSchema,
   UserRole,
   ClinicRole,
   clinics,
   clinicUsers,
+  leads,
+  leadInteractions,
+  leadAppointments,
   PaymentStatus
 } from "@shared/schema";
 import { z } from "zod";
