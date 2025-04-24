@@ -11,12 +11,17 @@ import { useAuth } from "@/hooks/use-auth";
 // Importar o CSS base da biblioteca
 import "react-calendar-heatmap/dist/styles.css";
 
+// Tipos do react-calendar-heatmap
+interface TooltipDataAttrs {
+  'data-tip': string;
+}
+
 // Tipo de dado para o heatmap
-type HeatmapData = {
+interface HeatmapData {
   date: string;
   count: number;
   value: number;
-};
+}
 
 type HeatmapDisplayMode = 'appointments' | 'revenue';
 
@@ -42,39 +47,10 @@ export function PerformanceHeatmapSimplified() {
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
   
-  // Dados de exemplo para demonstração caso não haja dados do backend
-  // Isso garante que o componente sempre tenha um visual interessante
-  const sampleData = useMemo(() => {
-    if (heatmapData.length > 0) {
-      // Se temos dados reais, usar eles
-      return heatmapData;
-    }
-    
-    // Caso contrário, criar alguns dados de exemplo para visualização
-    const data: HeatmapData[] = [];
-    const year = selectedYear;
-    
-    // Adicionar alguns valores para mostrar o heatmap funcionando
-    for (let month = 0; month < 12; month++) {
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-        // Gerar valores esparsos para demonstração (apenas 30% dos dias)
-        if (Math.random() > 0.7) {
-          const count = Math.floor(Math.random() * 8) + 1;
-          const value = count * 100 + Math.floor(Math.random() * 500);
-          
-          data.push({
-            date: format(new Date(year, month, day), 'yyyy-MM-dd'),
-            count,
-            value
-          });
-        }
-      }
-    }
-    
-    return data;
-  }, [heatmapData, selectedYear]);
+  // Usamos apenas dados reais do backend
+  const dataToDisplay = useMemo(() => {
+    return heatmapData || [];
+  }, [heatmapData]);
   
   // Criar um array com anos disponíveis para seleção (atual e 2 anos anteriores)
   const availableYears = useMemo(() => {
@@ -104,7 +80,8 @@ export function PerformanceHeatmapSimplified() {
     return 'color-scale-4';
   };
   
-  const getTooltipDataAttrs = (value: any) => {
+  // Função para gerar os atributos de tooltip
+  const getTooltipDataAttrs: any = (value: any) => {
     if (!value || !value.date) {
       return { 'data-tip': '' };
     }
@@ -180,7 +157,7 @@ export function PerformanceHeatmapSimplified() {
             <ReactCalendarHeatmap
               startDate={startDate}
               endDate={endDate}
-              values={sampleData}
+              values={dataToDisplay}
               classForValue={getClassForValue}
               tooltipDataAttrs={getTooltipDataAttrs}
               showWeekdayLabels={true}
