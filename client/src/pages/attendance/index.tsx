@@ -749,7 +749,9 @@ export default function AttendancePage() {
             
             {clockActionMutation.isPending && (
               <div className="mt-2 text-center text-sm text-muted-foreground">
-                <Loader2 className="inline-block h-4 w-4 animate-spin mr-1" />
+                <svg className="inline-block h-4 w-4 animate-spin mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
                 Registrando ponto...
               </div>
             )}
