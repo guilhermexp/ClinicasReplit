@@ -15,6 +15,7 @@ import Clients from "@/pages/clients";
 import Appointments from "@/pages/appointments";
 import Financial from "@/pages/financial";
 import FinanceiroPage from "@/pages/financeiro";
+import AttendancePage from "@/pages/attendance";
 import CrmPage from "@/pages/crm";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
@@ -110,6 +111,14 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <FinanceiroPage />
+                </MainLayout>
+              </ProtectedRoute>
+            </Route>
+            
+            <Route path="/attendance">
+              <ProtectedRoute>
+                <MainLayout>
+                  <AttendancePage />
                 </MainLayout>
               </ProtectedRoute>
             </Route>
