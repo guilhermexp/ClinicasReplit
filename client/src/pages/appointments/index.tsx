@@ -418,9 +418,9 @@ export default function Appointments() {
           open={!!selectedAppointmentId} 
           onOpenChange={(open) => !open && setSelectedAppointmentId(null)}
         >
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] bg-background/95 backdrop-blur-md border border-border/50 shadow-xl">
             <DialogHeader>
-              <DialogTitle>Editar Agendamento</DialogTitle>
+              <DialogTitle className="gradient-text">Editar Agendamento</DialogTitle>
               <DialogDescription>
                 Atualize os dados do agendamento
               </DialogDescription>
@@ -451,31 +451,72 @@ function StatusDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Funções para obter a cor baseada no status
+  const getButtonStyle = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return "bg-blue-400/20 text-blue-700 border-blue-300/30 hover:bg-blue-400/30";
+      case 'confirmed':
+        return "bg-green-400/20 text-green-700 border-green-300/30 hover:bg-green-400/30";
+      case 'completed':
+        return "bg-indigo-400/20 text-indigo-700 border-indigo-300/30 hover:bg-indigo-400/30";
+      case 'cancelled':
+        return "bg-red-400/20 text-red-700 border-red-300/30 hover:bg-red-400/30";
+      case 'no_show':
+        return "bg-amber-400/20 text-amber-700 border-amber-300/30 hover:bg-amber-400/30";
+      default:
+        return "bg-secondary";
+    }
+  };
+
   return (
     <div className="relative">
       <Button
-        variant="secondary"
+        variant="outline"
         size="sm"
+        className={`border-primary/20 ${getButtonStyle(currentStatus)}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        Status
+        <span className="flex items-center gap-1">
+          Status
+          <div className={`w-2 h-2 rounded-full ${
+            currentStatus === 'scheduled' ? 'bg-blue-500' :
+            currentStatus === 'confirmed' ? 'bg-green-500' :
+            currentStatus === 'completed' ? 'bg-indigo-500' :
+            currentStatus === 'cancelled' ? 'bg-red-500' :
+            currentStatus === 'no_show' ? 'bg-amber-500' : 'bg-gray-500'
+          }`}></div>
+        </span>
       </Button>
       
       {isOpen && (
         <div 
-          className="absolute right-0 mt-1 w-40 bg-white shadow-lg rounded-md overflow-hidden z-10 border"
+          className="absolute right-0 mt-1 w-48 bg-background/95 backdrop-blur-md shadow-xl rounded-xl overflow-hidden z-10 border border-border/30"
           onBlur={() => setIsOpen(false)}
         >
           {Object.entries(appointmentStatusLabels).map(([status, label]) => (
             <button
               key={status}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${status === currentStatus ? 'bg-gray-50 font-medium' : ''}`}
+              className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                status === currentStatus 
+                  ? getButtonStyle(status) + ' font-medium' 
+                  : 'hover:bg-background/80'
+              }`}
               onClick={() => {
                 onStatusChange(status);
                 setIsOpen(false);
               }}
             >
-              {label}
+              <span className="flex items-center">
+                <div className={`w-2 h-2 rounded-full mr-2 ${
+                  status === 'scheduled' ? 'bg-blue-500' :
+                  status === 'confirmed' ? 'bg-green-500' :
+                  status === 'completed' ? 'bg-indigo-500' :
+                  status === 'cancelled' ? 'bg-red-500' :
+                  status === 'no_show' ? 'bg-amber-500' : 'bg-gray-500'
+                }`}></div>
+                {label}
+              </span>
             </button>
           ))}
         </div>
