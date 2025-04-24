@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
   
   // Get current user com caching otimizado
-  const { data: userData, isLoading } = useQuery({
+  const { data: userData, isLoading } = useQuery<{user: User}>({
     queryKey: ["/api/auth/me"],
     retry: false, // Don't retry auth requests
     staleTime: 5 * 60 * 1000, // 5 minutos
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   
   // Get clinics for current user com caching otimizado
-  const { data: clinics = [] } = useQuery({
+  const { data: clinics = [] } = useQuery<Clinic[]>({
     queryKey: ["/api/clinics"],
     enabled: !!userData?.user,
     staleTime: 5 * 60 * 1000, // 5 minutos 
