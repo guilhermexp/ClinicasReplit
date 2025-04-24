@@ -163,11 +163,11 @@ export function LeadDetailsDialog({
               </TabsTrigger>
               <TabsTrigger value="interacoes" className="flex-1">
                 <MessageCircle className="mr-2 h-4 w-4" />
-                Interações {interactions?.length > 0 && `(${interactions.length})`}
+                Interações {interactions && interactions.length > 0 && `(${interactions.length})`}
               </TabsTrigger>
               <TabsTrigger value="agendamentos" className="flex-1">
                 <CalendarDays className="mr-2 h-4 w-4" />
-                Agendamentos {appointments?.length > 0 && `(${appointments.length})`}
+                Agendamentos {appointments && appointments.length > 0 && `(${appointments.length})`}
               </TabsTrigger>
             </TabsList>
             
@@ -227,7 +227,7 @@ export function LeadDetailsDialog({
                           </div>
                         </div>
                         
-                        {lead.valorEstimado > 0 && (
+                        {lead.valorEstimado && lead.valorEstimado > 0 && (
                           <div className="flex items-start gap-3">
                             <span className="h-5 w-5 flex items-center justify-center text-muted-foreground font-bold">R$</span>
                             <div>
