@@ -42,7 +42,7 @@ export default function Login() {
         {/* Lado esquerdo - Hero section */}
         <div className="lg:w-1/2 bg-gradient-to-br from-primary-600 to-primary-800 p-8 text-white hidden lg:flex flex-col justify-center relative overflow-hidden">
           <div className="relative z-10 max-w-md mx-auto">
-            <h1 className="text-5xl font-bold mb-6 font-heading gradient-text">Gardenia</h1>
+            <h1 className="text-5xl font-bold mb-6 font-heading gradient-text">Clinicas.com</h1>
             <p className="text-xl mb-10 text-white/90">Sistema de Gestão para Clínicas de Estética</p>
             
             <div className="space-y-8">
@@ -89,7 +89,7 @@ export default function Login() {
         <div className="lg:w-1/2 p-6 md:p-10 flex flex-col justify-center">
           {/* Logo para mobile e tablet */}
           <div className="text-center mb-8 lg:hidden">
-            <h1 className="text-4xl font-bold gradient-text font-heading">Gardenia</h1>
+            <h1 className="text-4xl font-bold gradient-text font-heading">Clinicas.com</h1>
             <p className="text-muted-foreground mt-2">Sistema de Gestão para Clínicas de Estética</p>
           </div>
           
@@ -191,7 +191,7 @@ export default function Login() {
             <p className="font-medium mb-2 text-muted-foreground">Acesso de demonstração:</p>
             <div className="flex flex-col sm:flex-row justify-center sm:space-x-6 space-y-1 sm:space-y-0">
               <div>
-                <p className="font-mono text-primary-600">joao@gardenia.com</p>
+                <p className="font-mono text-primary-600">joao@clinicas.com</p>
               </div>
               <div>
                 <p className="font-mono text-primary-600">password</p>
