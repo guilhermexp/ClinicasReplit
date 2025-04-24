@@ -9,8 +9,9 @@ import { eq, and } from "drizzle-orm";
 async function main() {
   try {
     // Parâmetros
-    const userId = 999; // ID do usuário (guilherme-varela@hotmail.com)
+    const userId = 3; // ID do usuário (guilherme-varela@hotmail.com)
     const clinicId = 2; // ID da clínica (Gardenia Clinic)
+    const clinicUserId = 2; // ID da relação clinic_user
     
     // Verifica se o usuário existe e tem associação com a clínica
     const clinicUser = await storage.getClinicUser(clinicId, userId);
@@ -46,7 +47,7 @@ async function main() {
         .from(permissions)
         .where(
           and(
-            eq(permissions.clinicUserId, clinicUser.id),
+            eq(permissions.clinicUserId, clinicUserId),
             eq(permissions.module, perm.module),
             eq(permissions.action, perm.action)
           )
@@ -59,7 +60,7 @@ async function main() {
       
       // Adiciona a permissão
       await db.insert(permissions).values({
-        clinicUserId: clinicUser.id,
+        clinicUserId: clinicUserId,
         module: perm.module,
         action: perm.action
       });
