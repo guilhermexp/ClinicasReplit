@@ -11,7 +11,8 @@ export default function FinanceiroPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const params = useParams();
-  const clinicId = parseInt(params.clinicId);
+  const { selectedClinic } = useAuth();
+  const clinicId = parseInt(params.clinicId) || selectedClinic?.id || 0;
   const [activeTab, setActiveTab] = useState("pagamentos");
 
   // Verificar se a clínica existe
