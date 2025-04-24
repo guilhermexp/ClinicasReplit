@@ -46,39 +46,39 @@ export default function Login() {
             <p className="text-xl mb-10 text-white/90">Sistema de Gestão para Clínicas de Estética</p>
             
             <div className="space-y-8">
-              <div className="flex items-start space-x-4 backdrop-blur-sm bg-white/10 p-4 rounded-xl hover:bg-white/20 transition-colors">
+              <div className="flex items-start space-x-4 backdrop-blur-sm bg-primary-700 p-4 rounded-xl hover:bg-primary-800 transition-colors">
                 <div className="bg-white text-primary-600 p-2 rounded-full shadow-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Gestão completa de clientes</h3>
-                  <p className="text-white/80">Cadastro, histórico e acompanhamento</p>
+                  <h3 className="font-semibold text-lg text-white">Gestão completa de clientes</h3>
+                  <p className="text-white">Cadastro, histórico e acompanhamento</p>
                 </div>
               </div>
               
-              <div className="flex items-start space-x-4 backdrop-blur-sm bg-white/10 p-4 rounded-xl hover:bg-white/20 transition-colors">
+              <div className="flex items-start space-x-4 backdrop-blur-sm bg-primary-700 p-4 rounded-xl hover:bg-primary-800 transition-colors">
                 <div className="bg-white text-primary-600 p-2 rounded-full shadow-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Agendamento inteligente</h3>
-                  <p className="text-white/80">Controle total da agenda de profissionais</p>
+                  <h3 className="font-semibold text-lg text-white">Agendamento inteligente</h3>
+                  <p className="text-white">Controle total da agenda de profissionais</p>
                 </div>
               </div>
               
-              <div className="flex items-start space-x-4 backdrop-blur-sm bg-white/10 p-4 rounded-xl hover:bg-white/20 transition-colors">
+              <div className="flex items-start space-x-4 backdrop-blur-sm bg-primary-700 p-4 rounded-xl hover:bg-primary-800 transition-colors">
                 <div className="bg-white text-primary-600 p-2 rounded-full shadow-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Relatórios financeiros</h3>
-                  <p className="text-white/80">Acompanhe o desempenho do seu negócio</p>
+                  <h3 className="font-semibold text-lg text-white">Relatórios financeiros</h3>
+                  <p className="text-white">Acompanhe o desempenho do seu negócio</p>
                 </div>
               </div>
             </div>
@@ -186,18 +186,6 @@ export default function Login() {
               </CardFooter>
             </form>
           </Card>
-          
-          <div className="mt-8 text-center text-sm p-4 glass-card bg-background/80 backdrop-blur-sm rounded-xl max-w-md mx-auto">
-            <p className="font-medium mb-2 text-muted-foreground">Acesso de demonstração:</p>
-            <div className="flex flex-col sm:flex-row justify-center sm:space-x-6 space-y-1 sm:space-y-0">
-              <div>
-                <p className="font-mono text-primary-600">joao@clinicas.com</p>
-              </div>
-              <div>
-                <p className="font-mono text-primary-600">password</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
