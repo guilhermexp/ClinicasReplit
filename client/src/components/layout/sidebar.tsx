@@ -116,7 +116,7 @@ export function Sidebar({ className }: SidebarProps) {
         variant="outline" 
         size="icon" 
         onClick={toggleSidebar}
-        className="p-2 rounded-md bg-white shadow-md text-gray-700 hover:bg-gray-100"
+        className="p-2 rounded-full glass-card backdrop-blur-md shadow-lg border-white/20 text-foreground hover:shadow-xl transition-all"
         aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
         aria-expanded={isOpen}
         aria-controls="sidebar-menu"
@@ -183,8 +183,8 @@ export function Sidebar({ className }: SidebarProps) {
       
       <aside 
         className={cn(
-          "z-40 flex flex-col bg-white border-r border-gray-200 transition-all duration-300",
-          isMobile ? "fixed inset-y-0 left-0" : "h-screen",
+          "z-40 flex flex-col glass-card sidebar-gradient transition-all duration-300 shadow-xl",
+          isMobile ? "fixed inset-y-0 left-0 m-4 rounded-xl h-[calc(100%-2rem)]" : "h-screen ml-4 my-4 rounded-xl",
           isCollapsed && !isMobile ? "w-20" : "w-64",
           className
         )}
@@ -193,7 +193,7 @@ export function Sidebar({ className }: SidebarProps) {
         role="navigation"
       >
         {/* Logo e botão de colapso */}
-        <div className="flex items-center justify-between h-16 border-b border-gray-200 bg-primary-500 text-white px-4">
+        <div className="flex items-center justify-between h-16 border-b border-white/10 text-white px-4">
           {!isCollapsed && (
             <h1 className="text-2xl font-heading font-bold">Gardenia</h1>
           )}
@@ -206,7 +206,7 @@ export function Sidebar({ className }: SidebarProps) {
               variant="ghost" 
               size="icon" 
               onClick={toggleCollapse}
-              className="text-white hover:bg-primary-600 h-8 w-8"
+              className="text-white hover:bg-white/10 h-8 w-8"
               aria-label={isCollapsed ? "Expandir menu" : "Recolher menu"}
               aria-expanded={!isCollapsed}
             >
@@ -221,7 +221,7 @@ export function Sidebar({ className }: SidebarProps) {
         {/* User Info */}
         {user && (
           <div className={cn(
-            "flex border-b border-gray-200",
+            "flex border-b border-white/10",
             isCollapsed ? "flex-col items-center py-4" : "flex-col items-center pt-5 pb-4"
           )}>
             {isLoading ? (
@@ -229,22 +229,22 @@ export function Sidebar({ className }: SidebarProps) {
             ) : (
               <>
                 <Avatar className={cn(
-                  "relative mb-2",
+                  "relative mb-2 shadow-lg border-2 border-white/20",
                   isCollapsed ? "h-10 w-10" : "h-16 w-16"
                 )}>
                   <AvatarFallback className={getAvatarColor(user.name)}>
                     {getInitials(user.name)}
                   </AvatarFallback>
                   <div 
-                    className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
+                    className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white/60 shadow-md"
                     aria-label="Online"
                   ></div>
                 </Avatar>
                 
                 {!isCollapsed && (
                   <>
-                    <h2 className="text-lg font-semibold">{user.name}</h2>
-                    <p className="text-sm text-gray-500">{user.role}</p>
+                    <h2 className="text-lg font-semibold text-white">{user.name}</h2>
+                    <p className="text-sm text-white/70">{user.role}</p>
                     
                     {/* Clinic Selector */}
                     {clinics.length > 0 && (
@@ -254,12 +254,16 @@ export function Sidebar({ className }: SidebarProps) {
                           onValueChange={handleClinicChange}
                           aria-label="Selecionar clínica"
                         >
-                          <SelectTrigger className="text-sm bg-white">
+                          <SelectTrigger className="text-sm glass-card text-white border-white/20 bg-white/10 focus:ring-white/20">
                             <SelectValue placeholder="Selecione uma clínica" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="glass-card">
                             {clinics.map(clinic => (
-                              <SelectItem key={clinic.id} value={clinic.id.toString()}>
+                              <SelectItem 
+                                key={clinic.id} 
+                                value={clinic.id.toString()}
+                                className="focus:bg-white/10"
+                              >
                                 {clinic.name}
                               </SelectItem>
                             ))}
@@ -277,7 +281,7 @@ export function Sidebar({ className }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4" aria-label="Menu principal">
           <div className={cn(
-            "space-y-1",
+            "space-y-2",
             isCollapsed ? "px-2" : "px-3"
           )}>
             {isLoading ? (
@@ -293,28 +297,34 @@ export function Sidebar({ className }: SidebarProps) {
                       <button
                         onClick={() => navigate(item.path)}
                         className={cn(
-                          "flex items-center rounded-md w-full transition-colors",
-                          isCollapsed ? "justify-center p-3" : "px-3 py-2 text-left",
+                          "flex items-center rounded-xl w-full transition-all backdrop-blur-sm",
+                          isCollapsed ? "justify-center p-3" : "px-3 py-3 text-left",
                           item.isActive
-                            ? "bg-primary-50 text-primary-700"
-                            : "text-gray-700 hover:bg-gray-100"
+                            ? "bg-white/20 text-white shadow-md"
+                            : "text-white/80 hover:bg-white/10 hover:text-white hover:shadow-sm"
                         )}
                         aria-current={item.isActive ? "page" : undefined}
                         aria-label={item.name}
                       >
                         <span className={cn(
-                          item.isActive ? "text-primary-700" : "text-gray-500",
+                          "transition-transform",
+                          item.isActive ? "text-white scale-110" : "text-white/80",
                           isCollapsed ? "" : "mr-3"
                         )}>
                           {item.icon}
                         </span>
                         {!isCollapsed && (
-                          <span className="text-sm font-medium">{item.name}</span>
+                          <span className={cn(
+                            "text-sm font-medium",
+                            item.isActive && "font-semibold"
+                          )}>
+                            {item.name}
+                          </span>
                         )}
                       </button>
                     </TooltipTrigger>
                     {isCollapsed && (
-                      <TooltipContent side="right">
+                      <TooltipContent side="right" className="glass-card text-white border-white/20 bg-primary/80">
                         {item.name}
                       </TooltipContent>
                     )}
@@ -326,9 +336,9 @@ export function Sidebar({ className }: SidebarProps) {
         </nav>
 
         {/* Email info and Logout */}
-        <div className="border-t border-gray-200 p-4">
+        <div className="border-t border-white/10 p-4">
           {user && !isCollapsed && !isLoading && (
-            <div className="mb-3 text-xs text-gray-500 truncate">
+            <div className="mb-3 text-xs text-white/70 truncate">
               {user.email}
             </div>
           )}
@@ -341,7 +351,7 @@ export function Sidebar({ className }: SidebarProps) {
                   <button
                     onClick={handleLogout}
                     className={cn(
-                      "flex items-center text-sm text-gray-700 hover:text-primary-600",
+                      "flex items-center text-sm text-white/80 hover:text-white transition-colors",
                       isCollapsed ? "justify-center w-full" : "w-full"
                     )}
                     aria-label="Sair do sistema"
@@ -354,7 +364,7 @@ export function Sidebar({ className }: SidebarProps) {
                   </button>
                 </TooltipTrigger>
                 {isCollapsed && (
-                  <TooltipContent side="right">
+                  <TooltipContent side="right" className="glass-card text-white border-white/20 bg-primary/80">
                     Sair
                   </TooltipContent>
                 )}
