@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import {
   Card,
   CardContent,
@@ -11,8 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LeadStatus, LeadSource, InteractionType, AppointmentStatus } from "@shared/crm";
-import { Lead } from "@shared/schema";
+import { LeadStatus, LeadSource } from "@shared/crm";
+import { type Lead } from "@shared/schema";
 import { AddLeadDialog } from "@/components/crm/add-lead-dialog";
 import { LeadDetailsDialog } from "@/components/crm/lead-details-dialog";
 import {
@@ -26,7 +27,6 @@ import {
   CheckCircle,
   ArrowUpRight,
   Search,
-  Filter,
   Plus,
   Instagram,
   Facebook,
@@ -35,88 +35,6 @@ import {
   MessageSquare,
   ChevronDown
 } from "lucide-react";
-
-// Mock data até conectarmos com a API real
-const mockLeads = [
-  {
-    id: 1,
-    nome: "Maria Silva",
-    telefone: "(11) 98765-4321",
-    email: "maria@exemplo.com",
-    fonte: "Instagram" as LeadSource,
-    status: "Novo" as LeadStatus,
-    dataCadastro: new Date(2023, 2, 15),
-    ultimaAtualizacao: new Date(2023, 2, 15),
-    procedimentoInteresse: "Botox",
-    valorEstimado: 1500,
-    responsavel: "Dr. Ana"
-  },
-  {
-    id: 2,
-    nome: "João Santos",
-    telefone: "(11) 91234-5678",
-    email: "joao@exemplo.com",
-    fonte: "Facebook" as LeadSource,
-    status: "Em contato" as LeadStatus,
-    dataCadastro: new Date(2023, 2, 10),
-    ultimaAtualizacao: new Date(2023, 2, 12),
-    procedimentoInteresse: "Preenchimento Facial",
-    valorEstimado: 2000,
-    responsavel: "Dr. Ricardo"
-  },
-  {
-    id: 3,
-    nome: "Carla Oliveira",
-    telefone: "(11) 99876-5432",
-    email: "carla@exemplo.com",
-    fonte: "Site" as LeadSource,
-    status: "Agendado" as LeadStatus,
-    dataCadastro: new Date(2023, 2, 5),
-    ultimaAtualizacao: new Date(2023, 2, 14),
-    procedimentoInteresse: "Limpeza de Pele",
-    valorEstimado: 800,
-    responsavel: "Dr. Ana"
-  },
-  {
-    id: 4,
-    nome: "Pedro Almeida",
-    telefone: "(11) 97654-3210",
-    email: "pedro@exemplo.com",
-    fonte: "Indicação" as LeadSource,
-    status: "Convertido" as LeadStatus,
-    dataCadastro: new Date(2023, 1, 28),
-    ultimaAtualizacao: new Date(2023, 2, 10),
-    procedimentoInteresse: "Harmonização Facial",
-    valorEstimado: 3500,
-    responsavel: "Dr. Roberto"
-  },
-  {
-    id: 5,
-    nome: "Sofia Lima",
-    telefone: "(11) 94321-8765",
-    email: "sofia@exemplo.com",
-    fonte: "Google" as LeadSource,
-    status: "Perdido" as LeadStatus,
-    dataCadastro: new Date(2023, 1, 20),
-    ultimaAtualizacao: new Date(2023, 2, 5),
-    procedimentoInteresse: "Criolipólise",
-    valorEstimado: 2800,
-    responsavel: "Dr. Roberto"
-  },
-  {
-    id: 6,
-    nome: "Lucia Fernandes",
-    telefone: "(11) 92345-6789",
-    email: "lucia@exemplo.com",
-    fonte: "Instagram" as LeadSource,
-    status: "Novo" as LeadStatus,
-    dataCadastro: new Date(2023, 2, 17),
-    ultimaAtualizacao: new Date(2023, 2, 17),
-    procedimentoInteresse: "Microagulhamento",
-    valorEstimado: 1200,
-    responsavel: "Dr. Ricardo"
-  }
-];
 
 function CRMDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -170,8 +88,8 @@ function CRMDashboard() {
     enabled: !!activeClinic?.id
   });
 
-  // Filtrar leads quando os filtros mudarem
-  useEffect(() => {
+  // Filtrar leads baseado nos filtros
+  const filteredLeads = React.useMemo(() => {
     let result = [...leads];
     
     // Filtrar por status
@@ -194,7 +112,7 @@ function CRMDashboard() {
       );
     }
     
-    setFilteredLeads(result);
+    return result;
   }, [leads, statusFilter, sourceFilter, searchQuery]);
 
   // Contadores para o dashboard
@@ -221,7 +139,7 @@ function CRMDashboard() {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  const getSourceIcon = (source: string) => {
+  const getSourceIcon = (source: string): JSX.Element => {
     const icons: Record<string, JSX.Element> = {
       [LeadSource.INSTAGRAM]: <Instagram size={16} className="text-pink-500" />,
       [LeadSource.FACEBOOK]: <Facebook size={16} className="text-blue-600" />,
@@ -242,7 +160,10 @@ function CRMDashboard() {
     <div className="container p-6">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold gradient-text">CRM - Gestão de Leads</h1>
-        <Button className="gap-2">
+        <Button 
+          className="gap-2"
+          onClick={() => setAddLeadDialogOpen(true)}
+        >
           <Plus size={16} />
           Novo Lead
         </Button>
@@ -268,7 +189,7 @@ function CRMDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Novos Leads</p>
-                <h2 className="text-3xl font-bold">{getLeadsByStatus("Novo")}</h2>
+                <h2 className="text-3xl font-bold">{getLeadsByStatus(LeadStatus.NOVO)}</h2>
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
                 <UserPlus className="h-6 w-6 text-blue-600" />
@@ -282,7 +203,7 @@ function CRMDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Leads Convertidos</p>
-                <h2 className="text-3xl font-bold">{getLeadsByStatus("Convertido")}</h2>
+                <h2 className="text-3xl font-bold">{getLeadsByStatus(LeadStatus.CONVERTIDO)}</h2>
               </div>
               <div className="bg-green-100 p-3 rounded-full">
                 <CheckCircle className="h-6 w-6 text-green-600" />
@@ -298,7 +219,7 @@ function CRMDashboard() {
                 <p className="text-sm text-muted-foreground">Taxa de Conversão</p>
                 <h2 className="text-3xl font-bold">
                   {leads.length > 0 
-                    ? `${(getLeadsByStatus("Convertido") / leads.length * 100).toFixed(1)}%` 
+                    ? `${(getLeadsByStatus(LeadStatus.CONVERTIDO) / leads.length * 100).toFixed(1)}%` 
                     : "0%"}
                 </h2>
               </div>
@@ -323,23 +244,23 @@ function CRMDashboard() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span>Novo ({getLeadsByStatus("Novo")})</span>
+                  <span>Novo ({getLeadsByStatus(LeadStatus.NOVO)})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-                  <span>Em contato ({getLeadsByStatus("Em contato")})</span>
+                  <span>Em contato ({getLeadsByStatus(LeadStatus.EM_CONTATO)})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  <span>Agendado ({getLeadsByStatus("Agendado")})</span>
+                  <span>Agendado ({getLeadsByStatus(LeadStatus.AGENDADO)})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span>Convertido ({getLeadsByStatus("Convertido")})</span>
+                  <span>Convertido ({getLeadsByStatus(LeadStatus.CONVERTIDO)})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span>Perdido ({getLeadsByStatus("Perdido")})</span>
+                  <span>Perdido ({getLeadsByStatus(LeadStatus.PERDIDO)})</span>
                 </div>
               </div>
             </div>
@@ -356,7 +277,7 @@ function CRMDashboard() {
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(getLeadsBySource()).map(([source, count]) => (
                 <div key={source} className="flex items-center gap-2">
-                  {getSourceIcon(source as LeadSource)}
+                  {getSourceIcon(source)}
                   <span>
                     {source} ({count})
                   </span>
@@ -396,11 +317,11 @@ function CRMDashboard() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Todos">Todos os Status</SelectItem>
-                    <SelectItem value="Novo">Novo</SelectItem>
-                    <SelectItem value="Em contato">Em contato</SelectItem>
-                    <SelectItem value="Agendado">Agendado</SelectItem>
-                    <SelectItem value="Convertido">Convertido</SelectItem>
-                    <SelectItem value="Perdido">Perdido</SelectItem>
+                    <SelectItem value={LeadStatus.NOVO}>Novo</SelectItem>
+                    <SelectItem value={LeadStatus.EM_CONTATO}>Em contato</SelectItem>
+                    <SelectItem value={LeadStatus.AGENDADO}>Agendado</SelectItem>
+                    <SelectItem value={LeadStatus.CONVERTIDO}>Convertido</SelectItem>
+                    <SelectItem value={LeadStatus.PERDIDO}>Perdido</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -413,13 +334,13 @@ function CRMDashboard() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Todos">Todas as Origens</SelectItem>
-                    <SelectItem value="Instagram">Instagram</SelectItem>
-                    <SelectItem value="Facebook">Facebook</SelectItem>
-                    <SelectItem value="Site">Site</SelectItem>
-                    <SelectItem value="Indicação">Indicação</SelectItem>
-                    <SelectItem value="Google">Google</SelectItem>
-                    <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                    <SelectItem value="Outro">Outro</SelectItem>
+                    <SelectItem value={LeadSource.INSTAGRAM}>Instagram</SelectItem>
+                    <SelectItem value={LeadSource.FACEBOOK}>Facebook</SelectItem>
+                    <SelectItem value={LeadSource.SITE}>Site</SelectItem>
+                    <SelectItem value={LeadSource.INDICACAO}>Indicação</SelectItem>
+                    <SelectItem value={LeadSource.GOOGLE}>Google</SelectItem>
+                    <SelectItem value={LeadSource.WHATSAPP}>WhatsApp</SelectItem>
+                    <SelectItem value={LeadSource.OUTRO}>Outro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -443,7 +364,14 @@ function CRMDashboard() {
                 </thead>
                 <tbody>
                   {filteredLeads.map((lead) => (
-                    <tr key={lead.id} className="border-t hover:bg-muted/50">
+                    <tr 
+                      key={lead.id} 
+                      className="border-t hover:bg-muted/50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedLead(lead);
+                        setLeadDetailsDialogOpen(true);
+                      }}
+                    >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="bg-primary-100 p-2 rounded-full">
@@ -451,7 +379,7 @@ function CRMDashboard() {
                           </div>
                           <div>
                             <p className="font-medium">{lead.nome}</p>
-                            <p className="text-xs text-muted-foreground">{lead.email}</p>
+                            <p className="text-xs text-muted-foreground">{lead.email || '-'}</p>
                           </div>
                         </div>
                       </td>
@@ -474,7 +402,7 @@ function CRMDashboard() {
                       </td>
                       <td className="py-3 px-4">
                         <div>
-                          <p className="font-medium">{lead.procedimentoInteresse}</p>
+                          <p className="font-medium">{lead.procedimentoInteresse || '-'}</p>
                           <p className="text-xs text-muted-foreground">
                             {lead.valorEstimado ? `R$ ${lead.valorEstimado.toLocaleString('pt-BR')}` : '-'}
                           </p>
@@ -484,22 +412,63 @@ function CRMDashboard() {
                       <td className="py-3 px-4">
                         <div>
                           <p className="text-xs text-muted-foreground">Cadastro:</p>
-                          <p className="text-sm">{formatDate(lead.dataCadastro)}</p>
+                          <p className="text-sm">{formatDate(new Date(lead.dataCadastro))}</p>
                         </div>
                       </td>
                     </tr>
                   ))}
+                  
+                  {filteredLeads.length === 0 && (
+                    <tr className="border-t">
+                      <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                        {isLoadingLeads ? (
+                          <div className="flex justify-center items-center gap-2">
+                            <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                            <span>Carregando leads...</span>
+                          </div>
+                        ) : (
+                          <>
+                            {isLeadsError ? (
+                              <div>
+                                <p>Erro ao carregar leads.</p>
+                                <p className="text-sm">{String(leadsError)}</p>
+                              </div>
+                            ) : "Nenhum lead encontrado com os filtros selecionados."}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
-              {filteredLeads.length === 0 && (
-                <div className="py-8 text-center text-muted-foreground">
-                  Nenhum lead encontrado com os filtros aplicados.
-                </div>
-              )}
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      {activeClinic && (
+        <>
+          <AddLeadDialog 
+            open={addLeadDialogOpen} 
+            onOpenChange={setAddLeadDialogOpen} 
+            clinicId={activeClinic.id}
+            onSuccess={() => {
+              // Recarregar os leads
+              const queryKey = `/api/clinics/${activeClinic.id}/leads`;
+              queryClient.invalidateQueries({ queryKey: [queryKey] });
+            }}
+          />
+          
+          {selectedLead && (
+            <LeadDetailsDialog
+              open={leadDetailsDialogOpen}
+              onOpenChange={setLeadDetailsDialogOpen}
+              lead={selectedLead}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }
