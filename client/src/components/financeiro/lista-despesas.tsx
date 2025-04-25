@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, FileEdit, MoreHorizontal, Printer, Trash2 } from "lucide-react";
+import { CreditCard, Eye, FileEdit, MoreHorizontal, Trash2 } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -21,85 +21,91 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-interface ListaPagamentosProps {
+interface ListaDespesasProps {
   clinicId?: string;
   limit?: number;
   simplified?: boolean;
 }
 
-// Interface para os dados de pagamento
-interface Payment {
+// Interface para os dados de despesa
+interface Expense {
   id: number;
-  clientName: string;
-  serviceName: string;
+  description: string;
+  category: string;
   amount: number;
-  paymentMethod: string;
-  paymentDate: string;
+  dueDate: string;
+  paymentDate: string | null;
   status: string;
+  supplierName?: string;
 }
 
-const ListaPagamentos: React.FC<ListaPagamentosProps> = ({ clinicId, limit = 10, simplified = false }) => {
+const ListaDespesas: React.FC<ListaDespesasProps> = ({ clinicId, limit = 10, simplified = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Query para buscar os pagamentos da clínica
+  // Query para buscar as despesas da clínica
   const { data, isLoading, error } = useQuery({
-    queryKey: ["/api/clinics", clinicId, "financial", "payments", { page: currentPage, limit }],
+    queryKey: ["/api/clinics", clinicId, "financial", "expenses", { page: currentPage, limit }],
     queryFn: async () => {
-      const res = await fetch(`/api/clinics/${clinicId}/financial/payments?page=${currentPage}&limit=${limit}`);
+      const res = await fetch(`/api/clinics/${clinicId}/financial/expenses?page=${currentPage}&limit=${limit}`);
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Erro ao carregar pagamentos");
+        throw new Error(errorData.message || "Erro ao carregar despesas");
       }
       return res.json();
     },
     enabled: !!clinicId,
     // Dados simulados para desenvolvimento
     placeholderData: {
-      payments: [
+      expenses: [
         {
           id: 1,
-          clientName: "Ana Silva",
-          serviceName: "Limpeza de Pele",
-          amount: 120.00,
-          paymentMethod: "credit_card",
-          paymentDate: "2025-04-22T14:30:00Z",
-          status: "paid"
+          description: "Aluguel da clínica",
+          category: "rent",
+          amount: 3500.00,
+          dueDate: "2025-04-30T00:00:00Z",
+          paymentDate: null,
+          status: "pending",
+          supplierName: "Imobiliária Confiança"
         },
         {
           id: 2,
-          clientName: "Carlos Oliveira",
-          serviceName: "Massagem Relaxante",
-          amount: 180.00,
-          paymentMethod: "pix",
-          paymentDate: "2025-04-21T10:15:00Z",
-          status: "paid"
+          description: "Materiais descartáveis",
+          category: "supplies",
+          amount: 850.00,
+          dueDate: "2025-04-18T00:00:00Z",
+          paymentDate: "2025-04-18T14:35:00Z",
+          status: "paid",
+          supplierName: "Medical Supplies LTDA"
         },
         {
           id: 3,
-          clientName: "Mariana Costa",
-          serviceName: "Aplicação de Botox",
-          amount: 850.00,
-          paymentMethod: "credit_card",
-          paymentDate: "2025-04-20T16:45:00Z",
-          status: "paid"
+          description: "Conta de energia elétrica",
+          category: "utilities",
+          amount: 780.00,
+          dueDate: "2025-04-15T00:00:00Z",
+          paymentDate: "2025-04-15T10:20:00Z",
+          status: "paid",
+          supplierName: "Companhia Elétrica"
         },
         {
           id: 4,
-          clientName: "Pedro Santos",
-          serviceName: "Depilação a Laser",
-          amount: 350.00,
-          paymentMethod: "pending",
+          description: "Salários dos funcionários",
+          category: "salary",
+          amount: 12000.00,
+          dueDate: "2025-05-05T00:00:00Z",
           paymentDate: null,
-          status: "pending"
+          status: "scheduled",
+          supplierName: ""
         },
         {
           id: 5,
-          clientName: "Julia Mendes",
-          serviceName: "Drenagem Linfática",
-          amount: 220.00,
-          paymentMethod: "bank_transfer",
-          paymentDate: "2025-04-18T11:30:00Z",
-          status: "paid"
+          description: "Manutenção de equipamentos",
+          category: "maintenance",
+          amount: 650.00,
+          dueDate: "2025-04-28T00:00:00Z",
+          paymentDate: null,
+          status: "pending",
+          supplierName: "TechFix Equipamentos"
         }
       ],
       total: 5,
@@ -118,22 +124,28 @@ const ListaPagamentos: React.FC<ListaPagamentosProps> = ({ clinicId, limit = 10,
 
   // Formatação de data
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Pendente";
-    return format(new Date(dateString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    if (!dateString) return "Não pago";
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
   };
 
-  // Mapear métodos de pagamento para nomes legíveis
-  const getPaymentMethodName = (method: string) => {
-    const methods: Record<string, string> = {
-      'credit_card': 'Cartão de Crédito',
-      'debit_card': 'Cartão de Débito',
-      'cash': 'Dinheiro',
-      'pix': 'PIX',
-      'bank_transfer': 'Transferência',
-      'boleto': 'Boleto',
-      'pending': 'Pendente'
+  // Mapear categorias para nomes legíveis
+  const getCategoryName = (category: string) => {
+    const categories: Record<string, string> = {
+      'rent': 'Aluguel',
+      'utilities': 'Serviços públicos',
+      'salary': 'Salários',
+      'marketing': 'Marketing',
+      'supplies': 'Suprimentos',
+      'equipment': 'Equipamentos',
+      'maintenance': 'Manutenção',
+      'taxes': 'Impostos',
+      'insurance': 'Seguros',
+      'software': 'Software',
+      'training': 'Treinamento',
+      'travel': 'Viagens',
+      'other': 'Outros'
     };
-    return methods[method] || method;
+    return categories[category] || category;
   };
 
   // Mapear status para badges
@@ -143,15 +155,21 @@ const ListaPagamentos: React.FC<ListaPagamentosProps> = ({ clinicId, limit = 10,
         return <Badge className="bg-green-100 text-green-800 border-green-200">Pago</Badge>;
       case 'pending':
         return <Badge variant="outline">Pendente</Badge>;
-      case 'refunded':
-        return <Badge variant="destructive">Reembolsado</Badge>;
-      case 'failed':
-        return <Badge variant="destructive">Falhou</Badge>;
-      case 'partial':
-        return <Badge className="bg-amber-100 text-amber-800 border-amber-200">Parcial</Badge>;
+      case 'scheduled':
+        return <Badge variant="secondary">Agendado</Badge>;
+      case 'recurring':
+        return <Badge variant="default">Recorrente</Badge>;
+      case 'cancelled':
+        return <Badge variant="destructive">Cancelado</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
+  };
+
+  // Função para pagar uma despesa
+  const handlePayExpense = (expenseId: number) => {
+    console.log(`Pagar despesa ${expenseId}`);
+    // Implementar lógica para pagar despesa
   };
 
   if (isLoading) {
@@ -166,7 +184,7 @@ const ListaPagamentos: React.FC<ListaPagamentosProps> = ({ clinicId, limit = 10,
   if (error) {
     return (
       <div className="text-red-500 p-4 text-center">
-        Erro ao carregar pagamentos. Por favor, tente novamente.
+        Erro ao carregar despesas. Por favor, tente novamente.
       </div>
     );
   }
@@ -177,32 +195,34 @@ const ListaPagamentos: React.FC<ListaPagamentosProps> = ({ clinicId, limit = 10,
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Cliente / Serviço</TableHead>
+              <TableHead>Descrição / Categoria</TableHead>
               <TableHead>Valor</TableHead>
-              {!simplified && <TableHead>Método</TableHead>}
-              {!simplified && <TableHead>Data</TableHead>}
+              {!simplified && <TableHead>Fornecedor</TableHead>}
+              <TableHead>Vencimento</TableHead>
+              {!simplified && <TableHead>Pagamento</TableHead>}
               <TableHead>Status</TableHead>
               {!simplified && <TableHead className="w-[60px]"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.payments.length === 0 ? (
+            {data.expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={simplified ? 3 : 6} className="text-center text-muted-foreground h-24">
-                  Nenhum pagamento encontrado
+                <TableCell colSpan={simplified ? 4 : 7} className="text-center text-muted-foreground h-24">
+                  Nenhuma despesa encontrada
                 </TableCell>
               </TableRow>
             ) : (
-              data.payments.map((payment: Payment) => (
-                <TableRow key={payment.id}>
+              data.expenses.map((expense: Expense) => (
+                <TableRow key={expense.id}>
                   <TableCell>
-                    <div className="font-medium">{payment.clientName}</div>
-                    <div className="text-sm text-muted-foreground">{payment.serviceName}</div>
+                    <div className="font-medium">{expense.description}</div>
+                    <div className="text-sm text-muted-foreground">{getCategoryName(expense.category)}</div>
                   </TableCell>
-                  <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                  {!simplified && <TableCell>{getPaymentMethodName(payment.paymentMethod)}</TableCell>}
-                  {!simplified && <TableCell>{formatDate(payment.paymentDate)}</TableCell>}
-                  <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                  <TableCell>{formatCurrency(expense.amount)}</TableCell>
+                  {!simplified && <TableCell>{expense.supplierName || "-"}</TableCell>}
+                  <TableCell>{formatDate(expense.dueDate)}</TableCell>
+                  {!simplified && <TableCell>{expense.paymentDate ? formatDate(expense.paymentDate) : "-"}</TableCell>}
+                  <TableCell>{getStatusBadge(expense.status)}</TableCell>
                   {!simplified && (
                     <TableCell>
                       <DropdownMenu>
@@ -219,9 +239,11 @@ const ListaPagamentos: React.FC<ListaPagamentosProps> = ({ clinicId, limit = 10,
                           <DropdownMenuItem>
                             <FileEdit className="mr-2 h-4 w-4" /> Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Printer className="mr-2 h-4 w-4" /> Imprimir recibo
-                          </DropdownMenuItem>
+                          {expense.status === 'pending' && (
+                            <DropdownMenuItem onClick={() => handlePayExpense(expense.id)}>
+                              <CreditCard className="mr-2 h-4 w-4" /> Registrar pagamento
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem className="text-red-600">
                             <Trash2 className="mr-2 h-4 w-4" /> Excluir
                           </DropdownMenuItem>
@@ -263,4 +285,4 @@ const ListaPagamentos: React.FC<ListaPagamentosProps> = ({ clinicId, limit = 10,
   );
 };
 
-export default ListaPagamentos;
+export default ListaDespesas;

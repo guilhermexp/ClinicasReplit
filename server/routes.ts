@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { registerCRMRoutes } from "./routes-crm";
 import { registerInventoryRoutes } from "./routes-inventory";
 import { registerProfessionalsRoutes } from "./routes-professionals";
+import { registerFinancialRoutes } from "./routes-financial";
 import { 
   insertUserSchema, 
   insertClinicSchema,
@@ -1435,6 +1436,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Registrar as rotas de profissionais
   registerProfessionalsRoutes(app, isAuthenticated);
+  
+  // Registrar as rotas do módulo financeiro
+  registerFinancialRoutes(app, isAuthenticated);
 
   // Rotas do módulo de segurança
 
