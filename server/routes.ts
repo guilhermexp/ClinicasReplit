@@ -620,8 +620,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Buscando usuário pelo email:", userEmail);
       
       // Buscar no banco diretamente para evitar problemas de ID
+      // Selecionar apenas as colunas que existem na tabela
       const [userDetails] = await db
-        .select()
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role
+        })
         .from(users)
         .where(eq(users.email, userEmail));
       
