@@ -29,6 +29,7 @@ import {
   ClinicRole,
   clinics,
   clinicUsers,
+  clients,
   leads,
   leadInteractions,
   leadAppointments,
@@ -38,7 +39,8 @@ import {
   userDevices,
   activityLogs,
   userTwoFactorAuth,
-  users
+  users,
+  professionals
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
