@@ -5,6 +5,7 @@ import { db, pool } from "./db";
 import { eq, inArray, and, gte, lte } from "drizzle-orm";
 import { format } from "date-fns";
 import { registerCRMRoutes } from "./routes-crm";
+import { registerInventoryRoutes } from "./routes-inventory";
 import { 
   insertUserSchema, 
   insertClinicSchema,
@@ -1148,6 +1149,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Registrar as rotas do CRM
   registerCRMRoutes(app, isAuthenticated);
+
+  // Registrar as rotas de inventário
+  registerInventoryRoutes(app, isAuthenticated);
 
   // Create HTTP server
   const httpServer = createServer(app);

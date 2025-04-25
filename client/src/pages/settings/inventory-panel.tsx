@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardHeader,
@@ -10,9 +10,35 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Save } from "lucide-react";
+import { Save, Package, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { InventoryProduct } from "@shared/schema";
 
 export function InventoryPanel() {
+  const { selectedClinic } = useAuth();
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Fetch inventory data
+  const { 
+    data: inventoryProducts = [], 
+    isLoading,
+    error
+  } = useQuery<InventoryProduct[]>({
+    queryKey: ["/api/clinics", selectedClinic?.id, "inventory"],
+    queryFn: async () => {
+      if (!selectedClinic?.id) return [];
+      const res = await apiRequest(
+        "GET", 
+        `/api/clinics/${selectedClinic.id}/inventory`
+      );
+      return res.json();
+    },
+    enabled: !!selectedClinic?.id
+  });
   return (
     <Card>
       <CardHeader>
@@ -50,160 +76,61 @@ export function InventoryPanel() {
             <div className="w-1/6">Status</div>
             <div className="w-1/12 text-right">Ações</div>
           </div>
-          <div className="divide-y">
-            <div className="p-3 flex items-center text-sm hover:bg-gray-50">
-              <div className="w-1/3 font-medium">Agulha Botox - SOLM</div>
-              <div className="w-1/6">Injetáveis</div>
-              <div className="w-1/6">64</div>
-              <div className="w-1/6">UN</div>
-              <div className="w-1/6">
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                  Normal
-                </span>
-              </div>
-              <div className="w-1/12 flex justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Button>
-              </div>
+          
+          {isLoading ? (
+            <div className="p-6 flex justify-center items-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Carregando produtos...</span>
             </div>
-            <div className="p-3 flex items-center text-sm hover:bg-gray-50">
-              <div className="w-1/3 font-medium">Biogelis - Preenchedor</div>
-              <div className="w-1/6">Preenchedores</div>
-              <div className="w-1/6">11</div>
-              <div className="w-1/6">CX</div>
-              <div className="w-1/6">
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                  Normal
-                </span>
-              </div>
-              <div className="w-1/12 flex justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Button>
-              </div>
+          ) : error ? (
+            <div className="p-6 text-center text-red-500">
+              <p>Erro ao carregar produtos. Por favor, tente novamente.</p>
             </div>
-            <div className="p-3 flex items-center text-sm hover:bg-gray-50">
-              <div className="w-1/3 font-medium">Intramuscular PHD</div>
-              <div className="w-1/6">Injetáveis</div>
-              <div className="w-1/6">38</div>
-              <div className="w-1/6">UN</div>
-              <div className="w-1/6">
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                  Normal
-                </span>
-              </div>
-              <div className="w-1/12 flex justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Button>
-              </div>
+          ) : inventoryProducts.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              <Package className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+              <p>Nenhum produto encontrado no estoque.</p>
+              <p className="text-sm">Clique em "Adicionar Produto" para começar.</p>
             </div>
-            <div className="p-3 flex items-center text-sm hover:bg-gray-50">
-              <div className="w-1/3 font-medium">Intramuscular Victalab</div>
-              <div className="w-1/6">Injetáveis</div>
-              <div className="w-1/6">21</div>
-              <div className="w-1/6">UN</div>
-              <div className="w-1/6">
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                  Normal
-                </span>
-              </div>
-              <div className="w-1/12 flex justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Button>
-              </div>
+          ) : (
+            <div className="divide-y">
+              {inventoryProducts.map(product => {
+                // Determine status display
+                let statusColor = "bg-green-100 text-green-800"; // Default: normal
+                let statusText = "Normal";
+                
+                if (product.status === "out_of_stock") {
+                  statusColor = "bg-red-100 text-red-800";
+                  statusText = "Esgotado";
+                } else if (product.status === "low_stock") {
+                  statusColor = "bg-yellow-100 text-yellow-800";
+                  statusText = "Baixo";
+                }
+                
+                return (
+                  <div key={product.id} className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">{product.name}</div>
+                    <div className="w-1/6">{product.category || "N/A"}</div>
+                    <div className="w-1/6">{product.quantity}</div>
+                    <div className="w-1/6">{product.unit || "UN"}</div>
+                    <div className="w-1/6">
+                      <span className={`inline-flex items-center rounded-full ${statusColor} px-2.5 py-0.5 text-xs font-medium`}>
+                        {statusText}
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="p-3 flex items-center text-sm hover:bg-gray-50">
-              <div className="w-1/3 font-medium">Juvederm - Preenchedor Labial</div>
-              <div className="w-1/6">Preenchedores</div>
-              <div className="w-1/6">4</div>
-              <div className="w-1/6">CX</div>
-              <div className="w-1/6">
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                  Normal
-                </span>
-              </div>
-              <div className="w-1/12 flex justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 flex items-center text-sm hover:bg-gray-50">
-              <div className="w-1/3 font-medium">Agulha Cinza - Intra</div>
-              <div className="w-1/6">Injetáveis</div>
-              <div className="w-1/6">3</div>
-              <div className="w-1/6">CX</div>
-              <div className="w-1/6">
-                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                  Baixo
-                </span>
-              </div>
-              <div className="w-1/12 flex justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 flex items-center text-sm hover:bg-gray-50">
-              <div className="w-1/3 font-medium">Água Termal</div>
-              <div className="w-1/6">Cosméticos</div>
-              <div className="w-1/6">0</div>
-              <div className="w-1/6">UN</div>
-              <div className="w-1/6">
-                <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                  Esgotado
-                </span>
-              </div>
-              <div className="w-1/12 flex justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Button>
-              </div>
-            </div>
-            <div className="p-3 flex items-center text-sm hover:bg-gray-50">
-              <div className="w-1/3 font-medium">Agulha Verde</div>
-              <div className="w-1/6">Injetáveis</div>
-              <div className="w-1/6">0</div>
-              <div className="w-1/6">UN</div>
-              <div className="w-1/6">
-                <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                  Esgotado
-                </span>
-              </div>
-              <div className="w-1/12 flex justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </Button>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
         
         <Separator />
