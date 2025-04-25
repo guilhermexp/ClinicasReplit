@@ -124,11 +124,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 isSearchOpen ? "w-full md:w-64" : "w-0 md:w-64"
               )}>
                 <form onSubmit={handleSearch} className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <div className="absolute left-2 top-[50%] transform -translate-y-1/2 p-1 rounded-md bg-gradient-to-br from-primary-400/10 to-primary-600/10">
+                    <Search className="h-3.5 w-3.5 text-primary-500" aria-hidden="true" />
+                  </div>
                   <Input 
                     type="search" 
                     placeholder="Pesquisar..." 
-                    className="pl-8 h-9 md:h-10 w-full bg-transparent border-muted/50 focus:border-primary/50 focus:ring-primary/25"
+                    className="pl-10 h-9 md:h-10 w-full bg-white/5 border-white/10 focus:border-primary-400/30 focus:ring-primary-400/20 rounded-lg shadow-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     aria-label="Pesquisar no sistema"
@@ -177,38 +179,49 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="rounded-full h-9 w-9 md:h-10 md:w-10 hover:bg-transparent hover:shadow-md transition-shadow"
+                      className="rounded-full h-9 w-9 md:h-10 md:w-10 hover:bg-transparent hover:shadow-lg transition-all p-0 border-2 border-primary-200/30"
                       aria-label="Menu do usuário"
                     >
-                      <Avatar className="h-9 w-9 md:h-10 md:w-10 shadow-md border-2 border-white/50">
-                        <AvatarFallback className={getAvatarColor(user.name)}>
+                      <Avatar className="h-9 w-9 md:h-10 md:w-10 shadow-md border-[3px] border-white/30 bg-gradient-to-br from-primary-100/80 to-primary-600/50">
+                        <AvatarFallback className="bg-gradient-to-br from-primary-600 to-primary-400 text-white font-medium">
                           {getInitials(user.name)}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 glass-card">
+                  <DropdownMenuContent align="end" className="w-64 glass-card backdrop-blur-md border border-white/10 shadow-xl p-1">
                     <DropdownMenuLabel>
-                      <div className="flex flex-col space-y-1">
-                        <p className="font-medium gradient-text">{user.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      <div className="flex items-center space-x-3 p-1.5">
+                        <Avatar className="h-12 w-12 shadow-md border-2 border-white/30 bg-gradient-to-br from-primary-100/80 to-primary-600/50">
+                          <AvatarFallback className="bg-gradient-to-br from-primary-600 to-primary-400 text-white font-medium">
+                            {getInitials(user.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <p className="font-semibold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-border/30" />
+                    <DropdownMenuSeparator className="bg-border/30 my-1" />
                     <DropdownMenuItem 
                       onClick={() => navigate('/settings')}
-                      className="hover:bg-primary/10 focus:bg-primary/10 transition-colors"
+                      className="hover:bg-primary/10 focus:bg-primary/10 transition-colors rounded-md my-0.5 p-2.5"
                     >
-                      <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
+                      <div className="mr-3 p-1.5 rounded-md bg-gradient-to-br from-primary-400/10 to-primary-600/10">
+                        <Settings className="h-4 w-4" aria-hidden="true" />
+                      </div>
                       <span>Meu perfil</span>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-border/30" />
+                    <DropdownMenuSeparator className="bg-border/30 my-1" />
                     <DropdownMenuItem 
                       onClick={() => logout()}
-                      className="hover:bg-destructive/10 focus:bg-destructive/10 transition-colors"
+                      className="hover:bg-destructive/10 focus:bg-destructive/10 transition-colors rounded-md my-0.5 p-2.5"
                     >
-                      <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
-                      <span>Sair</span>
+                      <div className="mr-3 p-1.5 rounded-md bg-gradient-to-br from-destructive/10 to-destructive/5">
+                        <LogOut className="h-4 w-4 text-destructive/80" aria-hidden="true" />
+                      </div>
+                      <span className="text-destructive/80">Sair</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
