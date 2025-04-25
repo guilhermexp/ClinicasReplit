@@ -843,10 +843,10 @@ export default function Settings() {
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground">
-                                {device.ipLocation || 'Localização desconhecida'} · {device.browser} · {device.operatingSystem}
+                                {device.lastIp || 'Localização desconhecida'} · {device.browser || 'Navegador desconhecido'} · {device.operatingSystem || 'Sistema desconhecido'}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                Último acesso: {device.lastActiveAt ? format(new Date(device.lastActiveAt), 'dd/MM/yyyy, HH:mm', { locale: ptBR }) : 'Desconhecido'}
+                                Último acesso: {device.lastActive ? format(new Date(device.lastActive), 'dd/MM/yyyy, HH:mm', { locale: ptBR }) : 'Desconhecido'}
                               </p>
                             </div>
                           </div>
