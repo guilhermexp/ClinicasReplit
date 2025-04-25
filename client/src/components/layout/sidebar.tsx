@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { usePermissions } from "@/hooks/use-permissions";
+import { usePermissionsContext2 } from "@/hooks/use-permissions-context";
 import { getInitials, getAvatarColor } from "@/lib/auth-utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,7 +47,7 @@ const NavItemSkeleton = () => (
 
 export function Sidebar({ className }: SidebarProps) {
   const { user, logout, clinics, selectedClinic, setSelectedClinic } = useAuth();
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissionsContext2();
   const [location, navigate] = useLocation();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(!isMobile);
