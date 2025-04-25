@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { usePermissions } from "@/hooks/use-permissions";
+import { usePermissionsContext2 } from "@/hooks/use-permissions-context";
 import { Client, AppointmentStatus } from "@shared/schema";
 import { 
   Loader2, 
@@ -76,7 +76,7 @@ import DeleteClientModal from "@/components/clients/delete-client-modal";
 
 export default function ClientsPage() {
   const { selectedClinic } = useAuth();
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissionsContext2();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [search, setSearch] = useState("");
