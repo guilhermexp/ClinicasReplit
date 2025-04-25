@@ -607,40 +607,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const { clinicId } = req.body;
       
+      console.log("Tentando criar convite. Usuário:", user.email, "ID:", user.id, "Clínica ID:", clinicId);
+      
       if (!clinicId) {
+        console.log("Erro: ID da clínica não informado");
         return res.status(400).json({ message: "É necessário informar o ID da clínica." });
       }
       
-      // Verificar se o usuário tem acesso à clínica
-      const hasAccess = await hasClinicAccess(user.id, clinicId);
-      if (!hasAccess) {
+      // Verificando usuário diretamente
+      const userDetails = await storage.getUser(user.id);
+      console.log("Detalhes do usuário:", JSON.stringify(userDetails));
+      
+      // Verificando relação com a clínica
+      const clinicUser = await storage.getClinicUser(clinicId, user.id);
+      console.log("Relação com a clínica:", JSON.stringify(clinicUser));
+      
+      // Se o usuário é SUPER_ADMIN ou OWNER da clínica, ele deve ter permissão
+      if (userDetails?.role === 'SUPER_ADMIN' || clinicUser?.role === 'OWNER') {
+        console.log("Usuário tem permissão para criar convites");
+        
+        // Generate a random token
+        const token = crypto.randomBytes(32).toString("hex");
+        
+        const data = {
+          ...req.body,
+          token,
+          invitedBy: user.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        };
+        
+        console.log("Dados do convite:", JSON.stringify(data));
+        
+        const result = insertInvitationSchema.safeParse(data);
+        
+        if (!result.success) {
+          console.log("Dados inválidos:", result.error.errors);
+          return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
+        }
+        
+        console.log("Criando convite na base de dados");
+        const newInvitation = await storage.createInvitation(result.data);
+        console.log("Convite criado com sucesso:", JSON.stringify(newInvitation));
+        
+        // In a real app, we would send an email with the invitation link
+        // For demo purposes, we'll just return the token in the response
+        res.status(201).json({
+          ...newInvitation,
+          invitationLink: `/accept-invitation?token=${token}`
+        });
+      } else {
+        console.log("Usuário não tem permissão. Role:", userDetails?.role, "Clínica Role:", clinicUser?.role);
         return res.status(403).json({ message: "Você não tem permissão para convidar usuários para esta clínica." });
       }
-      
-      // Generate a random token
-      const token = crypto.randomBytes(32).toString("hex");
-      
-      const data = {
-        ...req.body,
-        token,
-        invitedBy: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-      };
-      
-      const result = insertInvitationSchema.safeParse(data);
-      
-      if (!result.success) {
-        return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
-      }
-      
-      const newInvitation = await storage.createInvitation(result.data);
-      
-      // In a real app, we would send an email with the invitation link
-      // For demo purposes, we'll just return the token in the response
-      res.status(201).json({
-        ...newInvitation,
-        invitationLink: `/accept-invitation?token=${token}`
-      });
     } catch (error) {
       console.error("Erro ao criar convite:", error);
       res.status(500).json({ message: "Erro ao criar convite." });
