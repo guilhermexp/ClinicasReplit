@@ -56,9 +56,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Authentication middleware
   const isAuthenticated = (req: Request, res: Response, next: Function) => {
+    console.log("Verificando autenticação na rota:", req.originalUrl);
+    console.log("Session ID:", req.sessionID);
+    console.log("Está autenticado?", req.isAuthenticated());
     if (req.isAuthenticated()) {
+      console.log("Usuário autenticado:", req.user?.email);
       return next();
     }
+    console.log("Usuário não está autenticado");
     res.status(401).json({ message: "Não autorizado. Faça login para continuar." });
   };
   
