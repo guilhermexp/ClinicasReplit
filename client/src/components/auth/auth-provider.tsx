@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
   
-  // Get current user com caching otimizado
+  // Get current user com caching melhorado
   const { 
     data: userData, 
     isLoading,
@@ -121,26 +121,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     retry: false, // Don't retry auth requests
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    staleTime: 15 * 60 * 1000, // 15 minutos (aumentado para melhorar performance)
+    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+    refetchOnWindowFocus: false, // Só recarregar quando necessário
+    refetchOnMount: "always", // Sempre verificar ao montar para garantir autenticação
+    refetchInterval: false, // Desativar refetch automático
+    refetchIntervalInBackground: false, // Não atualizar em background
   });
   
-  // Get clinics for current user com caching otimizado
+  // Get clinics for current user com caching melhorado
   const { data: clinics = [] } = useQuery<Clinic[]>({
     queryKey: ["/api/clinics"],
     enabled: !!userData?.user,
-    staleTime: 5 * 60 * 1000, // 5 minutos 
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: 15 * 60 * 1000, // 15 minutos (aumentado)
+    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
   });
   
   // Get current clinic user relationship for permission checking
   const { data: activeClinicUser = null } = useQuery<ClinicUser | null>({
     queryKey: ["/api/clinics", selectedClinic?.id, "user"],
     enabled: !!userData?.user && !!selectedClinic?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000 // 10 minutos
+    staleTime: 15 * 60 * 1000, // 15 minutos (aumentado)
+    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
   });
   
   // Set default selected clinic if not already set

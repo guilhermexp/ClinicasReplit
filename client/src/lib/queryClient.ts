@@ -83,10 +83,10 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: true,
       // Aumentar o tempo de cache para melhorar performance
-      staleTime: 5 * 60 * 1000, // 5 minutos
+      staleTime: 10 * 60 * 1000, // 10 minutos (aumentado)
       retry: 1,
       // O parâmetro cacheTime foi renomeado para gcTime no React Query v5
-      gcTime: 10 * 60 * 1000, // 10 minutos
+      gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
     },
     mutations: {
       retry: 1,
