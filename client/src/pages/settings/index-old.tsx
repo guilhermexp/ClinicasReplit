@@ -41,10 +41,12 @@ import {
   Loader2,
   Scissors,
   Users,
-  Package
+  Package,
+  UserCog,
+  Stethoscope
 } from "lucide-react";
 
-// Helper component for the inventory tab
+// Componente de inventário com dados reais
 import { InventoryPanel } from "./inventory-panel";
 
 export default function Settings() {
@@ -349,19 +351,44 @@ export default function Settings() {
                               id="saturday-close" 
                               type="time" 
                               className="flex-1" 
-                              defaultValue="13:00"
+                              defaultValue="14:00"
                               disabled={!hasPermission("settings", "edit") || isUpdating}
                             />
                           </div>
                         </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="sunday">Domingo</Label>
+                          <div className="flex items-center h-10">
+                            <span className="text-sm text-gray-500">Fechado</span>
+                          </div>
+                        </div>
                       </div>
+                    </div>
+                    
+                    <Separator className="my-4" />
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium mb-3">Serviços</h3>
+                      <p className="text-sm text-gray-500">
+                        Os serviços podem ser configurados na seção de serviços do sistema.
+                      </p>
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        disabled={isUpdating}
+                      >
+                        Gerenciar Serviços
+                      </Button>
                     </div>
                   </>
                 )}
               </CardContent>
               <CardFooter className="flex justify-end">
                 {hasPermission("settings", "edit") && (
-                  <Button type="submit" disabled={isUpdating}>
+                  <Button 
+                    type="submit" 
+                    disabled={isUpdating || isLoading}
+                  >
                     {isUpdating ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -377,80 +404,6 @@ export default function Settings() {
                 )}
               </CardFooter>
             </form>
-          </Card>
-        </TabsContent>
-        
-        {/* Profile Settings */}
-        <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>Perfil do Usuário</CardTitle>
-              <CardDescription>
-                Atualize suas informações pessoais e preferências de conta.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col md:flex-row items-start gap-4 mb-6">
-                <div className="relative">
-                  <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                    <User className="h-12 w-12 text-gray-400" />
-                  </div>
-                  <div className="absolute -bottom-2 -right-2">
-                    <Button variant="outline" size="sm" className="rounded-full h-8 w-8 p-0">
-                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">{user?.name || "Nome do Usuário"}</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {user?.email || "email@exemplo.com"}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                      {user?.role || "Usuário"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo</Label>
-                  <Input id="name" defaultValue={user?.name || ""} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue={user?.email || ""} />
-                </div>
-                
-                <Separator className="my-4" />
-                
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Fuso Horário</Label>
-                  <Select defaultValue="America/Sao_Paulo">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione seu fuso horário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/Sao_Paulo">Brasília (GMT-3)</SelectItem>
-                      <SelectItem value="America/Manaus">Manaus (GMT-4)</SelectItem>
-                      <SelectItem value="America/Belem">Belém (GMT-3)</SelectItem>
-                      <SelectItem value="America/Fortaleza">Fortaleza (GMT-3)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button>
-                <Save className="mr-2 h-4 w-4" />
-                Salvar Alterações
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
         
@@ -736,7 +689,476 @@ export default function Settings() {
         
         {/* Inventory Settings */}
         <TabsContent value="inventory">
-          <InventoryPanel />
+          <Card>
+            <CardHeader>
+              <CardTitle>Controle de Estoque</CardTitle>
+              <CardDescription>
+                Gerencie o estoque de produtos e insumos da clínica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Produtos em Estoque</h3>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-64">
+                    <svg className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <Input className="w-full pl-9" placeholder="Buscar produto..." />
+                  </div>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Adicionar Produto
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-gray-50 p-3 flex items-center font-medium text-sm">
+                  <div className="w-1/3">Produto</div>
+                  <div className="w-1/6">Categoria</div>
+                  <div className="w-1/6">Quantidade</div>
+                  <div className="w-1/6">Valor Unit.</div>
+                  <div className="w-1/6">Status</div>
+                  <div className="w-1/12 text-right">Ações</div>
+                </div>
+                <div className="divide-y">
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Ácido Hialurônico 10ml</div>
+                    <div className="w-1/6">Injetáveis</div>
+                    <div className="w-1/6">18 unidades</div>
+                    <div className="w-1/6">R$ 280,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Normal
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Luvas Descartáveis (caixa)</div>
+                    <div className="w-1/6">Descartáveis</div>
+                    <div className="w-1/6">5 unidades</div>
+                    <div className="w-1/6">R$ 32,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                        Baixo
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Creme Hidratante Corporal 1L</div>
+                    <div className="w-1/6">Cosméticos</div>
+                    <div className="w-1/6">12 unidades</div>
+                    <div className="w-1/6">R$ 75,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Normal
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Agulhas para Aplicação</div>
+                    <div className="w-1/6">Descartáveis</div>
+                    <div className="w-1/6">0 unidades</div>
+                    <div className="w-1/6">R$ 15,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                        Esgotado
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Produtos cadastrados</p>
+                        <h4 className="text-2xl font-bold">42</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
+                          <path d="M4 6v12c0 1.1.9 2 2 2h14v-4" />
+                          <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Produtos com estoque baixo</p>
+                        <h4 className="text-2xl font-bold">7</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-yellow-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Valor total em estoque</p>
+                        <h4 className="text-2xl font-bold">R$ 12.480</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="1" x2="12" y2="23" />
+                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline">
+                Relatório de Estoque
+              </Button>
+              <Button>
+                <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Solicitar Compra
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        {/* Profile Settings */}
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Perfil do Usuário</CardTitle>
+              <CardDescription>
+                Gerencie as informações do seu perfil.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Nome Completo</Label>
+                <Input 
+                  id="username" 
+                  placeholder="Seu nome completo" 
+                  defaultValue={user?.name || ""}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="seu.email@exemplo.com" 
+                  defaultValue={user?.email || ""}
+                  disabled
+                />
+                <p className="text-xs text-muted-foreground">O email não pode ser alterado, pois é usado para login.</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input 
+                  id="phone" 
+                  placeholder="(XX) XXXXX-XXXX" 
+                  defaultValue=""
+                />
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-2">
+                <Label htmlFor="profile-photo">Foto de Perfil</Label>
+                <div className="flex items-center space-x-4">
+                  <div className="h-20 w-20 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span className="text-primary-700 font-semibold text-xl">
+                      {user?.name 
+                        ? user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() 
+                        : '?'}
+                    </span>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Alterar Foto
+                  </Button>
+                </div>
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-2">
+                <Label htmlFor="language">Idioma</Label>
+                <Select defaultValue="pt-BR">
+                  <SelectTrigger id="language">
+                    <SelectValue placeholder="Selecione o idioma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
+                    <SelectItem value="en-US">English (US)</SelectItem>
+                    <SelectItem value="es">Español</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="timezone">Fuso Horário</Label>
+                <Select defaultValue="America/Sao_Paulo">
+                  <SelectTrigger id="timezone">
+                    <SelectValue placeholder="Selecione o fuso horário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/Sao_Paulo">Brasília (GMT-3)</SelectItem>
+                    <SelectItem value="America/Manaus">Manaus (GMT-4)</SelectItem>
+                    <SelectItem value="America/Belem">Belém (GMT-3)</SelectItem>
+                    <SelectItem value="America/Fortaleza">Fortaleza (GMT-3)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-end">
+              <Button>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Alterações
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        {/* Inventory Settings */}
+        <TabsContent value="inventory">
+          <Card>
+            <CardHeader>
+              <CardTitle>Controle de Estoque</CardTitle>
+              <CardDescription>
+                Gerencie o estoque de produtos e insumos da clínica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Produtos em Estoque</h3>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-64">
+                    <svg className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <Input className="w-full pl-9" placeholder="Buscar produto..." />
+                  </div>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Adicionar Produto
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-gray-50 p-3 flex items-center font-medium text-sm">
+                  <div className="w-1/3">Produto</div>
+                  <div className="w-1/6">Categoria</div>
+                  <div className="w-1/6">Quantidade</div>
+                  <div className="w-1/6">Valor Unit.</div>
+                  <div className="w-1/6">Status</div>
+                  <div className="w-1/12 text-right">Ações</div>
+                </div>
+                <div className="divide-y">
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Ácido Hialurônico 10ml</div>
+                    <div className="w-1/6">Injetáveis</div>
+                    <div className="w-1/6">18 unidades</div>
+                    <div className="w-1/6">R$ 280,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Normal
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Luvas Descartáveis (caixa)</div>
+                    <div className="w-1/6">Descartáveis</div>
+                    <div className="w-1/6">5 unidades</div>
+                    <div className="w-1/6">R$ 32,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                        Baixo
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Creme Hidratante Corporal 1L</div>
+                    <div className="w-1/6">Cosméticos</div>
+                    <div className="w-1/6">12 unidades</div>
+                    <div className="w-1/6">R$ 75,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        Normal
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 flex items-center text-sm hover:bg-gray-50">
+                    <div className="w-1/3 font-medium">Agulhas para Aplicação</div>
+                    <div className="w-1/6">Descartáveis</div>
+                    <div className="w-1/6">0 unidades</div>
+                    <div className="w-1/6">R$ 15,00</div>
+                    <div className="w-1/6">
+                      <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                        Esgotado
+                      </span>
+                    </div>
+                    <div className="w-1/12 flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Produtos cadastrados</p>
+                        <h4 className="text-2xl font-bold">42</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
+                          <path d="M4 6v12c0 1.1.9 2 2 2h14v-4" />
+                          <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Produtos com estoque baixo</p>
+                        <h4 className="text-2xl font-bold">7</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-yellow-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">Valor total em estoque</p>
+                        <h4 className="text-2xl font-bold">R$ 12.480</h4>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                        <svg className="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="1" x2="12" y2="23" />
+                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline">
+                Relatório de Estoque
+              </Button>
+              <Button>
+                <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Solicitar Compra
+              </Button>
+            </CardFooter>
+          </Card>
         </TabsContent>
         
         {/* Notification Settings */}
@@ -753,46 +1175,33 @@ export default function Settings() {
                 <h3 className="text-sm font-medium mb-3">Notificações de Email</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <Label
-                        htmlFor="marketing"
-                        className="text-sm font-medium"
-                      >
-                        Notificações de Marketing
-                      </Label>
+                    <div className="space-y-0.5">
+                      <Label htmlFor="email-appointments">Agendamentos</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receba informações sobre promoções e novidades.
+                        Receba emails sobre novos agendamentos e alterações.
                       </p>
                     </div>
-                    <Switch id="marketing" />
+                    <Switch id="email-appointments" defaultChecked />
                   </div>
+                  
                   <div className="flex items-center justify-between">
-                    <div>
-                      <Label
-                        htmlFor="social"
-                        className="text-sm font-medium"
-                      >
-                        Lembretes de Consulta
-                      </Label>
+                    <div className="space-y-0.5">
+                      <Label htmlFor="email-marketing">Marketing</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receba lembretes de consultas agendadas.
+                        Receba emails sobre campanhas e promoções.
                       </p>
                     </div>
-                    <Switch id="social" defaultChecked />
+                    <Switch id="email-marketing" defaultChecked />
                   </div>
+                  
                   <div className="flex items-center justify-between">
-                    <div>
-                      <Label
-                        htmlFor="security"
-                        className="text-sm font-medium"
-                      >
-                        Alertas de Segurança
-                      </Label>
+                    <div className="space-y-0.5">
+                      <Label htmlFor="email-system">Sistema</Label>
                       <p className="text-sm text-muted-foreground">
-                        Seja notificado sobre atividades suspeitas.
+                        Receba emails sobre atualizações e alterações no sistema.
                       </p>
                     </div>
-                    <Switch id="security" defaultChecked />
+                    <Switch id="email-system" defaultChecked />
                   </div>
                 </div>
               </div>
@@ -800,49 +1209,53 @@ export default function Settings() {
               <Separator />
               
               <div>
-                <h3 className="text-sm font-medium mb-3">Notificações de Aplicativo</h3>
+                <h3 className="text-sm font-medium mb-3">Notificações Push</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <Label
-                        htmlFor="new-features"
-                        className="text-sm font-medium"
-                      >
-                        Novos Recursos
-                      </Label>
+                    <div className="space-y-0.5">
+                      <Label htmlFor="push-appointments">Agendamentos</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receba atualizações sobre novos recursos.
+                        Receba notificações no navegador sobre agendamentos.
                       </p>
                     </div>
-                    <Switch id="new-features" defaultChecked />
+                    <Switch id="push-appointments" defaultChecked />
                   </div>
+                  
                   <div className="flex items-center justify-between">
-                    <div>
-                      <Label
-                        htmlFor="account-activity"
-                        className="text-sm font-medium"
-                      >
-                        Atividade da Conta
-                      </Label>
+                    <div className="space-y-0.5">
+                      <Label htmlFor="push-messages">Mensagens</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receba atualizações sobre a atividade da sua conta.
+                        Receba notificações no navegador sobre novas mensagens.
                       </p>
                     </div>
-                    <Switch id="account-activity" />
+                    <Switch id="push-messages" defaultChecked />
                   </div>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="text-sm font-medium mb-3">Lembretes</h3>
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <Label
-                        htmlFor="newsletter"
-                        className="text-sm font-medium"
-                      >
-                        Newsletter
-                      </Label>
+                    <div className="space-y-0.5">
+                      <Label htmlFor="reminder-day-before">Dia Anterior</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receba nossa newsletter mensal.
+                        Receba um lembrete um dia antes dos agendamentos.
                       </p>
                     </div>
-                    <Switch id="newsletter" />
+                    <Switch id="reminder-day-before" defaultChecked />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="reminder-hour-before">Uma Hora Antes</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Receba um lembrete uma hora antes dos agendamentos.
+                      </p>
+                    </div>
+                    <Switch id="reminder-hour-before" defaultChecked />
                   </div>
                 </div>
               </div>
@@ -860,75 +1273,113 @@ export default function Settings() {
         <TabsContent value="security">
           <Card>
             <CardHeader>
-              <CardTitle>Configurações de Segurança</CardTitle>
+              <CardTitle>Segurança e Privacidade</CardTitle>
               <CardDescription>
-                Gerencie suas configurações de segurança e controle de acesso.
+                Gerencie suas configurações de segurança e privacidade.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
                 <h3 className="text-sm font-medium mb-3">Alterar Senha</h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Senha Atual</Label>
                     <Input id="current-password" type="password" />
                   </div>
+                  
                   <div className="space-y-2">
                     <Label htmlFor="new-password">Nova Senha</Label>
                     <Input id="new-password" type="password" />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                    <Label htmlFor="confirm-password">Confirme a Nova Senha</Label>
                     <Input id="confirm-password" type="password" />
                   </div>
+                  
+                  <Button className="mt-2">Alterar Senha</Button>
                 </div>
               </div>
               
               <Separator />
               
               <div>
-                <h3 className="text-sm font-medium mb-3">Autenticação de Dois Fatores</h3>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Aumente a segurança da sua conta com autenticação de dois fatores.
-                    </p>
+                <h3 className="text-sm font-medium mb-3">Verificação em Duas Etapas</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="two-factor">Ativar Verificação em Duas Etapas</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Adicione uma camada extra de segurança à sua conta.
+                      </p>
+                    </div>
+                    <Switch id="two-factor" />
                   </div>
-                  <Switch />
                 </div>
               </div>
               
               <Separator />
               
               <div>
-                <h3 className="text-sm font-medium mb-3">Sessões Ativas</h3>
+                <h3 className="text-sm font-medium mb-3">Dispositivos Conectados</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Chrome em Windows</p>
-                      <p className="text-xs text-gray-500">Último acesso: Hoje, 14:30</p>
+                  <div className="border rounded-md p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center mb-1">
+                          <Smartphone className="mr-2 h-4 w-4" />
+                          <span className="font-medium">iPhone 13 Pro</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">São Paulo, Brasil</p>
+                        <p className="text-xs text-muted-foreground mt-1">Último acesso: Hoje, 09:32</p>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        Desconectar
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm">Encerrar</Button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Safari em MacOS</p>
-                      <p className="text-xs text-gray-500">Último acesso: Ontem, 18:45</p>
+                  
+                  <div className="border rounded-md p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center mb-1">
+                          <Laptop className="mr-2 h-4 w-4" />
+                          <span className="font-medium">MacBook Pro</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">São Paulo, Brasil</p>
+                        <p className="text-xs text-muted-foreground mt-1">Último acesso: Hoje, 08:15</p>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        Desconectar
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm">Encerrar</Button>
                   </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button>
-                <Save className="mr-2 h-4 w-4" />
-                Salvar Alterações
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// Missing Laptop component - used in the security tab
+function Laptop(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16" />
+    </svg>
   );
 }
