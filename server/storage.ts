@@ -83,6 +83,7 @@ export interface IStorage {
   getInvitation(token: string): Promise<Invitation | undefined>;
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   deleteInvitation(id: number): Promise<boolean>;
+  deleteInvitationByToken(token: string): Promise<boolean>;
   listInvitations(clinicId: number): Promise<Invitation[]>;
   
   // Payment operations
@@ -711,6 +712,13 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(invitations)
       .where(eq(invitations.id, id));
+    return !!result;
+  }
+  
+  async deleteInvitationByToken(token: string): Promise<boolean> {
+    const result = await db
+      .delete(invitations)
+      .where(eq(invitations.token, token));
     return !!result;
   }
   
