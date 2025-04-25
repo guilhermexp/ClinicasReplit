@@ -406,6 +406,52 @@ export const leadAppointments = pgTable("lead_appointments", {
   createdBy: integer("created_by").references(() => users.id),
 });
 
+// User devices table
+export const userDevices = pgTable("user_devices", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  deviceName: text("device_name").notNull(),
+  deviceType: text("device_type").notNull(),
+  browser: text("browser"),
+  operatingSystem: text("operating_system"),
+  lastIp: text("last_ip"),
+  lastActive: timestamp("last_active").notNull().defaultNow(),
+  isActive: boolean("is_active").notNull().default(true),
+  userAgent: text("user_agent"),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// User activity logs table
+export const activityLogs = pgTable("activity_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  activity: text("activity").notNull(),
+  entityType: text("entity_type"),
+  entityId: integer("entity_id"),
+  details: jsonb("details"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  deviceId: integer("device_id").references(() => userDevices.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// User 2FA settings table
+export const userTwoFactorAuth = pgTable("user_two_factor_auth", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id).unique(),
+  appEnabled: boolean("app_enabled").notNull().default(false),
+  appSecret: text("app_secret"),
+  smsEnabled: boolean("sms_enabled").notNull().default(false),
+  phoneVerified: boolean("phone_verified").notNull().default(false),
+  emailEnabled: boolean("email_enabled").notNull().default(false),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  backupCodes: text("backup_codes").array(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, lastLogin: true, createdAt: true, updatedAt: true });
 export const insertClinicSchema = createInsertSchema(clinics).omit({ id: true, createdAt: true, updatedAt: true });
@@ -481,3 +527,18 @@ export type InsertLeadInteraction = z.infer<typeof insertLeadInteractionSchema>;
 
 export type LeadAppointment = typeof leadAppointments.$inferSelect;
 export type InsertLeadAppointment = z.infer<typeof insertLeadAppointmentSchema>;
+
+// Schema para os dispositivos de usuário
+export const insertUserDeviceSchema = createInsertSchema(userDevices).omit({ id: true, createdAt: true, updatedAt: true });
+export type UserDevice = typeof userDevices.$inferSelect;
+export type InsertUserDevice = z.infer<typeof insertUserDeviceSchema>;
+
+// Schema para logs de atividade
+export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({ id: true, createdAt: true });
+export type ActivityLog = typeof activityLogs.$inferSelect;
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+
+// Schema para configurações de 2FA
+export const insertUserTwoFactorAuthSchema = createInsertSchema(userTwoFactorAuth).omit({ id: true, updatedAt: true });
+export type UserTwoFactorAuth = typeof userTwoFactorAuth.$inferSelect;
+export type InsertUserTwoFactorAuth = z.infer<typeof insertUserTwoFactorAuthSchema>;

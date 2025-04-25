@@ -10,8 +10,11 @@ import {
   Invitation, InsertInvitation,
   Payment, InsertPayment, PaymentStatus,
   Commission, InsertCommission,
+  UserDevice, InsertUserDevice,
+  ActivityLog, InsertActivityLog,
+  UserTwoFactorAuth, InsertUserTwoFactorAuth,
   users, clinics, clinicUsers, permissions, clients, professionals, services, appointments, invitations,
-  payments, commissions
+  payments, commissions, userDevices, activityLogs, userTwoFactorAuth
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
