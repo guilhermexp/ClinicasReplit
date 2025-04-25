@@ -5,7 +5,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Clinic } from "@shared/schema";
+import type { Clinic, UserDevice, ActivityLog, UserTwoFactorAuth } from "@shared/schema";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { 
   Card, 
   CardContent, 
@@ -54,6 +56,12 @@ export default function Settings() {
   const [appAuth, setAppAuth] = useState(false);
   const [smsAuth, setSmsAuth] = useState(false);
   const [emailAuth, setEmailAuth] = useState(false);
+  const [setupMode, setSetupMode] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<number | null>(null);
+  const [confirmingAction, setConfirmingAction] = useState(false);
   
   // Buscar dados da clínica
   const { data: clinic, isLoading } = useQuery<Clinic>({
