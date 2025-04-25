@@ -527,11 +527,77 @@ export class DatabaseStorage implements IStorage {
     return newProfessional;
   }
   
-  async listProfessionals(clinicId: number): Promise<Professional[]> {
+  async updateProfessional(id: number, updates: Partial<Professional>): Promise<Professional> {
+    const [updatedProfessional] = await db
+      .update(professionals)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(professionals.id, id))
+      .returning();
+    
+    if (!updatedProfessional) {
+      throw new Error("Profissional não encontrado");
+    }
+    
+    return updatedProfessional;
+  }
+  
+  async deleteProfessional(id: number): Promise<void> {
+    await db.delete(professionals).where(eq(professionals.id, id));
+  }
+  
+  async getProfessionalsByClinic(clinicId: number): Promise<Professional[]> {
     return await db
       .select()
       .from(professionals)
       .where(eq(professionals.clinicId, clinicId));
+  }
+  
+  // Usado para listagem retrocompatível
+  async listProfessionals(clinicId: number): Promise<Professional[]> {
+    return this.getProfessionalsByClinic(clinicId);
+  }
+  
+  async getProfessionalByUserAndClinic(userId: number, clinicId: number): Promise<Professional | undefined> {
+    const [professional] = await db
+      .select()
+      .from(professionals)
+      .where(and(
+        eq(professionals.userId, userId),
+        eq(professionals.clinicId, clinicId)
+      ));
+    
+    return professional;
+  }
+  
+  async getUsersByClinic(clinicId: number): Promise<User[]> {
+    const clinicUserRecords = await db
+      .select()
+      .from(clinicUsers)
+      .where(eq(clinicUsers.clinicId, clinicId));
+    
+    const userIds = clinicUserRecords.map(record => record.userId);
+    
+    if (userIds.length === 0) {
+      return [];
+    }
+    
+    const userRecords = await Promise.all(
+      userIds.map(userId => this.getUser(userId))
+    );
+    
+    return userRecords.filter(user => user !== undefined) as User[];
+  }
+  
+  async getClinicUserByUserAndClinic(userId: number, clinicId: number): Promise<ClinicUser | undefined> {
+    const [clinicUser] = await db
+      .select()
+      .from(clinicUsers)
+      .where(and(
+        eq(clinicUsers.userId, userId),
+        eq(clinicUsers.clinicId, clinicId)
+      ));
+    
+    return clinicUser;
   }
   
   // Service operations

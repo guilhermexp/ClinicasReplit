@@ -6,6 +6,7 @@ import { eq, inArray, and, gte, lte } from "drizzle-orm";
 import { format } from "date-fns";
 import { registerCRMRoutes } from "./routes-crm";
 import { registerInventoryRoutes } from "./routes-inventory";
+import { registerProfessionalsRoutes } from "./routes-professionals";
 import { 
   insertUserSchema, 
   insertClinicSchema,
