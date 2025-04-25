@@ -603,10 +603,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/invitations", isAuthenticated, async (req: Request, res: Response) => {
     try {
+      const user = req.user as any;
+      const { clinicId } = req.body;
+      
+      if (!clinicId) {
+        return res.status(400).json({ message: "É necessário informar o ID da clínica." });
+      }
+      
+      // Verificar se o usuário tem acesso à clínica
+      const hasAccess = await hasClinicAccess(user.id, clinicId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Você não tem permissão para convidar usuários para esta clínica." });
+      }
+      
       // Generate a random token
       const token = crypto.randomBytes(32).toString("hex");
       
-      const user = req.user as any;
       const data = {
         ...req.body,
         token,
@@ -629,6 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invitationLink: `/accept-invitation?token=${token}`
       });
     } catch (error) {
+      console.error("Erro ao criar convite:", error);
       res.status(500).json({ message: "Erro ao criar convite." });
     }
   });
