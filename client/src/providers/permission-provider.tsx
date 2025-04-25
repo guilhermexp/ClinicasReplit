@@ -25,24 +25,44 @@ export const PermissionsContext = createContext<PermissionsContextType | null>(n
 
 // Provider do Context
 export function PermissionsProvider({ children }: { children: ReactNode }) {
-  // Buscar permissões do usuário a partir da API
+  // Buscar permissões do usuário a partir da API com cache otimizado
   const { data: userPermissions = [], isLoading: isLoadingPermissions, error } = useQuery({
     queryKey: ["/api/me/permissions"],
     enabled: true,
+    staleTime: 15 * 60 * 1000, // 15 minutos (aumentado)
+    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+    refetchOnWindowFocus: false,
   });
 
   // Buscar papel do usuário a partir da API
   const { data: userData, isLoading: isLoadingUser } = useQuery({
     queryKey: ["/api/auth/me"],
     enabled: true,
+    staleTime: 15 * 60 * 1000, // 15 minutos (aumentado)
+    gcTime: 30 * 60 * 1000, // 30 minutos (aumentado)
+    refetchOnWindowFocus: false,
   });
 
   const userRole = userData?.role as UserRole || null;
   const isLoading = isLoadingPermissions || isLoadingUser;
 
   // Função para verificar se o usuário tem uma permissão específica
+  // Com cache para evitar re-cálculos
+  const permissionCache = new Map<string, boolean>();
+  
   const hasUserPermission = (module: PermissionModule, action: PermissionAction): boolean => {
-    return checkPermission(userPermissions, userRole, module, action);
+    const cacheKey = `${module}:${action}`;
+    
+    // Verificar se já temos o resultado em cache
+    if (permissionCache.has(cacheKey)) {
+      return permissionCache.get(cacheKey)!;
+    }
+    
+    // Calcular resultado e armazenar em cache
+    const result = checkPermission(userPermissions, userRole, module, action);
+    permissionCache.set(cacheKey, result);
+    
+    return result;
   };
 
   // Valor do contexto
