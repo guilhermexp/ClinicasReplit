@@ -334,6 +334,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Excluir usuário de uma clínica
+  app.delete("/api/clinic-users/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicUserId = parseInt(req.params.id);
+      
+      // Verificar se o clinicUser existe
+      const clinicUsers = await storage.listClinicUsers();
+      const clinicUser = clinicUsers.find(cu => cu.id === clinicUserId);
+      
+      if (!clinicUser) {
+        return res.status(404).json({ message: "Usuário da clínica não encontrado." });
+      }
+      
+      // Verificar se o usuário solicitante tem permissão para remover usuários da clínica
+      const requesterClinicUser = await storage.getClinicUserByUserAndClinic(req.user!.id, clinicUser.clinicId);
+      
+      if (!requesterClinicUser || !['OWNER', 'MANAGER'].includes(requesterClinicUser.role)) {
+        return res.status(403).json({ message: "Você não tem permissão para remover usuários desta clínica." });
+      }
+      
+      // Não permitir a exclusão do próprio usuário OWNER
+      if (clinicUser.role === 'OWNER' && clinicUser.userId === req.user!.id) {
+        return res.status(400).json({ message: "Você não pode remover a si mesmo como proprietário da clínica." });
+      }
+      
+      // Excluir o clinicUser
+      const result = await storage.deleteClinicUser(clinicUserId);
+      
+      if (result) {
+        res.json({ message: "Usuário removido da clínica com sucesso." });
+      } else {
+        res.status(500).json({ message: "Erro ao remover usuário da clínica." });
+      }
+    } catch (error) {
+      console.error("Erro ao excluir usuário da clínica:", error);
+      res.status(500).json({ message: "Erro ao excluir usuário da clínica." });
+    }
+  });
+  
   // ClinicUser routes
   app.get("/api/clinics/:clinicId/user", isAuthenticated, async (req: Request, res: Response) => {
     if (!req.user) {
@@ -732,6 +771,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user invitations:", error);
       res.status(500).json({ message: "Erro ao buscar convites." });
+    }
+  });
+  
+  // Get invitations for a specific clinic
+  app.get("/api/clinics/:clinicId/invitations", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      
+      // Verificar se o usuário tem permissão para esta clínica
+      const clinicUser = await storage.getClinicUserByUserAndClinic(req.user!.id, clinicId);
+      
+      if (!clinicUser || !['OWNER', 'MANAGER'].includes(clinicUser.role)) {
+        return res.status(403).json({ message: "Você não tem permissão para visualizar convites desta clínica." });
+      }
+      
+      const invitations = await storage.listInvitations(clinicId);
+      
+      // Filtrar apenas convites não expirados
+      const validInvitations = invitations.filter(inv => 
+        new Date(inv.expiresAt) > new Date()
+      );
+      
+      // Obter informações adicionais sobre quem enviou o convite
+      const invitationsWithDetails = await Promise.all(validInvitations.map(async inv => {
+        const inviter = await storage.getUser(inv.invitedBy);
+        
+        return {
+          ...inv,
+          inviterName: inviter?.name || `Usuário #${inv.invitedBy}`
+        };
+      }));
+      
+      console.log(`Retornando ${invitationsWithDetails.length} convites para a clínica ${clinicId}`);
+      res.json(invitationsWithDetails);
+    } catch (error) {
+      console.error(`Erro ao buscar convites da clínica: ${error}`);
+      res.status(500).json({ message: "Erro ao buscar convites da clínica." });
     }
   });
   

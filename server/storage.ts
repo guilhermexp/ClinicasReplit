@@ -311,6 +311,25 @@ export class DatabaseStorage implements IStorage {
     return updatedClinicUser;
   }
   
+  async deleteClinicUser(id: number): Promise<boolean> {
+    try {
+      // Primeiro excluir todas as permissões associadas a este clinicUser
+      await db
+        .delete(permissions)
+        .where(eq(permissions.clinicUserId, id));
+      
+      // Depois excluir o clinicUser
+      const result = await db
+        .delete(clinicUsers)
+        .where(eq(clinicUsers.id, id));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Erro ao excluir usuário da clínica:", error);
+      return false;
+    }
+  }
+  
   async listClinicUsers(clinicId?: number, userId?: number): Promise<ClinicUser[]> {
     if (clinicId !== undefined && userId !== undefined) {
       return await db
