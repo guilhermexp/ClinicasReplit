@@ -1,0 +1,61 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+auth-provider.tsx:97 Verificando autenticação...
+auth-provider.tsx:116 Usuário autenticado: Object
+clients:1 A soft navigation has been detected: https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/clients
+chunk-4XZ4EZJF.js?v=83760a42:8895 Unknown option 'data-replit-metadata'
+warnUnknownOptions @ chunk-4XZ4EZJF.js?v=83760a42:8895
+Show 1 more frame
+Show less
+chunk-4XZ4EZJF.js?v=83760a42:8895 Unknown option 'data-component-name'
+warnUnknownOptions @ chunk-4XZ4EZJF.js?v=83760a42:8895
+Show 1 more frame
+Show less
+appointments:1 A soft navigation has been detected: https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/appointments
+financeiro:1 A soft navigation has been detected: https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/financeiro
+attendance:1 A soft navigation has been detected: https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/attendance
+queryClient.ts:71 Erro na requisição para /api/employees: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+(anonymous) @ queryClient.ts:71
+2index.tsx:345 Uncaught TypeError: Cannot read properties of null (reading 'find')
+    at index.tsx:345:22
+    at updateMemo (chunk-SXRIVT2P.js?v=83760a42:12258:27)
+    at Object.useMemo (chunk-SXRIVT2P.js?v=83760a42:12774:24)
+    at useMemo (chunk-QCHXOAYK.js?v=83760a42:1094:29)
+    at AttendancePage (index.tsx:344:32)
+    at renderWithHooks (chunk-SXRIVT2P.js?v=83760a42:11596:26)
+    at updateFunctionComponent (chunk-SXRIVT2P.js?v=83760a42:14630:28)
+    at beginWork (chunk-SXRIVT2P.js?v=83760a42:15972:22)
+    at HTMLUnknownElement.callCallback2 (chunk-SXRIVT2P.js?v=83760a42:3680:22)
+    at Object.invokeGuardedCallbackDev (chunk-SXRIVT2P.js?v=83760a42:3705:24)
+chunk-SXRIVT2P.js?v=83760a42:14080 The above error occurred in the <AttendancePage> component:
+
+    at AttendancePage (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/pages/attendance/index.tsx:73:30)
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/components/layout/main-layout.tsx:71:38)
+    at ProtectedRoute (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/App.tsx?v=5DNMYQ9Y0z3wRYYpIZtXl:40:27)
+    at Route (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=83760a42:206:16)
+    at Switch (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=83760a42:262:17)
+    at Provider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=83760a42:38:15)
+    at TooltipProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=83760a42:65:5)
+    at AuthProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/components/auth/auth-provider.tsx:38:32)
+    at QueryClientProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=83760a42:2875:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-SXRIVT2P.js?v=83760a42:14080
+Show 1 more frame
+Show less
+chunk-SXRIVT2P.js?v=83760a42:9176 Uncaught TypeError: Cannot read properties of null (reading 'find')
+    at index.tsx:345:22
+    at updateMemo (chunk-SXRIVT2P.js?v=83760a42:12258:27)
+    at Object.useMemo (chunk-SXRIVT2P.js?v=83760a42:12774:24)
+    at useMemo (chunk-QCHXOAYK.js?v=83760a42:1094:29)
+    at AttendancePage (index.tsx:344:32)
+    at renderWithHooks (chunk-SXRIVT2P.js?v=83760a42:11596:26)
+    at updateFunctionComponent (chunk-SXRIVT2P.js?v=83760a42:14630:28)
+    at beginWork (chunk-SXRIVT2P.js?v=83760a42:15972:22)
+    at beginWork$1 (chunk-SXRIVT2P.js?v=83760a42:19806:22)
+    at performUnitOfWork (chunk-SXRIVT2P.js?v=83760a42:19251:20)
