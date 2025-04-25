@@ -1,8 +1,8 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Switch, Route, Redirect } from "wouter";
-import { queryClient, localStoragePersister } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { localStoragePersister, removeExpiredPersistedQueries } from "@/hooks/use-local-storage-persister";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/auth/auth-provider";
@@ -67,6 +67,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  // Limpar queries expiradas quando a aplicação iniciar
+  useEffect(() => {
+    // Remove queries expiradas do cache
+    removeExpiredPersistedQueries(queryClient);
+    
+    // Log para debug
+    console.log('Cache de persistência inicializado e queries expiradas removidas');
+  }, []);
+  
   return (
     <PersistQueryClientProvider
       client={queryClient}

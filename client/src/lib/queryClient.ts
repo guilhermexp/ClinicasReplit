@@ -1,158 +1,214 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+import { QueryClient, 
+         QueryFunction, 
+         MutationFunction, 
+         QueryKey,
+         DefaultOptions } from "@tanstack/react-query";
+import { localStoragePersister, removeExpiredPersistedQueries } from "@/hooks/use-local-storage-persister";
+import { persistQueryClient } from "@tanstack/react-query-persist-client";
 
-// Configuração do persistidor de cache usando localStorage
-export const localStoragePersister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: 'CLINIC_REACT_QUERY_CACHE',
-  throttleTime: 1000, // Tempo de espera antes de salvar no localStorage (ms)
-  serialize: (data) => JSON.stringify(data),
-  deserialize: (data) => JSON.parse(data),
-});
+// Tipo para parâmetros da requisição, para uso em apiRequest
+export interface RequestParams {
+  [key: string]: string | number | boolean | null | undefined;
+}
 
-// Helpers para gerenciar o redirecionamento em caso de 401
-let isRedirectingToLogin = false;
-const redirectToLogin = () => {
-  if (isRedirectingToLogin) return;
-  isRedirectingToLogin = true;
-  // Salvar a URL atual para retornar após o login
-  const currentPath = window.location.pathname;
-  if (currentPath !== '/login' && currentPath !== '/auth') {
-    localStorage.setItem('redirectAfterLogin', currentPath);
-  }
-  // Pequeno delay para evitar múltiplos redirecionamentos
-  setTimeout(() => {
-    window.location.href = '/login';
-    isRedirectingToLogin = false;
-  }, 100);
+// Configurações de cache otimizadas para diferentes tipos de dados
+const queryConfig: DefaultOptions = {
+  queries: {
+    // Configuração default para a maioria das queries
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 15 * 60 * 1000, // 15 minutos
+    retry: 1,
+    refetchOnMount: true,
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: true,
+  },
 };
 
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    // Redirecionamento específico para erros 401 (Não autorizado)
-    if (res.status === 401) {
-      redirectToLogin();
+export const queryClient = new QueryClient({
+  defaultOptions: queryConfig,
+});
+
+// Configuração da persistência do cache (executado no lado do cliente)
+if (typeof window !== 'undefined') {
+  // Inicializa a persistência do cache
+  persistQueryClient({
+    queryClient,
+    persister: localStoragePersister,
+    // Máximo de 24 horas para dados em cache
+    maxAge: 1000 * 60 * 60 * 24,
+    // Configurações adicionais para melhorar performance
+    dehydrateOptions: {
+      // Não incluir dados com dehydrated: false na meta 
+      shouldDehydrateQuery: (query: any) => {
+        // Não persistir queries que estão em loading (usando string direto para evitar erro de tipos)
+        if (String(query.state.status) === 'loading') return false;
+        
+        // Não persistir queries que têm persist=false no meta
+        const meta = (query.state.meta as Record<string, any>) || {};
+        if (meta.persist === false) return false;
+        
+        return true;
+      },
+    }
+  });
+  
+  // Remover queries expiradas após inicialização
+  removeExpiredPersistedQueries(queryClient);
+}
+
+export function invalidateQueries(
+  invalidationCallback: (queryClient: QueryClient) => Promise<void>
+): Promise<void> {
+  return invalidationCallback(queryClient);
+}
+
+// Função para construir querystring a partir de objeto de parâmetros
+// ignorando parâmetros nulos
+function buildQueryString(params: RequestParams = {}): string {
+  const query = Object.entries(params)
+    .filter(([_, value]) => value != null)
+    .map(
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
+    )
+    .join("&");
+
+  return query ? `?${query}` : "";
+}
+
+// Opções para o getQueryFn quando ocorre um erro 401
+interface GetQueryFnOptions {
+  on401?: "throw" | "returnNull";
+  meta?: {
+    persist?: boolean;  // Define se a query deve ser persistida no localStorage
+    cacheTime?: number; // Tempo em milissegundos para o cache ser considerado válido
+    priority?: 'high' | 'medium' | 'low'; // Prioridade para prefetching
+  };
+}
+
+/**
+ * Função para criar um queryFn que faz requisições à API e trata erros comuns
+ * @param options Opções para comportamento em caso de erro 401 (não autenticado) e metadados de cache
+ */
+export function getQueryFn(options: GetQueryFnOptions = {}) {
+  return async ({ queryKey, meta }: { queryKey: QueryKey, meta?: any }) => {
+    // A primeira parte da queryKey é o endpoint da requisição
+    const [endpoint, ...params] = queryKey;
+    
+    if (typeof endpoint !== "string") {
+      throw new Error("A queryKey deve começar com uma string (endpoint)");
     }
     
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
-  }
-}
-
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res;
-}
-
-type UnauthorizedBehavior = "returnNull" | "throw";
-
-// Cache de segundo nível para endpoints críticos (usado quando API falha temporariamente)
-const criticalDataCache = new Map<string, {data: any, timestamp: number}>();
-
-// Lista de endpoints críticos que devem ter cache de segundo nível
-const CRITICAL_ENDPOINTS = [
-  '/api/auth/me',
-  '/api/me/permissions',
-  '/api/dashboard/metrics',
-  '/api/financial/summary'
-];
-
-// Tempo de expiração do cache de segundo nível (30 minutos)
-const SECOND_LEVEL_CACHE_EXPIRY = 30 * 60 * 1000;
-
-// Função aprimorada para buscas com cache de segundo nível
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const endpoint = queryKey[0] as string;
-    const isCriticalEndpoint = CRITICAL_ENDPOINTS.includes(endpoint);
+    let queryParams: RequestParams = {};
     
-    try {
-      // Tentar obter dados da API primeiro
-      const res = await fetch(endpoint, {
-        credentials: "include",
-        headers: {
-          "Accept": "application/json",
-          "Cache-Control": "no-cache",
-        }
-      });
-
-      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-        console.log(`Acesso não autorizado para ${endpoint}`);
-        return null;
+    // Se há parâmetros e o último é um objeto, considera como queryParams
+    if (params.length > 0) {
+      const lastParam = params[params.length - 1];
+      if (lastParam && typeof lastParam === "object" && !Array.isArray(lastParam)) {
+        queryParams = lastParam as RequestParams;
       }
-
-      await throwIfResNotOk(res);
+    }
+    
+    // Mesclar meta dados passados via opções e via queryOptions
+    const combinedMeta = {
+      ...options.meta,
+      ...meta
+    };
+    
+    // Fazer a requisição à API
+    try {
+      const res = await apiRequest("GET", endpoint, undefined, queryParams);
       const data = await res.json();
       
-      // Se for um endpoint crítico, armazenar no cache de segundo nível
-      if (isCriticalEndpoint) {
-        criticalDataCache.set(endpoint, {
-          data,
-          timestamp: Date.now()
-        });
+      // Para endpoints do dashboard, adicionar timestamps aos dados
+      // Isso ajuda a identificar quando os dados foram carregados
+      if (endpoint.includes('/api/dashboard') || endpoint.includes('/api/financeiro')) {
+        return {
+          ...data,
+          _fetchedAt: Date.now()
+        };
       }
       
       return data;
-    } catch (error) {
-      console.error(`Erro na requisição para ${endpoint}:`, error);
-      
-      // Se for um endpoint crítico, verificar se temos dados em cache
-      if (isCriticalEndpoint) {
-        const cachedData = criticalDataCache.get(endpoint);
-        
-        // Usar dados em cache se estiverem disponíveis e dentro do prazo de validade
-        if (cachedData && (Date.now() - cachedData.timestamp) < SECOND_LEVEL_CACHE_EXPIRY) {
-          console.log(`Usando dados em cache para ${endpoint}`);
-          return cachedData.data;
-        }
-      }
-      
-      // Comportamento padrão em caso de erro
-      if (unauthorizedBehavior === "returnNull") {
+    } catch (error: any) {
+      if (error.message?.includes("401") && options.on401 === "returnNull") {
         return null;
       }
       throw error;
     }
   };
+}
 
-// Configuração otimizada para o queryClient
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      queryFn: getQueryFn({ on401: "returnNull" }),
-      refetchInterval: false,
-      // Só recarregar dados quando a janela voltar ao foco se os dados forem obsoletos
-      refetchOnWindowFocus: 'always',
-      // Tempo de cache estendido para melhorar performance
-      staleTime: 15 * 60 * 1000, // 15 minutos (aumentado)
-      retry: 1,
-      // Tempo de garbage collection estendido (renomeado para gcTime no React Query v5)
-      gcTime: 60 * 60 * 1000, // 60 minutos (aumentado)
-      // Estrutura para metadados que podem ser usados no futuro para persistência seletiva
-      meta: {
-        persist: true
-      },
+/**
+ * Função para fazer requisições à API com tratamento otimizado de erros e cache.
+ * @param method Método HTTP (GET, POST, PUT, DELETE, etc.)
+ * @param endpoint Endpoint da API (/api/users, /api/products, etc.)
+ * @param data Dados para enviar no corpo da requisição (para POST, PUT, etc.)
+ * @param params Parâmetros de consulta (para GET)
+ * @returns Promise com o resultado da requisição
+ */
+export async function apiRequest(
+  method: string,
+  endpoint: string,
+  data?: any,
+  params?: RequestParams
+): Promise<Response> {
+  let url = `${endpoint}${params ? buildQueryString(params) : ""}`;
+  
+  const options: RequestInit = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
     },
-    mutations: {
-      retry: 1,
-      // Atualiza o cache automaticamente em caso de erro, mantendo os dados anteriores
-      onError: (err, variables, context) => {
-        console.error('Erro em mutação:', err);
+    credentials: "include", // importante para enviar cookies em requisições cross-origin
+  };
+
+  // Adicionar body apenas para métodos não-GET
+  if (method !== "GET" && data !== undefined) {
+    options.body = JSON.stringify(data);
+  }
+
+  // Adicionar timestamp para evitar cache do navegador em requests críticos
+  if (method === "GET" && !params?.nocache && endpoint.includes('/api/dashboard')) {
+    const timestampParam = `_t=${Date.now()}`;
+    url += url.includes('?') ? `&${timestampParam}` : `?${timestampParam}`;
+  }
+
+  const res = await fetch(url, options);
+  
+  if (!res.ok) {
+    // Tentar obter mensagem de erro do corpo da resposta
+    try {
+      const errorData = await res.json();
+      throw new Error(errorData.message || `Erro ${res.status}: ${res.statusText}`);
+    } catch (e) {
+      // Se não conseguir parsear o corpo, usar mensagem padrão
+      if (e instanceof SyntaxError) {
+        throw new Error(`Erro ${res.status}: ${res.statusText}`);
       }
-    },
-  },
-});
+      throw e;
+    }
+  }
+  
+  return res;
+}
+
+/**
+ * Função para verificar se a resposta da requisição está ok.
+ * Se não estiver, extrai a mensagem de erro e lança uma exceção.
+ */
+export async function throwIfResNotOk(res: Response): Promise<Response> {
+  if (!res.ok) {
+    try {
+      const errorData = await res.json();
+      throw new Error(errorData.message || `Erro ${res.status}: ${res.statusText}`);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw new Error(`Erro ${res.status}: ${res.statusText}`);
+      }
+      throw e;
+    }
+  }
+  return res;
+}

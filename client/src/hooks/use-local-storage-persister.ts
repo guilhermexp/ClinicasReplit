@@ -1,5 +1,5 @@
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from "@tanstack/react-query";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 
 /**
  * Cria um persister para o localStorage que salva o estado das queries
@@ -7,12 +7,36 @@ import { QueryClient } from '@tanstack/react-query';
  */
 export const localStoragePersister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: 'clinicas-system-query-cache',
-  // Define quais queries serão persistidas (baseado em metadados)
-  // Por padrão, só persiste queries que têm meta.persist = true
-  throttleTime: 1000, // milliseconds
-  serialize: data => JSON.stringify(data),
-  deserialize: data => JSON.parse(data),
+  key: "CLINICAS_QUERY_CACHE", // chave única para o cache no localStorage
+  throttleTime: 1000, // tempo mínimo entre salvamentos para evitar sobrecarga
+  // Apenas persistir queries com meta.persist = true
+  serialize: data => {
+    return JSON.stringify({
+      timestamp: Date.now(),
+      buster: process.env.VERSION || '1.0', // para invalidar o cache quando a versão muda
+      data
+    });
+  },
+  deserialize: cachedString => {
+    if (!cachedString) {
+      return {};
+    }
+    
+    const cache = JSON.parse(cachedString);
+    
+    // Verificar se o cache é da versão atual
+    if (cache.buster !== process.env.VERSION) {
+      return {};
+    }
+    
+    // Verificar se o cache expirou (30 dias)
+    const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 dias em ms
+    if (Date.now() - cache.timestamp > maxAge) {
+      return {};
+    }
+    
+    return cache.data;
+  }
 });
 
 /**
@@ -21,43 +45,47 @@ export const localStoragePersister = createSyncStoragePersister({
  */
 export function removeExpiredPersistedQueries(queryClient: QueryClient) {
   try {
-    // Obter os dados atuais do cache persistido
-    const localStorageCache = JSON.parse(
-      localStorage.getItem('clinicas-system-query-cache') || '{}'
-    );
+    // Tempo de expiração 
+    const expirationTime = 7 * 24 * 60 * 60 * 1000; // 7 dias em ms
     
-    if (!localStorageCache.clientState?.queries) {
+    // Recuperar o cache atual
+    const cacheString = window.localStorage.getItem("CLINICAS_QUERY_CACHE");
+    if (!cacheString) return;
+    
+    const cache = JSON.parse(cacheString);
+    
+    // Se o cache inteiro é antigo (mais de 30 dias), limpar tudo
+    if (Date.now() - cache.timestamp > 30 * 24 * 60 * 60 * 1000) {
+      window.localStorage.removeItem("CLINICAS_QUERY_CACHE");
       return;
     }
     
-    // Verificar e filtrar queries expiradas
-    const now = Date.now();
-    const queries = localStorageCache.clientState.queries;
-    
-    // Remover queries que estão expiradas
-    let hasRemovedItems = false;
-    for (const queryKey in queries) {
-      const query = queries[queryKey];
+    // Filtrar queries expiradas e atualizar o cache
+    const queries = cache.data?.queries || [];
+    const activeQueries = queries.filter((query: any) => {
+      // Se a query não tem meta.persist, não persistir
+      if (!query.state.meta?.persist) return false;
       
-      // Se o tempo de expiração do GC (garbage collection) já passou, remover a query
-      if (query.gcTime && now > query.gcTime) {
-        delete queries[queryKey];
-        hasRemovedItems = true;
-      }
-    }
+      // Verificar se a query expirou
+      const lastUpdated = query.state.dataUpdatedAt;
+      return Date.now() - lastUpdated < expirationTime;
+    });
     
-    // Se houve remoções, atualizar o localStorage
-    if (hasRemovedItems) {
-      localStorage.setItem(
-        'clinicas-system-query-cache',
-        JSON.stringify(localStorageCache)
+    // Atualizar o cache apenas com queries ativas
+    if (activeQueries.length !== queries.length) {
+      cache.data.queries = activeQueries;
+      window.localStorage.setItem(
+        "CLINICAS_QUERY_CACHE",
+        JSON.stringify(cache)
       );
       
-      console.log('Removidas queries expiradas do cache persistido');
+      console.log(
+        `Cache de queries limpo: removidas ${queries.length - activeQueries.length} queries expiradas`
+      );
     }
   } catch (error) {
-    console.error('Erro ao limpar cache persistido:', error);
-    // Em caso de erro, limpar completamente o cache para evitar problemas
-    localStorage.removeItem('clinicas-system-query-cache');
+    // Em caso de erro, limpar o cache completamente para evitar problemas
+    console.error("Erro ao limpar o cache, reset completo:", error);
+    window.localStorage.removeItem("CLINICAS_QUERY_CACHE");
   }
 }
