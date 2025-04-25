@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MetricsPrefetcher } from "@/components/dashboard/metrics-prefetcher";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -42,6 +43,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [headerLoading, setHeaderLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Renderiza o prefetcher de métricas que carrega dados em segundo plano
+  // para melhorar a performance do dashboard e outras páginas críticas
+  const renderMetricsPrefetcher = isAuthenticated;
   
   // Simular carregamento do cabeçalho
   useEffect(() => {
@@ -93,6 +98,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
   
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* Componente para pré-carregar dados críticos em segundo plano */}
+      {renderMetricsPrefetcher && <MetricsPrefetcher />}
+      
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
