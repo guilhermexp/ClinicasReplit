@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { usePermissions } from "@/hooks/use-permissions";
+import { usePermissionsContext2 } from "@/hooks/use-permissions-context";
 import { Button } from "@/components/ui/button";
 import {
   Calendar,
@@ -189,7 +189,7 @@ const formatCurrency = (value: number): string => {
 
 export default function Dashboard() {
   const { user, selectedClinic } = useAuth();
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissionsContext2();
   const [location, setLocation] = useLocation();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   
