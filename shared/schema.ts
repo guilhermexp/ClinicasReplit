@@ -132,6 +132,18 @@ export enum InventoryStatus {
   DISCONTINUED = "discontinued"
 }
 
+// Inventory Transaction Type enum
+export enum InventoryTransactionType {
+  PURCHASE = "purchase",            // Compra de produto
+  SALE = "sale",                    // Venda de produto
+  ADJUSTMENT = "adjustment",        // Ajuste manual de estoque
+  RETURN = "return",                // Devolução de produto
+  TRANSFER = "transfer",            // Transferência entre localizações
+  EXPIRED = "expired",              // Produto expirado
+  DAMAGED = "damaged",              // Produto danificado
+  WRITE_OFF = "write_off"           // Baixa de produto
+}
+
 // Task Status enum
 export enum TaskStatus {
   TODO = "todo",
@@ -460,23 +472,60 @@ export const budgets = pgTable("budgets", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Inventory Categories table
+export const inventoryCategories = pgTable("inventory_categories", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color"),
+  icon: text("icon"),
+  parentId: integer("parent_id").references(() => inventoryCategories.id),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Inventory Products table
 export const inventoryProducts = pgTable("inventory_products", {
   id: serial("id").primaryKey(),
   clinicId: integer("clinic_id").notNull().references(() => clinics.id),
   name: text("name").notNull(),
   sku: text("sku"),
+  barcode: text("barcode"),
   description: text("description"),
-  category: text("category"),
-  price: integer("price"),
-  costPrice: integer("cost_price"),
+  categoryId: integer("category_id").references(() => inventoryCategories.id),
+  price: integer("price"), // Preço de venda em centavos
+  costPrice: integer("cost_price"), // Preço de custo em centavos
   quantity: integer("quantity").notNull().default(0),
   lowStockThreshold: integer("low_stock_threshold"),
   image: text("image"),
   supplier: text("supplier"),
+  supplierContact: text("supplier_contact"),
   location: text("location"),
   status: text("status").$type<InventoryStatus>().notNull().default(InventoryStatus.IN_STOCK),
   expiryDate: timestamp("expiry_date"),
+  tags: text("tags").array(),
+  isService: boolean("is_service").default(false), // Indica se é um produto físico ou um serviço
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Inventory Transactions table para rastrear movimentações de estoque
+export const inventoryTransactions = pgTable("inventory_transactions", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  productId: integer("product_id").notNull().references(() => inventoryProducts.id),
+  type: text("type").$type<InventoryTransactionType>().notNull(),
+  quantity: integer("quantity").notNull(), // Positivo para entrada, negativo para saída
+  previousQuantity: integer("previous_quantity").notNull(),
+  newQuantity: integer("new_quantity").notNull(),
+  date: timestamp("date").notNull().defaultNow(),
+  referenceId: integer("reference_id"), // ID de referência (venda, compra, etc.)
+  referenceType: text("reference_type"), // Tipo de referência (payment, expense, etc.)
+  notes: text("notes"),
+  cost: integer("cost"), // Custo total da transação em centavos
   createdBy: integer("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -654,7 +703,9 @@ export const insertAppointmentSchema = createInsertSchema(appointments).omit({ i
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCommissionSchema = createInsertSchema(commissions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInventoryCategorySchema = createInsertSchema(inventoryCategories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertInventoryProductSchema = createInsertSchema(inventoryProducts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInventoryTransactionSchema = createInsertSchema(inventoryTransactions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMarketingCampaignSchema = createInsertSchema(marketingCampaigns).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertInvitationSchema = createInsertSchema(invitations).omit({ id: true, createdAt: true });
@@ -696,8 +747,14 @@ export type InsertCommission = z.infer<typeof insertCommissionSchema>;
 export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 
+export type InventoryCategory = typeof inventoryCategories.$inferSelect;
+export type InsertInventoryCategory = z.infer<typeof insertInventoryCategorySchema>;
+
 export type InventoryProduct = typeof inventoryProducts.$inferSelect;
 export type InsertInventoryProduct = z.infer<typeof insertInventoryProductSchema>;
+
+export type InventoryTransaction = typeof inventoryTransactions.$inferSelect;
+export type InsertInventoryTransaction = z.infer<typeof insertInventoryTransactionSchema>;
 
 export type MarketingCampaign = typeof marketingCampaigns.$inferSelect;
 export type InsertMarketingCampaign = z.infer<typeof insertMarketingCampaignSchema>;

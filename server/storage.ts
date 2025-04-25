@@ -131,6 +131,27 @@ export interface IStorage {
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: number, task: Partial<Task>): Promise<Task | undefined>;
   deleteTask(id: number): Promise<boolean>;
+  
+  // Inventory Category operations
+  getInventoryCategory(id: number): Promise<InventoryCategory | undefined>;
+  getInventoryCategoriesByClinic(clinicId: number): Promise<InventoryCategory[]>;
+  createInventoryCategory(category: InsertInventoryCategory): Promise<InventoryCategory>;
+  updateInventoryCategory(id: number, category: Partial<InventoryCategory>): Promise<InventoryCategory | undefined>;
+  deleteInventoryCategory(id: number): Promise<boolean>;
+  
+  // Inventory Product operations
+  getInventoryProduct(id: number): Promise<InventoryProduct | undefined>;
+  getInventoryProductsByClinic(clinicId: number): Promise<InventoryProduct[]>;
+  getInventoryProductsByCategory(categoryId: number): Promise<InventoryProduct[]>;
+  createInventoryProduct(product: InsertInventoryProduct): Promise<InventoryProduct>;
+  updateInventoryProduct(id: number, product: Partial<InventoryProduct>): Promise<InventoryProduct | undefined>;
+  deleteInventoryProduct(id: number): Promise<boolean>;
+  
+  // Inventory Transaction operations
+  getInventoryTransaction(id: number): Promise<InventoryTransaction | undefined>;
+  getInventoryTransactionsByProduct(productId: number): Promise<InventoryTransaction[]>;
+  getInventoryTransactionsByClinic(clinicId: number): Promise<InventoryTransaction[]>;
+  createInventoryTransaction(transaction: InsertInventoryTransaction): Promise<InventoryTransaction>;
 }
 
 // Database storage implementation using Drizzle ORM
