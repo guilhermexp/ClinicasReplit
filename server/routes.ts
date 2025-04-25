@@ -8,6 +8,7 @@ import { registerCRMRoutes } from "./routes-crm";
 import { registerInventoryRoutes } from "./routes-inventory";
 import { registerProfessionalsRoutes } from "./routes-professionals";
 import { registerFinancialRoutes } from "./routes-financial";
+import { registerTaskRoutes } from "./routes-tasks";
 import { 
   insertUserSchema, 
   insertClinicSchema,

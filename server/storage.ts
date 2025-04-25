@@ -13,8 +13,9 @@ import {
   UserDevice, InsertUserDevice,
   ActivityLog, InsertActivityLog,
   UserTwoFactorAuth, InsertUserTwoFactorAuth,
+  Task, InsertTask, TaskStatus,
   users, clinics, clinicUsers, permissions, clients, professionals, services, appointments, invitations,
-  payments, commissions, userDevices, activityLogs, userTwoFactorAuth
+  payments, commissions, userDevices, activityLogs, userTwoFactorAuth, tasks
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -121,6 +122,15 @@ export interface IStorage {
   getUserTwoFactorAuth(userId: number): Promise<UserTwoFactorAuth | undefined>;
   createUserTwoFactorAuth(twoFactorAuth: InsertUserTwoFactorAuth): Promise<UserTwoFactorAuth>;
   updateUserTwoFactorAuth(userId: number, twoFactorAuth: Partial<UserTwoFactorAuth>): Promise<UserTwoFactorAuth | undefined>;
+  
+  // Task operations
+  getTask(id: number): Promise<Task | undefined>;
+  getTasksByClinic(clinicId: number): Promise<Task[]>;
+  getTasksByAssignee(userId: number): Promise<Task[]>;
+  getTasksByStatus(clinicId: number, status: TaskStatus): Promise<Task[]>;
+  createTask(task: InsertTask): Promise<Task>;
+  updateTask(id: number, task: Partial<Task>): Promise<Task | undefined>;
+  deleteTask(id: number): Promise<boolean>;
 }
 
 // Database storage implementation using Drizzle ORM
@@ -1027,6 +1037,66 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userTwoFactorAuth.userId, userId))
       .returning();
     return updatedTwoFA;
+  }
+
+  // Task operations
+  async getTask(id: number): Promise<Task | undefined> {
+    const [task] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, id));
+    return task;
+  }
+
+  async getTasksByClinic(clinicId: number): Promise<Task[]> {
+    return await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.clinicId, clinicId));
+  }
+
+  async getTasksByAssignee(userId: number): Promise<Task[]> {
+    return await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.assignedTo, userId));
+  }
+
+  async getTasksByStatus(clinicId: number, status: TaskStatus): Promise<Task[]> {
+    return await db
+      .select()
+      .from(tasks)
+      .where(and(
+        eq(tasks.clinicId, clinicId),
+        eq(tasks.status, status)
+      ));
+  }
+
+  async createTask(task: InsertTask): Promise<Task> {
+    const [newTask] = await db.insert(tasks).values(task).returning();
+    return newTask;
+  }
+
+  async updateTask(id: number, updates: Partial<Task>): Promise<Task | undefined> {
+    // Se estiver completando a tarefa, adicionar a data de conclusão
+    if (updates.status === TaskStatus.DONE && !updates.completedAt) {
+      updates.completedAt = new Date();
+    }
+
+    const [updatedTask] = await db
+      .update(tasks)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .returning();
+    return updatedTask;
+  }
+
+  async deleteTask(id: number): Promise<boolean> {
+    const result = await db
+      .delete(tasks)
+      .where(eq(tasks.id, id));
+    
+    return result !== null && (result as any).rowCount > 0;
   }
 }
 
