@@ -44,6 +44,45 @@ export enum PaymentStatus {
   PARTIAL = "partial"
 }
 
+// Expense Category enum
+export enum ExpenseCategory {
+  RENT = "rent",                      // Aluguel
+  UTILITIES = "utilities",            // Serviços públicos (água, luz, etc)
+  SALARY = "salary",                  // Salários
+  MARKETING = "marketing",            // Marketing
+  SUPPLIES = "supplies",              // Suprimentos
+  EQUIPMENT = "equipment",            // Equipamentos
+  MAINTENANCE = "maintenance",        // Manutenção
+  TAXES = "taxes",                    // Impostos
+  INSURANCE = "insurance",            // Seguros
+  SOFTWARE = "software",              // Software
+  TRAINING = "training",              // Treinamento
+  TRAVEL = "travel",                  // Viagens
+  OTHER = "other"                     // Outros
+}
+
+// Expense Status enum
+export enum ExpenseStatus {
+  PENDING = "pending",                // Pendente
+  PAID = "paid",                      // Pago
+  SCHEDULED = "scheduled",            // Agendado
+  RECURRING = "recurring",            // Recorrente
+  CANCELLED = "cancelled"             // Cancelado
+}
+
+// Payment Method enum
+export enum PaymentMethod {
+  CASH = "cash",                      // Dinheiro
+  CREDIT_CARD = "credit_card",        // Cartão de crédito
+  DEBIT_CARD = "debit_card",          // Cartão de débito
+  BANK_TRANSFER = "bank_transfer",    // Transferência bancária
+  PIX = "pix",                        // PIX
+  BOLETO = "boleto",                  // Boleto
+  CHECK = "check",                    // Cheque
+  ONLINE = "online",                  // Pagamento online
+  OTHER = "other"                     // Outros
+}
+
 // Service Category enum
 export enum ServiceCategory {
   FACIAL = "facial",
@@ -293,6 +332,117 @@ export const documents = pgTable("documents", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Expenses table
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  amount: integer("amount").notNull(), // in cents
+  description: text("description").notNull(),
+  category: text("category").$type<ExpenseCategory>().notNull().default(ExpenseCategory.OTHER),
+  status: text("status").$type<ExpenseStatus>().notNull().default(ExpenseStatus.PENDING),
+  dueDate: timestamp("due_date").notNull(),
+  paymentDate: timestamp("payment_date"),
+  paymentMethod: text("payment_method").$type<PaymentMethod>(),
+  recurrence: jsonb("recurrence"), // Para despesas recorrentes (mensal, semanal, etc.)
+  attachmentUrl: text("attachment_url"), // URL para comprovante/nota fiscal
+  supplierName: text("supplier_name"),
+  supplierDocument: text("supplier_document"), // CNPJ/CPF
+  supplierContact: text("supplier_contact"),
+  tags: text("tags").array(),
+  notes: text("notes"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Accounts table (contas bancárias, cartões, caixa)
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // bank_account, credit_card, cash
+  balance: integer("balance").notNull().default(0), // in cents
+  institution: text("institution"), // nome do banco/instituição
+  accountNumber: text("account_number"),
+  agency: text("agency"),
+  isDefault: boolean("is_default").default(false),
+  color: text("color"),
+  icon: text("icon"),
+  notes: text("notes"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Financial Transactions table
+export const financialTransactions = pgTable("financial_transactions", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  accountId: integer("account_id").references(() => accounts.id),
+  amount: integer("amount").notNull(), // in cents, positive for income, negative for expenses
+  description: text("description").notNull(),
+  type: text("type").notNull(), // income, expense, transfer
+  category: text("category").notNull(),
+  date: timestamp("date").notNull(),
+  paymentId: integer("payment_id").references(() => payments.id),
+  expenseId: integer("expense_id").references(() => expenses.id),
+  relatedTransactionId: integer("related_transaction_id"), // para transferências
+  notes: text("notes"),
+  tags: text("tags").array(),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Financial Reports table
+export const financialReports = pgTable("financial_reports", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // cash_flow, balance_sheet, income_statement, etc.
+  period: text("period").notNull(), // daily, weekly, monthly, yearly, custom
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  data: jsonb("data").notNull(),
+  notes: text("notes"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Financial Goals table
+export const financialGoals = pgTable("financial_goals", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  targetAmount: integer("target_amount").notNull(), // in cents
+  currentAmount: integer("current_amount").notNull().default(0), // in cents
+  category: text("category").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  status: text("status").notNull().default("in_progress"), // in_progress, achieved, failed
+  color: text("color"),
+  icon: text("icon"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Budget table
+export const budgets = pgTable("budgets", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  name: text("name").notNull(),
+  year: integer("year").notNull(),
+  month: integer("month").notNull(),
+  categories: jsonb("categories").notNull(), // objeto com categorias e valores orçados
+  notes: text("notes"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Inventory Products table
 export const inventoryProducts = pgTable("inventory_products", {
   id: serial("id").primaryKey(),
@@ -533,6 +683,31 @@ export type InsertLeadAppointment = z.infer<typeof insertLeadAppointmentSchema>;
 export const insertUserDeviceSchema = createInsertSchema(userDevices).omit({ id: true, createdAt: true, updatedAt: true });
 export type UserDevice = typeof userDevices.$inferSelect;
 export type InsertUserDevice = z.infer<typeof insertUserDeviceSchema>;
+
+// Esquemas para o módulo financeiro
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+
+export const insertAccountSchema = createInsertSchema(accounts).omit({ id: true, createdAt: true, updatedAt: true });
+export type Account = typeof accounts.$inferSelect;
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+
+export const insertFinancialTransactionSchema = createInsertSchema(financialTransactions).omit({ id: true, createdAt: true, updatedAt: true });
+export type FinancialTransaction = typeof financialTransactions.$inferSelect;
+export type InsertFinancialTransaction = z.infer<typeof insertFinancialTransactionSchema>;
+
+export const insertFinancialReportSchema = createInsertSchema(financialReports).omit({ id: true, createdAt: true, updatedAt: true });
+export type FinancialReport = typeof financialReports.$inferSelect;
+export type InsertFinancialReport = z.infer<typeof insertFinancialReportSchema>;
+
+export const insertFinancialGoalSchema = createInsertSchema(financialGoals).omit({ id: true, createdAt: true, updatedAt: true });
+export type FinancialGoal = typeof financialGoals.$inferSelect;
+export type InsertFinancialGoal = z.infer<typeof insertFinancialGoalSchema>;
+
+export const insertBudgetSchema = createInsertSchema(budgets).omit({ id: true, createdAt: true, updatedAt: true });
+export type Budget = typeof budgets.$inferSelect;
+export type InsertBudget = z.infer<typeof insertBudgetSchema>;
 
 // Schema para logs de atividade
 export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({ id: true, createdAt: true });
