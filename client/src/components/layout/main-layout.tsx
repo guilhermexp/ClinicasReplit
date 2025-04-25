@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState, lazy, Suspense } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import Sidebar from "@/components/layout/sidebar";
-import { Loader2, BellIcon, Search, User, Settings, LogOut } from "lucide-react";
+import { Loader2, BellIcon, Search, User, Settings, LogOut, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,11 +25,12 @@ interface MainLayoutProps {
 
 // Componente de carregamento para o cabeçalho
 const HeaderSkeleton = () => (
-  <div className="h-16 bg-white border-b border-gray-200 px-4 flex items-center justify-between">
-    <Skeleton className="h-6 w-40" />
+  <div className="h-16 glass-card backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10 mx-4 mt-4 rounded-xl shadow-md">
+    <Skeleton className="h-8 w-48 bg-gray-300/30" />
     <div className="flex items-center space-x-4">
-      <Skeleton className="h-10 w-64 hidden md:block" />
-      <Skeleton className="h-10 w-10 rounded-full" />
+      <Skeleton className="h-10 w-64 hidden md:block bg-gray-300/30" />
+      <Skeleton className="h-10 w-10 rounded-full bg-gray-300/30" />
+      <Skeleton className="h-10 w-10 rounded-full bg-gray-300/30" />
     </div>
   </div>
 );
@@ -99,15 +100,20 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <HeaderSkeleton />
         ) : (
           <header 
-            className="h-16 glass-card backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10 mx-4 mt-4 rounded-xl"
+            className="h-16 glass-card backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10 mx-4 mt-4 rounded-xl shadow-md border border-white/10"
             role="banner"
             aria-label="Cabeçalho principal"
           >
             <div className="flex items-center">
               {selectedClinic && (
-                <h2 className="text-lg font-medium gradient-text hidden md:block">
-                  {selectedClinic.name}
-                </h2>
+                <div className="flex items-center space-x-2">
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-md">
+                    <Building2 className="h-4 w-4 text-white" />
+                  </div>
+                  <h2 className="text-lg font-semibold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent hidden md:block">
+                    {selectedClinic.name}
+                  </h2>
+                </div>
               )}
             </div>
             
@@ -137,12 +143,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   variant="ghost" 
                   size="icon" 
                   onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className="md:hidden text-foreground/80 hover:text-foreground hover:bg-transparent"
+                  className="md:hidden text-foreground/80 hover:text-foreground hover:bg-primary-100/20 rounded-lg"
                   aria-label={isSearchOpen ? "Fechar pesquisa" : "Abrir pesquisa"}
                   aria-expanded={isSearchOpen}
                   aria-controls="search-input"
                 >
-                  <Search className="h-5 w-5" aria-hidden="true" />
+                  <div className="p-1.5 rounded-md bg-gradient-to-br from-primary-400/10 to-primary-600/10">
+                    <Search className="h-4 w-4" aria-hidden="true" />
+                  </div>
                 </Button>
               )}
               
@@ -150,12 +158,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative text-foreground/80 hover:text-foreground hover:bg-transparent"
+                className="relative text-foreground/80 hover:text-foreground hover:bg-primary-100/20 rounded-lg"
                 aria-label="Notificações"
               >
-                <BellIcon className="h-5 w-5" aria-hidden="true" />
+                <div className="p-1.5 rounded-md bg-gradient-to-br from-primary-400/10 to-primary-600/10">
+                  <BellIcon className="h-4 w-4" aria-hidden="true" />
+                </div>
                 <span 
-                  className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full shadow-md"
+                  className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-md animate-pulse"
                   aria-label="Novas notificações"
                 ></span>
               </Button>
