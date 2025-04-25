@@ -46,6 +46,54 @@ interface DashboardStats {
   monthlyRevenue: number;
 }
 
+// Interface para métricas avançadas
+interface AdvancedMetrics {
+  agendamentos: {
+    total: number;
+    mesAtual: number;
+    mesAnterior: number;
+    crescimento: number;
+    taxaCancelamento: number;
+    horarioMaisPopular: number;
+    taxaOcupacao: number;
+  };
+  clientes: {
+    total: number;
+    novosNoMes: number;
+    crescimentoNovosClientes: number;
+  };
+  financeiro: {
+    receitaMesAtual: number;
+    receitaMesAnterior: number;
+    crescimentoReceita: number;
+    ticketMedio: number;
+  };
+  equipe: {
+    totalProfissionais: number;
+    profissionalMaisOcupado: number;
+    atendimentosPorProfissional: Record<number, number>;
+  };
+}
+
+// Interface para análise de desempenho de serviços
+interface ServicePerformance {
+  id: number;
+  name: string;
+  price: number;
+  duration: number;
+  totalAppointments: number;
+  completedAppointments: number;
+  canceledAppointments: number;
+  totalRevenue: number;
+  completionRate: number;
+  cancellationRate: number;
+  trend: Array<{
+    month: string;
+    count: number;
+    revenue: number;
+  }>;
+}
+
 // Tipo de status de agendamento
 type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
 
@@ -224,6 +272,18 @@ export default function Dashboard() {
     enabled: !!selectedClinic,
   });
   
+  // Consultas para métricas avançadas
+  const { data: advancedMetrics, isLoading: isLoadingAdvancedMetrics } = useQuery<AdvancedMetrics>({
+    queryKey: ["/api/clinics", selectedClinic?.id, "dashboard", "advanced-metrics"],
+    enabled: !!selectedClinic,
+  });
+  
+  // Consulta para análise de desempenho dos serviços
+  const { data: servicePerformance = [], isLoading: isLoadingServicePerformance } = useQuery<ServicePerformance[]>({
+    queryKey: ["/api/clinics", selectedClinic?.id, "dashboard", "service-performance"],
+    enabled: !!selectedClinic && hasPermission("services", "read"),
+  });
+  
   // Obter dias com agendamentos para o calendário
   const { data: appointmentDays = [], isLoading: isLoadingAppointmentDays } = useQuery<string[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "dashboard", "appointments", "days", 
@@ -246,7 +306,7 @@ export default function Dashboard() {
   }
   
   // Verificar se os dados das estatísticas foram carregados
-  const isLoading = isLoadingStats || isLoadingAppointments || isLoadingClients || isLoadingRevenue || isLoadingReminders;
+  const isLoading = isLoadingStats || isLoadingAppointments || isLoadingClients || isLoadingRevenue || isLoadingReminders || isLoadingAdvancedMetrics || isLoadingServicePerformance;
   const hasNoStats = !dashboardStats;
   
   if (isLoading || hasNoStats) {

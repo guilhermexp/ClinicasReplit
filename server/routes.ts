@@ -1440,6 +1440,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para obter métricas avançadas para o dashboard
+  app.get("/api/clinics/:clinicId/dashboard/advanced-metrics", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      
+      // Verifica se o usuário tem permissão para acessar dados desta clínica
+      const hasAccess = await hasClinicAccess(req.user!.id, clinicId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Permissão negada para acessar dados desta clínica" });
+      }
+      
+      // Determina datas para análise
+      const today = new Date();
+      const startOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const startOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      
+      // Buscar dados do banco
+      let appointmentsData = [];
+      let clientsData = [];
+      let paymentsData = [];
+      let professionalsData = [];
+      
+      try {
+        // Buscar todos os agendamentos
+        appointmentsData = await db
+          .select()
+          .from(appointments)
+          .where(eq(appointments.clinicId, clinicId));
+        
+        // Buscar clientes
+        clientsData = await db
+          .select()
+          .from(clients)
+          .where(eq(clients.clinicId, clinicId));
+        
+        // Buscar pagamentos
+        paymentsData = await db
+          .select()
+          .from(payments)
+          .where(eq(payments.clinicId, clinicId));
+        
+        // Buscar profissionais
+        professionalsData = await db
+          .select()
+          .from(professionals)
+          .where(eq(professionals.clinicId, clinicId));
+      } catch (dbError) {
+        console.error("Erro na consulta ao banco de dados:", dbError);
+        return res.status(500).json({ message: "Erro na consulta ao banco de dados" });
+      }
+      
+      // Cálculos para métricas de agendamentos
+      const currentMonthAppointments = appointmentsData.filter(
+        app => app.startTime >= startOfCurrentMonth && app.startTime <= today
+      );
+      
+      const previousMonthAppointments = appointmentsData.filter(
+        app => app.startTime >= startOfPreviousMonth && app.startTime < startOfCurrentMonth
+      );
+      
+      const canceledAppointments = appointmentsData.filter(app => app.status === "CANCELLED");
+      const cancelationRate = appointmentsData.length > 0 
+        ? (canceledAppointments.length / appointmentsData.length) * 100 
+        : 0;
+      
+      // Análise de horários mais populares
+      const hourCounts: Record<number, number> = {};
+      appointmentsData.forEach(app => {
+        const hour = new Date(app.startTime).getHours();
+        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      });
+      
+      // Encontrar o horário mais popular
+      let mostPopularHour = 0;
+      let maxCount = 0;
+      Object.entries(hourCounts).forEach(([hour, count]) => {
+        if (count > maxCount) {
+          mostPopularHour = parseInt(hour);
+          maxCount = count;
+        }
+      });
+      
+      // Calcular taxa de agendamentos por profissional
+      const appointmentsByProfessional: Record<number, number> = {};
+      appointmentsData.forEach(app => {
+        appointmentsByProfessional[app.professionalId] = (appointmentsByProfessional[app.professionalId] || 0) + 1;
+      });
+      
+      // Calcular o profissional mais ocupado
+      let busiestProfessionalId = 0;
+      let busiestProfessionalCount = 0;
+      Object.entries(appointmentsByProfessional).forEach(([profId, count]) => {
+        if (count > busiestProfessionalCount) {
+          busiestProfessionalId = parseInt(profId);
+          busiestProfessionalCount = count;
+        }
+      });
+      
+      // Análise de novos clientes
+      const newClientsThisMonth = clientsData.filter(
+        client => client.createdAt >= startOfCurrentMonth
+      ).length;
+      
+      const newClientsPreviousMonth = clientsData.filter(
+        client => client.createdAt >= startOfPreviousMonth && client.createdAt < startOfCurrentMonth
+      ).length;
+      
+      const newClientsGrowth = newClientsPreviousMonth > 0 
+        ? ((newClientsThisMonth - newClientsPreviousMonth) / newClientsPreviousMonth) * 100 
+        : newClientsThisMonth > 0 ? 100 : 0;
+      
+      // Análise de receita
+      const currentMonthRevenue = paymentsData
+        .filter(payment => payment.createdAt >= startOfCurrentMonth)
+        .reduce((sum, payment) => sum + payment.amount, 0);
+      
+      const previousMonthRevenue = paymentsData
+        .filter(payment => payment.createdAt >= startOfPreviousMonth && payment.createdAt < startOfCurrentMonth)
+        .reduce((sum, payment) => sum + payment.amount, 0);
+      
+      const revenueGrowth = previousMonthRevenue > 0 
+        ? ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100 
+        : currentMonthRevenue > 0 ? 100 : 0;
+      
+      // Taxa de ocupação da clínica
+      // Aqui consideramos horário comercial (8h às 18h) e dias úteis (22 dias no mês)
+      const workingHoursPerDay = 10; // 8h às 18h
+      const workingDaysPerMonth = 22;
+      const totalPossibleAppointmentsPerMonth = workingHoursPerDay * workingDaysPerMonth * professionalsData.length;
+      
+      const occupancyRate = totalPossibleAppointmentsPerMonth > 0 
+        ? (currentMonthAppointments.length / totalPossibleAppointmentsPerMonth) * 100 
+        : 0;
+      
+      res.json({
+        agendamentos: {
+          total: appointmentsData.length,
+          mesAtual: currentMonthAppointments.length,
+          mesAnterior: previousMonthAppointments.length,
+          crescimento: previousMonthAppointments.length > 0 
+            ? ((currentMonthAppointments.length - previousMonthAppointments.length) / previousMonthAppointments.length) * 100 
+            : currentMonthAppointments.length > 0 ? 100 : 0,
+          taxaCancelamento: cancelationRate,
+          horarioMaisPopular: mostPopularHour,
+          taxaOcupacao: occupancyRate
+        },
+        clientes: {
+          total: clientsData.length,
+          novosNoMes: newClientsThisMonth,
+          crescimentoNovosClientes: newClientsGrowth,
+        },
+        financeiro: {
+          receitaMesAtual: currentMonthRevenue,
+          receitaMesAnterior: previousMonthRevenue,
+          crescimentoReceita: revenueGrowth,
+          ticketMedio: paymentsData.length > 0 ? paymentsData.reduce((sum, p) => sum + p.amount, 0) / paymentsData.length : 0
+        },
+        equipe: {
+          totalProfissionais: professionalsData.length,
+          profissionalMaisOcupado: busiestProfessionalId,
+          atendimentosPorProfissional: appointmentsByProfessional
+        }
+      });
+    } catch (error: any) {
+      console.error("Erro ao buscar métricas avançadas:", error);
+      res.status(500).json({ message: error.message || "Erro ao buscar métricas avançadas" });
+    }
+  });
+  
   app.get("/api/clinics/:clinicId/financial/revenue/:period", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const clinicId = parseInt(req.params.clinicId);
@@ -1537,6 +1706,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+  // Endpoint para análise de desempenho por serviço
+  app.get("/api/clinics/:clinicId/dashboard/service-performance", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const clinicId = parseInt(req.params.clinicId);
+      
+      // Verifica se o usuário tem permissão para acessar dados desta clínica
+      const hasAccess = await hasClinicAccess(req.user!.id, clinicId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Permissão negada para acessar dados desta clínica" });
+      }
+      
+      // Buscar serviços da clínica
+      const servicesData = await db
+        .select({
+          id: services.id,
+          name: services.name,
+          price: services.price,
+          duration: services.duration,
+        })
+        .from(services)
+        .where(eq(services.clinicId, clinicId))
+        .limit(10);  // Limita para os 10 primeiros para performance
+      
+      // Buscar agendamentos para calcular quantas vezes cada serviço foi realizado
+      const appointmentsData = await db
+        .select({
+          serviceId: appointments.serviceId,
+          status: appointments.status,
+          startTime: appointments.startTime,
+        })
+        .from(appointments)
+        .where(eq(appointments.clinicId, clinicId))
+        .orderBy(desc(appointments.startTime));
+      
+      // Calcular performance de cada serviço
+      const servicePerformance = servicesData.map(service => {
+        // Contar quantas vezes este serviço foi agendado
+        const serviceAppointments = appointmentsData.filter(app => app.serviceId === service.id);
+        const completedAppointments = serviceAppointments.filter(app => app.status === "COMPLETED").length;
+        const canceledAppointments = serviceAppointments.filter(app => app.status === "CANCELLED").length;
+        
+        // Calcular receita total gerada por este serviço
+        const totalRevenue = completedAppointments * service.price;
+        
+        // Calcular taxa de conclusão e cancelamento
+        const completionRate = serviceAppointments.length > 0 
+          ? (completedAppointments / serviceAppointments.length) * 100 
+          : 0;
+        
+        const cancellationRate = serviceAppointments.length > 0 
+          ? (canceledAppointments / serviceAppointments.length) * 100 
+          : 0;
+        
+        // Agrupar por mês para tendência
+        const monthlyData = new Map<string, { count: number, revenue: number }>();
+        const today = new Date();
+        
+        // Inicializar os últimos 6 meses
+        for (let i = 5; i >= 0; i--) {
+          const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
+          const monthKey = `${month.getFullYear()}-${month.getMonth() + 1}`;
+          monthlyData.set(monthKey, { count: 0, revenue: 0 });
+        }
+        
+        // Preencher com dados reais
+        serviceAppointments.forEach(app => {
+          const appDate = new Date(app.startTime);
+          const monthKey = `${appDate.getFullYear()}-${appDate.getMonth() + 1}`;
+          
+          if (monthlyData.has(monthKey) && app.status === "COMPLETED") {
+            const data = monthlyData.get(monthKey)!;
+            data.count += 1;
+            data.revenue += service.price;
+          }
+        });
+        
+        // Converter para array para resposta
+        const trend = Array.from(monthlyData.entries()).map(([month, data]) => ({
+          month,
+          count: data.count,
+          revenue: data.revenue
+        }));
+        
+        return {
+          id: service.id,
+          name: service.name,
+          price: service.price,
+          duration: service.duration,
+          totalAppointments: serviceAppointments.length,
+          completedAppointments,
+          canceledAppointments,
+          totalRevenue,
+          completionRate,
+          cancellationRate,
+          trend
+        };
+      });
+      
+      // Ordenar por receita total
+      servicePerformance.sort((a, b) => b.totalRevenue - a.totalRevenue);
+      
+      res.json(servicePerformance);
+    } catch (error: any) {
+      console.error("Erro ao buscar desempenho por serviço:", error);
+      res.status(500).json({ message: error.message || "Erro ao buscar desempenho por serviço" });
+    }
+  });
+  
   app.get("/api/clinics/:clinicId/performance-heatmap", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const clinicId = parseInt(req.params.clinicId);
