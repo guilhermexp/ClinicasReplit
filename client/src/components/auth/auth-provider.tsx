@@ -93,6 +93,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isError: isAuthError 
   } = useQuery<{user: User}>({
     queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      console.log("Verificando autenticação...");
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+          headers: {
+            "Accept": "application/json",
+            "Cache-Control": "no-cache"
+          }
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log("Usuário não autenticado");
+            return { user: null };
+          }
+          throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log("Usuário autenticado:", data);
+        return data;
+      } catch (error) {
+        console.error("Erro ao verificar autenticação:", error);
+        return { user: null };
+      }
+    },
     retry: false, // Don't retry auth requests
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos
@@ -163,35 +190,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const res = await apiRequest("POST", "/api/auth/login", credentials);
-      return res.json();
+      console.log("Tentando login com:", credentials.email);
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: JSON.stringify(credentials),
+          credentials: "include"
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || `Erro ${response.status}: ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Erro durante login:", error);
+        throw error;
+      }
     },
     onSuccess: async (data) => {
+      console.log("Login bem-sucedido:", data);
+      
       // Atualizar os dados do usuário no cache
       queryClient.setQueryData(["/api/auth/me"], data);
       
-      // Pré-buscar dados de clínicas para evitar múltiplas requisições
-      queryClient.prefetchQuery({
-        queryKey: ["/api/clinics"],
-        staleTime: 5 * 60 * 1000 // 5 minutos
-      });
-      
-      // Verificar se o usuário já está vinculado a alguma clínica
-      const clinicsRes = await apiRequest("GET", "/api/clinics");
-      const userClinics = await clinicsRes.json();
-      
-      if (userClinics && userClinics.length > 0) {
-        // Usuário já está vinculado a pelo menos uma clínica, vai para o dashboard
-        navigate("/dashboard");
-      } else {
-        // Usuário sem clínicas vinculadas, vai para o onboarding
-        navigate("/onboarding");
+      try {
+        // Verificar se o usuário já está vinculado a alguma clínica
+        console.log("Buscando clínicas do usuário...");
+        const clinicsRes = await fetch("/api/clinics", {
+          credentials: "include",
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+        
+        if (!clinicsRes.ok) {
+          throw new Error(`Erro ao buscar clínicas: ${clinicsRes.status}`);
+        }
+        
+        const userClinics = await clinicsRes.json();
+        console.log("Clínicas do usuário:", userClinics);
+        
+        // Agora redirecionar baseado no resultado
+        if (userClinics && userClinics.length > 0) {
+          console.log("Redirecionando para dashboard");
+          // Usuário já está vinculado a pelo menos uma clínica, vai para o dashboard
+          setTimeout(() => navigate("/dashboard"), 100);
+        } else {
+          console.log("Redirecionando para onboarding");
+          // Usuário sem clínicas vinculadas, vai para o onboarding
+          setTimeout(() => navigate("/onboarding"), 100);
+        }
+        
+        toast({
+          title: "Login bem-sucedido",
+          description: `Bem-vindo, ${data.user.name}!`,
+        });
+      } catch (error) {
+        console.error("Erro após login:", error);
+        // Em caso de erro, ainda redirecionamos para dashboard
+        setTimeout(() => navigate("/dashboard"), 100);
       }
-      
-      toast({
-        title: "Login bem-sucedido",
-        description: `Bem-vindo, ${data.user.name}!`,
-      });
     },
     onError: (error: Error) => {
       toast({

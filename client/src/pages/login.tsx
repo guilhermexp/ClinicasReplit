@@ -36,12 +36,22 @@ export default function Login() {
     setIsLoading(true);
     
     try {
+      console.log("Iniciando login na página de login...");
       await login(email, password);
-      // The redirect is handled in the auth provider
-    } catch (error) {
+      console.log("Login bem-sucedido na página de login");
+      // Após o login bem-sucedido, podemos adicionar um redirecionamento manual
+      // em caso de falha do Auth Provider
+      setTimeout(() => {
+        if (window.location.pathname === "/login") {
+          console.log("Redirecionamento manual para dashboard");
+          window.location.href = "/dashboard";
+        }
+      }, 1000);
+    } catch (error: any) {
+      console.error("Erro durante login:", error);
       toast({
         title: "Erro ao fazer login",
-        description: "Verifique suas credenciais e tente novamente.",
+        description: error.message || "Verifique suas credenciais e tente novamente.",
         variant: "destructive",
       });
     } finally {
