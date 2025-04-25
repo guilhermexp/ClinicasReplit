@@ -913,20 +913,7 @@ export class DatabaseStorage implements IStorage {
   
   async getUserDevices(userId: number): Promise<UserDevice[]> {
     try {
-      // Tentar obter os dispositivos com todas as colunas
-      const devices = await db
-        .select()
-        .from(userDevices)
-        .where(eq(userDevices.userId, userId));
-      
-      // Adicionar a propriedade isCurrent temporariamente se ela ainda não existir na tabela
-      return devices.map(device => ({
-        ...device,
-        isCurrent: false
-      }));
-    } catch (error) {
-      console.error("Erro ao buscar dispositivos do usuário:", error);
-      // Buscar apenas as colunas que sabemos que existem
+      // Buscar apenas as colunas que sabemos que existem na tabela
       const devices = await db
         .select({
           id: userDevices.id,
@@ -952,6 +939,10 @@ export class DatabaseStorage implements IStorage {
         ...device,
         isCurrent: false
       }));
+    } catch (error) {
+      console.error("Erro ao buscar dispositivos do usuário:", error);
+      // Em caso de qualquer erro, retornar um array vazio
+      return [];
     }
   }
   
