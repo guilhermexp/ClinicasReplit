@@ -789,7 +789,7 @@ export default function AttendancePage() {
             </div>
           </div>
         </Card>
-      ) : filteredRecords.length === 0 ? (
+      ) : filteredRecords && filteredRecords.length === 0 ? (
         <Card className="border border-gray-100 shadow-sm overflow-hidden bg-gradient-to-b from-background to-muted/20">
           <CardContent className="p-8 text-center">
             <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -964,16 +964,16 @@ export default function AttendancePage() {
           </CardContent>
           <CardFooter className="py-3 px-4 border-t flex justify-between items-center text-xs text-muted-foreground">
             <div>
-              Total de registros: {filteredRecords.length}
+              Total de registros: {filteredRecords ? filteredRecords.length : 0}
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span>Completos: {filteredRecords.filter(r => r.status === "complete").length}</span>
+                <span>Completos: {filteredRecords ? filteredRecords.filter(r => r.status === "complete").length : 0}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                <span>Incompletos: {filteredRecords.filter(r => r.status === "incomplete").length}</span>
+                <span>Incompletos: {filteredRecords ? filteredRecords.filter(r => r.status === "incomplete").length : 0}</span>
               </div>
             </div>
           </CardFooter>
