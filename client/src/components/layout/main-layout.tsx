@@ -100,7 +100,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <HeaderSkeleton />
         ) : (
           <header 
-            className="h-16 glass-card backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10 mx-4 mt-4 rounded-xl shadow-md border border-white/10"
+            className="h-16 bg-black/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10 mx-4 mt-4 rounded-xl shadow-md border border-white/10"
             role="banner"
             aria-label="Cabeçalho principal"
           >
@@ -110,7 +110,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-md">
                     <Building2 className="h-4 w-4 text-white" />
                   </div>
-                  <h2 className="text-lg font-semibold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent hidden md:block">
+                  <h2 className="text-lg font-semibold text-white drop-shadow-sm hidden md:block">
                     {selectedClinic.name}
                   </h2>
                 </div>
@@ -124,13 +124,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 isSearchOpen ? "w-full md:w-64" : "w-0 md:w-64"
               )}>
                 <form onSubmit={handleSearch} className="relative">
-                  <div className="absolute left-2 top-[50%] transform -translate-y-1/2 p-1 rounded-md bg-gradient-to-br from-primary-400/10 to-primary-600/10">
-                    <Search className="h-3.5 w-3.5 text-primary-500" aria-hidden="true" />
+                  <div className="absolute left-2 top-[50%] transform -translate-y-1/2 p-1 rounded-md bg-primary-600/20">
+                    <Search className="h-3.5 w-3.5 text-white" aria-hidden="true" />
                   </div>
                   <Input 
                     type="search" 
                     placeholder="Pesquisar..." 
-                    className="pl-10 h-9 md:h-10 w-full bg-white/5 border-white/10 focus:border-primary-400/30 focus:ring-primary-400/20 rounded-lg shadow-sm"
+                    className="pl-10 h-9 md:h-10 w-full bg-black/40 border-white/20 focus:border-white/40 focus:ring-white/20 rounded-lg shadow-sm text-white placeholder:text-white/60"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     aria-label="Pesquisar no sistema"
@@ -145,13 +145,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   variant="ghost" 
                   size="icon" 
                   onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className="md:hidden text-foreground/80 hover:text-foreground hover:bg-primary-100/20 rounded-lg"
+                  className="md:hidden text-white hover:text-white hover:bg-white/10 rounded-lg"
                   aria-label={isSearchOpen ? "Fechar pesquisa" : "Abrir pesquisa"}
                   aria-expanded={isSearchOpen}
                   aria-controls="search-input"
                 >
-                  <div className="p-1.5 rounded-md bg-gradient-to-br from-primary-400/10 to-primary-600/10">
-                    <Search className="h-4 w-4" aria-hidden="true" />
+                  <div className="p-1.5 rounded-md bg-primary-600/20">
+                    <Search className="h-4 w-4 text-white" aria-hidden="true" />
                   </div>
                 </Button>
               )}
@@ -160,14 +160,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative text-foreground/80 hover:text-foreground hover:bg-primary-100/20 rounded-lg"
+                className="relative text-white hover:text-white hover:bg-white/10 rounded-lg"
                 aria-label="Notificações"
               >
-                <div className="p-1.5 rounded-md bg-gradient-to-br from-primary-400/10 to-primary-600/10">
-                  <BellIcon className="h-4 w-4" aria-hidden="true" />
+                <div className="p-1.5 rounded-md bg-primary-600/20">
+                  <BellIcon className="h-4 w-4 text-white" aria-hidden="true" />
                 </div>
                 <span 
-                  className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-md animate-pulse"
+                  className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full shadow-md animate-pulse"
                   aria-label="Novas notificações"
                 ></span>
               </Button>
@@ -189,7 +189,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 glass-card backdrop-blur-md border border-white/10 shadow-xl p-1">
+                  <DropdownMenuContent align="end" className="w-64 bg-black/75 backdrop-blur-md border border-white/10 shadow-xl p-1">
                     <DropdownMenuLabel>
                       <div className="flex items-center space-x-3 p-1.5">
                         <Avatar className="h-12 w-12 shadow-md border-2 border-white/30 bg-gradient-to-br from-primary-100/80 to-primary-600/50">
@@ -198,30 +198,30 @@ export default function MainLayout({ children }: MainLayoutProps) {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">
-                          <p className="font-semibold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">{user.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          <p className="font-semibold text-white">{user.name}</p>
+                          <p className="text-xs text-white/80 truncate">{user.email}</p>
                         </div>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-border/30 my-1" />
+                    <DropdownMenuSeparator className="bg-white/20 my-1" />
                     <DropdownMenuItem 
                       onClick={() => navigate('/settings')}
-                      className="hover:bg-primary/10 focus:bg-primary/10 transition-colors rounded-md my-0.5 p-2.5"
+                      className="hover:bg-white/10 focus:bg-white/10 transition-colors rounded-md my-0.5 p-2.5 text-white"
                     >
-                      <div className="mr-3 p-1.5 rounded-md bg-gradient-to-br from-primary-400/10 to-primary-600/10">
-                        <Settings className="h-4 w-4" aria-hidden="true" />
+                      <div className="mr-3 p-1.5 rounded-md bg-primary-600/20">
+                        <Settings className="h-4 w-4 text-white" aria-hidden="true" />
                       </div>
                       <span>Meu perfil</span>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-border/30 my-1" />
+                    <DropdownMenuSeparator className="bg-white/20 my-1" />
                     <DropdownMenuItem 
                       onClick={() => logout()}
-                      className="hover:bg-destructive/10 focus:bg-destructive/10 transition-colors rounded-md my-0.5 p-2.5"
+                      className="hover:bg-red-900/20 focus:bg-red-900/20 transition-colors rounded-md my-0.5 p-2.5 text-white"
                     >
-                      <div className="mr-3 p-1.5 rounded-md bg-gradient-to-br from-destructive/10 to-destructive/5">
-                        <LogOut className="h-4 w-4 text-destructive/80" aria-hidden="true" />
+                      <div className="mr-3 p-1.5 rounded-md bg-red-700/20">
+                        <LogOut className="h-4 w-4 text-white" aria-hidden="true" />
                       </div>
-                      <span className="text-destructive/80">Sair</span>
+                      <span className="text-white">Sair</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
