@@ -36,11 +36,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Mapeamento entre categorias da UI (português) e do banco (inglês)
+const CATEGORY_MAP: Record<string, string> = {
+  "Estética Facial": "facial",
+  "Estética Corporal": "body",
+  "Massoterapia": "massages",
+  "Injetáveis": "injectables",
+  "Tratamentos": "other"
+};
+
+// Mapeamento reverso para exibição
+const REVERSE_CATEGORY_MAP: Record<string, string> = {
+  "facial": "Estética Facial",
+  "body": "Estética Corporal",
+  "massages": "Massoterapia",
+  "injectables": "Injetáveis",
+  "other": "Tratamentos",
+  "hair": "Tratamentos Capilares",
+  "laser": "Laser"
+};
+
 interface Service {
   id: number;
   clinicId: number;
   name: string;
   description: string | null;
+  category?: string;
   duration: number;
   price: number;
   createdAt: string;
@@ -69,7 +90,11 @@ function ProcedureFormDialog({
   const [description, setDescription] = useState(procedure?.description || "");
   const [duration, setDuration] = useState(procedure?.duration?.toString() || "60");
   const [price, setPrice] = useState(procedure?.price ? (procedure.price / 100).toString() : "");
-  const [category, setCategory] = useState("Estética Facial");
+  const [category, setCategory] = useState(
+    procedure?.category && REVERSE_CATEGORY_MAP[procedure.category]
+      ? REVERSE_CATEGORY_MAP[procedure.category]
+      : "Estética Facial"
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Mutação para adicionar ou atualizar procedimento
@@ -130,6 +155,7 @@ function ProcedureFormDialog({
       description,
       duration: parseInt(duration) || 60,
       price: price ? Math.round(parseFloat(price) * 100) : 0, // Converter para centavos
+      category: CATEGORY_MAP[category] || "other", // Converter categoria para o formato do banco
       clinicId
     };
     
@@ -407,9 +433,10 @@ export function ProceduresPanel() {
         
         <div className="border rounded-md overflow-hidden">
           <div className="bg-gray-50 p-3 flex items-center font-medium text-sm">
-            <div className="w-1/3">Nome</div>
-            <div className="w-1/6">Duração</div>
-            <div className="w-1/4">Descrição</div>
+            <div className="w-1/4">Nome</div>
+            <div className="w-1/6">Categoria</div>
+            <div className="w-1/12">Duração</div>
+            <div className="w-1/6">Descrição</div>
             <div className="w-1/6">Valor</div>
             <div className="w-1/12 text-right">Ações</div>
           </div>
@@ -449,9 +476,16 @@ export function ProceduresPanel() {
                 )
                 .map(procedure => (
                   <div key={procedure.id} className="p-3 flex items-center text-sm hover:bg-gray-50">
-                    <div className="w-1/3 font-medium">{procedure.name}</div>
-                    <div className="w-1/6">{formatDuration(procedure.duration)}</div>
-                    <div className="w-1/4 truncate">{procedure.description || "-"}</div>
+                    <div className="w-1/4 font-medium">{procedure.name}</div>
+                    <div className="w-1/6">
+                      {procedure.category && REVERSE_CATEGORY_MAP[procedure.category] 
+                        ? <span className="inline-block bg-primary/10 text-primary text-xs rounded-full px-2 py-1">
+                            {REVERSE_CATEGORY_MAP[procedure.category]}
+                          </span>
+                        : "-"}
+                    </div>
+                    <div className="w-1/12">{formatDuration(procedure.duration)}</div>
+                    <div className="w-1/6 truncate">{procedure.description || "-"}</div>
                     <div className="w-1/6">{formatPrice(procedure.price)}</div>
                     <div className="w-1/12 flex justify-end space-x-1">
                       <Button 
