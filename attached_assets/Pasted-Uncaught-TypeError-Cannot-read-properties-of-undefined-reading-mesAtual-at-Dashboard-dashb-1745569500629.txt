@@ -1,0 +1,45 @@
+Uncaught TypeError: Cannot read properties of undefined (reading 'mesAtual')
+    at Dashboard (dashboard.tsx:759:99)
+    at renderWithHooks (chunk-SXRIVT2P.js?v=1cc86875:11596:26)
+    at updateFunctionComponent (chunk-SXRIVT2P.js?v=1cc86875:14630:28)
+    at beginWork (chunk-SXRIVT2P.js?v=1cc86875:15972:22)
+    at HTMLUnknownElement.callCallback2 (chunk-SXRIVT2P.js?v=1cc86875:3680:22)
+    at Object.invokeGuardedCallbackDev (chunk-SXRIVT2P.js?v=1cc86875:3705:24)
+    at invokeGuardedCallback (chunk-SXRIVT2P.js?v=1cc86875:3739:39)
+    at beginWork$1 (chunk-SXRIVT2P.js?v=1cc86875:19818:15)
+    at performUnitOfWork (chunk-SXRIVT2P.js?v=1cc86875:19251:20)
+    at workLoopSync (chunk-SXRIVT2P.js?v=1cc86875:19190:13)
+chunk-SXRIVT2P.js?v=1cc86875:14080 The above error occurred in the <Dashboard> component:
+
+    at Dashboard (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/pages/dashboard.tsx:178:36)
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/components/layout/main-layout.tsx:71:38)
+    at ProtectedRoute (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/App.tsx?v=8X7Wtg1bqGD3GAkWpa-ir:41:27)
+    at Route (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=1cc86875:206:16)
+    at Switch (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=1cc86875:262:17)
+    at Provider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=1cc86875:38:15)
+    at TooltipProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=1cc86875:65:5)
+    at PermissionsProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/providers/permission-provider.tsx:26:39)
+    at AuthProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/src/components/auth/auth-provider.tsx:38:32)
+    at QueryClientProvider (https://70e6cb73-e0c8-4c2b-acb0-dcbf1d0b013d-00-ri3405qii6mw.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1cc86875:2875:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-SXRIVT2P.js?v=1cc86875:14080
+Show 1 more frame
+Show less
+chunk-SXRIVT2P.js?v=1cc86875:9176 Uncaught TypeError: Cannot read properties of undefined (reading 'mesAtual')
+    at Dashboard (dashboard.tsx:759:99)
+    at renderWithHooks (chunk-SXRIVT2P.js?v=1cc86875:11596:26)
+    at updateFunctionComponent (chunk-SXRIVT2P.js?v=1cc86875:14630:28)
+    at beginWork (chunk-SXRIVT2P.js?v=1cc86875:15972:22)
+    at beginWork$1 (chunk-SXRIVT2P.js?v=1cc86875:19806:22)
+    at performUnitOfWork (chunk-SXRIVT2P.js?v=1cc86875:19251:20)
+    at workLoopSync (chunk-SXRIVT2P.js?v=1cc86875:19190:13)
+    at renderRootSync (chunk-SXRIVT2P.js?v=1cc86875:19169:15)
+    at recoverFromConcurrentError (chunk-SXRIVT2P.js?v=1cc86875:18786:28)
+    at performSyncWorkOnRoot (chunk-SXRIVT2P.js?v=1cc86875:18932:28)

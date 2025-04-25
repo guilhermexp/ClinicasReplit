@@ -741,7 +741,7 @@ export default function Dashboard() {
       </div>
 
       {/* Seção de Métricas Avançadas */}
-      {advancedMetrics && (
+      {advancedMetrics && advancedMetrics.agendamentos && advancedMetrics.clientes && advancedMetrics.financeiro && (
         <div className="mt-6">
           <h2 className="text-xl font-bold mb-4 gradient-text">Métricas Avançadas</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -768,8 +768,7 @@ export default function Dashboard() {
                     </div>
                     <Progress 
                       value={advancedMetrics.agendamentos.taxaOcupacao} 
-                      className="h-2 bg-muted/30"
-                      indicatorClassName={advancedMetrics.agendamentos.taxaOcupacao > 70 ? "bg-green-500" : "bg-amber-500"}  
+                      className={`h-2 bg-muted/30 ${advancedMetrics.agendamentos.taxaOcupacao > 70 ? "[--progress-foreground:theme(colors.green.500)]" : "[--progress-foreground:theme(colors.amber.500)]"}`}
                     />
                   </div>
                   
@@ -780,8 +779,7 @@ export default function Dashboard() {
                     </div>
                     <Progress 
                       value={advancedMetrics.agendamentos.taxaCancelamento} 
-                      className="h-2 bg-muted/30"
-                      indicatorClassName={advancedMetrics.agendamentos.taxaCancelamento < 10 ? "bg-green-500" : "bg-red-500"}  
+                      className={`h-2 bg-muted/30 ${advancedMetrics.agendamentos.taxaCancelamento < 10 ? "[--progress-foreground:theme(colors.green.500)]" : "[--progress-foreground:theme(colors.red.500)]"}`}
                     />
                   </div>
                   
@@ -834,8 +832,7 @@ export default function Dashboard() {
                     </div>
                     <Progress 
                       value={Math.min(advancedMetrics.clientes.novosNoMes / 50 * 100, 100)} 
-                      className="h-2 bg-muted/30"
-                      indicatorClassName="bg-blue-500"  
+                      className="h-2 bg-muted/30 [--progress-foreground:theme(colors.blue.500)]"
                     />
                   </div>
                   
@@ -884,8 +881,7 @@ export default function Dashboard() {
                     </div>
                     <Progress 
                       value={Math.min(advancedMetrics.financeiro.ticketMedio / 1000 * 100, 100)} 
-                      className="h-2 bg-muted/30"
-                      indicatorClassName="bg-green-500"  
+                      className="h-2 bg-muted/30 [--progress-foreground:theme(colors.green.500)]"
                     />
                   </div>
                   
@@ -945,8 +941,7 @@ export default function Dashboard() {
                         </div>
                         <Progress 
                           value={service.completionRate} 
-                          className="h-1.5 bg-muted/30"
-                          indicatorClassName="bg-primary"
+                          className="h-1.5 bg-muted/30 [--progress-foreground:hsl(var(--primary))]"
                         />
                       </div>
                       <div className="flex justify-between items-center text-xs mt-2">
