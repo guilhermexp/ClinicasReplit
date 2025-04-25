@@ -1763,6 +1763,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Permissão negada para acessar dados desta clínica" });
       }
       
+      // Importar esquema de serviços
+      const { services } = await import("@shared/schema");
+      
       // Buscar serviços da clínica
       const servicesData = await db
         .select({
@@ -1776,6 +1779,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(10);  // Limita para os 10 primeiros para performance
       
       // Buscar agendamentos para calcular quantas vezes cada serviço foi realizado
+      const { appointments } = await import("@shared/schema");
+      const { desc } = await import("drizzle-orm");
+      
       const appointmentsData = await db
         .select({
           serviceId: appointments.serviceId,
@@ -1881,6 +1887,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       try {
+        // Importar função de formatação de datas
+        const { format } = await import("date-fns");
+        
         // Buscar os agendamentos diretamente com SQL para evitar problemas de schema
         const appointmentsResult = await pool.query(`
           SELECT 
