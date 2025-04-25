@@ -100,7 +100,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <HeaderSkeleton />
         ) : (
           <header 
-            className="h-16 bg-black/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10 mx-4 mt-4 rounded-xl shadow-md border border-white/10"
+            className="h-16 glass-card sidebar-gradient backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10 mx-4 mt-4 rounded-xl shadow-md border border-white/10"
             role="banner"
             aria-label="Cabeçalho principal"
           >
@@ -124,13 +124,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 isSearchOpen ? "w-full md:w-64" : "w-0 md:w-64"
               )}>
                 <form onSubmit={handleSearch} className="relative">
-                  <div className="absolute left-2 top-[50%] transform -translate-y-1/2 p-1 rounded-md bg-primary-600/20">
+                  <div className="absolute left-2 top-[50%] transform -translate-y-1/2 p-1 rounded-md bg-white/10">
                     <Search className="h-3.5 w-3.5 text-white" aria-hidden="true" />
                   </div>
                   <Input 
                     type="search" 
                     placeholder="Pesquisar..." 
-                    className="pl-10 h-9 md:h-10 w-full bg-black/40 border-white/20 focus:border-white/40 focus:ring-white/20 rounded-lg shadow-sm text-white placeholder:text-white/60"
+                    className="pl-10 h-9 md:h-10 w-full bg-white/5 border-white/20 focus:border-white/40 focus:ring-white/20 rounded-lg shadow-sm text-white placeholder:text-white/60"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     aria-label="Pesquisar no sistema"
@@ -150,7 +150,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   aria-expanded={isSearchOpen}
                   aria-controls="search-input"
                 >
-                  <div className="p-1.5 rounded-md bg-primary-600/20">
+                  <div className="p-1.5 rounded-md bg-white/10">
                     <Search className="h-4 w-4 text-white" aria-hidden="true" />
                   </div>
                 </Button>
@@ -163,7 +163,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 className="relative text-white hover:text-white hover:bg-white/10 rounded-lg"
                 aria-label="Notificações"
               >
-                <div className="p-1.5 rounded-md bg-primary-600/20">
+                <div className="p-1.5 rounded-md bg-white/10">
                   <BellIcon className="h-4 w-4 text-white" aria-hidden="true" />
                 </div>
                 <span 
@@ -182,18 +182,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       className="rounded-full h-9 w-9 md:h-10 md:w-10 hover:bg-transparent hover:shadow-lg transition-all p-0 border-2 border-primary-200/30"
                       aria-label="Menu do usuário"
                     >
-                      <Avatar className="h-9 w-9 md:h-10 md:w-10 shadow-md border-[3px] border-white/30 bg-gradient-to-br from-primary-100/80 to-primary-600/50">
-                        <AvatarFallback className="bg-gradient-to-br from-primary-600 to-primary-400 text-white font-medium">
+                      <Avatar className="h-9 w-9 md:h-10 md:w-10 shadow-md border-[3px] border-white/30">
+                        <AvatarFallback className={getAvatarColor(user.name)}>
                           {getInitials(user.name)}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 bg-black/75 backdrop-blur-md border border-white/10 shadow-xl p-1">
+                  <DropdownMenuContent align="end" className="w-64 glass-card sidebar-gradient backdrop-blur-md border border-white/10 shadow-xl p-1">
                     <DropdownMenuLabel>
                       <div className="flex items-center space-x-3 p-1.5">
-                        <Avatar className="h-12 w-12 shadow-md border-2 border-white/30 bg-gradient-to-br from-primary-100/80 to-primary-600/50">
-                          <AvatarFallback className="bg-gradient-to-br from-primary-600 to-primary-400 text-white font-medium">
+                        <Avatar className="h-12 w-12 shadow-md border-2 border-white/30">
+                          <AvatarFallback className={getAvatarColor(user.name)}>
                             {getInitials(user.name)}
                           </AvatarFallback>
                         </Avatar>
@@ -208,7 +208,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       onClick={() => navigate('/settings')}
                       className="hover:bg-white/10 focus:bg-white/10 transition-colors rounded-md my-0.5 p-2.5 text-white"
                     >
-                      <div className="mr-3 p-1.5 rounded-md bg-primary-600/20">
+                      <div className="mr-3 p-1.5 rounded-md bg-white/10">
                         <Settings className="h-4 w-4 text-white" aria-hidden="true" />
                       </div>
                       <span>Meu perfil</span>
@@ -216,9 +216,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     <DropdownMenuSeparator className="bg-white/20 my-1" />
                     <DropdownMenuItem 
                       onClick={() => logout()}
-                      className="hover:bg-red-900/20 focus:bg-red-900/20 transition-colors rounded-md my-0.5 p-2.5 text-white"
+                      className="hover:bg-white/10 focus:bg-white/10 transition-colors rounded-md my-0.5 p-2.5 text-white"
                     >
-                      <div className="mr-3 p-1.5 rounded-md bg-red-700/20">
+                      <div className="mr-3 p-1.5 rounded-md bg-white/10">
                         <LogOut className="h-4 w-4 text-white" aria-hidden="true" />
                       </div>
                       <span className="text-white">Sair</span>
