@@ -39,6 +39,7 @@ import {
   userTwoFactorAuth,
   users
 } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { paymentService } from "./payment-service";
 import passport from "passport";
@@ -614,17 +615,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "É necessário informar o ID da clínica." });
       }
       
-      // Verificando usuário diretamente
-      const userDetails = await storage.getUser(user.id);
-      console.log("Detalhes do usuário:", JSON.stringify(userDetails));
+      // Verificando se o usuário existe pelo email, que é mais confiável que o ID
+      const userEmail = user.email;
+      console.log("Buscando usuário pelo email:", userEmail);
       
-      // Verificando relação com a clínica
-      const clinicUser = await storage.getClinicUser(clinicId, user.id);
+      // Buscar no banco diretamente para evitar problemas de ID
+      const [userDetails] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, userEmail));
+      
+      console.log("Detalhes do usuário encontrado:", JSON.stringify(userDetails));
+      
+      if (!userDetails) {
+        console.log("Usuário não encontrado na base de dados");
+        return res.status(404).json({ message: "Usuário não encontrado." });
+      }
+      
+      // Verificando relação com a clínica usando o ID recuperado do banco
+      const [clinicUser] = await db
+        .select()
+        .from(clinicUsers)
+        .where(
+          and(
+            eq(clinicUsers.userId, userDetails.id),
+            eq(clinicUsers.clinicId, clinicId)
+          )
+        );
+      
       console.log("Relação com a clínica:", JSON.stringify(clinicUser));
       
       // Se o usuário é SUPER_ADMIN ou OWNER da clínica, ele deve ter permissão
-      if (userDetails?.role === 'SUPER_ADMIN' || clinicUser?.role === 'OWNER') {
-        console.log("Usuário tem permissão para criar convites");
+      if (userDetails.role === UserRole.SUPER_ADMIN || (clinicUser && clinicUser.role === ClinicRole.OWNER)) {
+        console.log("Usuário tem permissão para criar convites. Role:", userDetails.role, "Clínica Role:", clinicUser?.role);
         
         // Generate a random token
         const token = crypto.randomBytes(32).toString("hex");
@@ -632,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const data = {
           ...req.body,
           token,
-          invitedBy: user.id,
+          invitedBy: userDetails.id, // Use o ID correto do banco
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
         };
         
@@ -656,7 +679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           invitationLink: `/accept-invitation?token=${token}`
         });
       } else {
-        console.log("Usuário não tem permissão. Role:", userDetails?.role, "Clínica Role:", clinicUser?.role);
+        console.log("Usuário não tem permissão. Role:", userDetails.role, "Clínica Role:", clinicUser?.role);
         return res.status(403).json({ message: "Você não tem permissão para convidar usuários para esta clínica." });
       }
     } catch (error) {
