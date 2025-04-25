@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -6,21 +7,37 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { PermissionsProvider } from "@/providers/permission-provider";
 import { useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
+
+// Componentes carregados imediatamente
 import MainLayout from "@/components/layout/main-layout";
-import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
-import Onboarding from "@/pages/onboarding";
-import Users from "@/pages/users";
-import Clients from "@/pages/clients";
-import Appointments from "@/pages/appointments";
-import Financial from "@/pages/financial/index";
-import FinanceiroPage from "@/pages/financeiro";
-import AttendancePage from "@/pages/attendance";
-import CrmPage from "@/pages/crm/index";
-import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
-import { Loader2 } from "lucide-react";
+
+// Lazy loading para componentes de páginas menos críticas
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const Onboarding = lazy(() => import("@/pages/onboarding"));
+const Users = lazy(() => import("@/pages/users"));
+const Clients = lazy(() => import("@/pages/clients"));
+const Appointments = lazy(() => import("@/pages/appointments"));
+const Financial = lazy(() => import("@/pages/financial/index"));
+const FinanceiroPage = lazy(() => import("@/pages/financeiro"));
+const AttendancePage = lazy(() => import("@/pages/attendance"));
+const CrmPage = lazy(() => import("@/pages/crm/index"));
+const Settings = lazy(() => import("@/pages/settings"));
+
+// Componente para carregamento suspense
+function PageLoader() {
+  return (
+    <div className="h-[80vh] w-full flex items-center justify-center">
+      <div className="flex flex-col items-center gap-2">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground">Carregando página...</p>
+      </div>
+    </div>
+  );
+}
 
 // Componente para proteger rotas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -41,7 +58,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Redirect to="/login" />;
   }
   
-  return <>{children}</>;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      {children}
+    </Suspense>
+  );
 }
 
 function App() {
