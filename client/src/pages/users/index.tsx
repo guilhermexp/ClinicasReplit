@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ export default function Users() {
   const { selectedClinic } = useAuth();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -248,10 +249,46 @@ export default function Users() {
                                 <DropdownMenuItem 
                                   className="cursor-pointer text-destructive focus:text-destructive"
                                   onClick={() => {
-                                    // Adicionar lógica para cancelar convite
-                                    toast({
-                                      title: "Recurso em desenvolvimento",
-                                      description: "A funcionalidade de cancelamento de convites será implementada em breve.",
+                                    // Cancelar convite usando a API
+                                    fetch(`/api/invitations/${invitation.token}`, {
+                                      method: 'DELETE',
+                                      headers: {
+                                        'Content-Type': 'application/json'
+                                      }
+                                    })
+                                    .then(response => {
+                                      if (response.ok) {
+                                        toast({
+                                          title: "Convite cancelado",
+                                          description: "O convite foi cancelado com sucesso."
+                                        });
+                                        // Invalidar o cache para forçar a atualização
+                                        queryClient.invalidateQueries({
+                                          queryKey: ["/api/clinics", selectedClinic?.id, "invitations"]
+                                        });
+                                      } else {
+                                        response.json().then(data => {
+                                          toast({
+                                            title: "Erro ao cancelar convite",
+                                            description: data.message || "Ocorreu um erro ao cancelar o convite.",
+                                            variant: "destructive"
+                                          });
+                                        }).catch(() => {
+                                          toast({
+                                            title: "Erro ao cancelar convite",
+                                            description: "Ocorreu um erro ao cancelar o convite.",
+                                            variant: "destructive"
+                                          });
+                                        });
+                                      }
+                                    })
+                                    .catch(error => {
+                                      console.error("Erro ao cancelar convite:", error);
+                                      toast({
+                                        title: "Erro ao cancelar convite",
+                                        description: "Ocorreu um erro ao cancelar o convite. Tente novamente mais tarde.",
+                                        variant: "destructive"
+                                      });
                                     });
                                   }}
                                 >

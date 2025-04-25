@@ -821,6 +821,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Cancelar convite (exclui o convite)
+  app.delete("/api/invitations/:token", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const token = req.params.token;
+      const invitation = await storage.getInvitation(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Convite não encontrado." });
+      }
+      
+      // Verificar se o usuário tem permissão para gerenciar esta clínica
+      const clinicUser = await storage.getClinicUserByUserAndClinic(req.user!.id, invitation.clinicId);
+      
+      if (!clinicUser || !['OWNER', 'MANAGER'].includes(clinicUser.role)) {
+        return res.status(403).json({ message: "Você não tem permissão para cancelar convites nesta clínica." });
+      }
+      
+      await storage.deleteInvitationByToken(token);
+      res.status(200).json({ message: "Convite cancelado com sucesso." });
+    } catch (error) {
+      console.error("Erro ao cancelar convite:", error);
+      res.status(500).json({ message: "Erro ao cancelar convite." });
+    }
+  });
+  
   // Accept invitation by token
   app.post("/api/invitations/accept", isAuthenticated, async (req: Request, res: Response) => {
     try {
