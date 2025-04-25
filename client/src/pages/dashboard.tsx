@@ -739,6 +739,295 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Seção de Métricas Avançadas */}
+      {advancedMetrics && (
+        <div className="mt-6">
+          <h2 className="text-xl font-bold mb-4 gradient-text">Métricas Avançadas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Métricas de Agendamentos */}
+            <Card variant="glass" className="border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="pb-2">
+                <CardTitle gradient={true} className="text-lg">Agendamentos</CardTitle>
+                <CardDescription>Performance de agendamentos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                      <span>Agendamentos no mês</span>
+                      <span className="font-medium text-foreground">{advancedMetrics.agendamentos.mesAtual}</span>
+                    </div>
+                    <Progress value={Math.min(advancedMetrics.agendamentos.mesAtual / 100 * 100, 100)} className="h-2"/>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                      <span>Taxa de ocupação</span>
+                      <span className="font-medium text-foreground">{advancedMetrics.agendamentos.taxaOcupacao.toFixed(1)}%</span>
+                    </div>
+                    <Progress 
+                      value={advancedMetrics.agendamentos.taxaOcupacao} 
+                      className="h-2 bg-muted/30"
+                      indicatorClassName={advancedMetrics.agendamentos.taxaOcupacao > 70 ? "bg-green-500" : "bg-amber-500"}  
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                      <span>Taxa de cancelamento</span>
+                      <span className="font-medium text-foreground">{advancedMetrics.agendamentos.taxaCancelamento.toFixed(1)}%</span>
+                    </div>
+                    <Progress 
+                      value={advancedMetrics.agendamentos.taxaCancelamento} 
+                      className="h-2 bg-muted/30"
+                      indicatorClassName={advancedMetrics.agendamentos.taxaCancelamento < 10 ? "bg-green-500" : "bg-red-500"}  
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-2 border-t border-border/30">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Crescimento</p>
+                      <div className="flex items-center space-x-1 text-sm">
+                        {advancedMetrics.agendamentos.crescimento > 0 ? (
+                          <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className={`font-medium ${
+                          advancedMetrics.agendamentos.crescimento > 0 ? "text-emerald-500" : "text-red-500"
+                        }`}>
+                          {advancedMetrics.agendamentos.crescimento > 0 && "+"}
+                          {advancedMetrics.agendamentos.crescimento.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Horário popular</p>
+                      <p className="font-medium">{advancedMetrics.agendamentos.horarioMaisPopular}h</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Métricas de Clientes */}
+            <Card variant="glass" className="border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="pb-2">
+                <CardTitle gradient={true} className="text-lg">Clientes</CardTitle>
+                <CardDescription>Métricas de clientes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                      <span>Total de clientes</span>
+                      <span className="font-medium text-foreground">{advancedMetrics.clientes.total}</span>
+                    </div>
+                    <Progress value={Math.min(advancedMetrics.clientes.total / 500 * 100, 100)} className="h-2 bg-muted/30"/>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                      <span>Novos clientes no mês</span>
+                      <span className="font-medium text-foreground">{advancedMetrics.clientes.novosNoMes}</span>
+                    </div>
+                    <Progress 
+                      value={Math.min(advancedMetrics.clientes.novosNoMes / 50 * 100, 100)} 
+                      className="h-2 bg-muted/30"
+                      indicatorClassName="bg-blue-500"  
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-2 border-t border-border/30 mt-8">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Crescimento de novos clientes</p>
+                      <div className="flex items-center space-x-1 text-sm">
+                        {advancedMetrics.clientes.crescimentoNovosClientes > 0 ? (
+                          <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className={`font-medium ${
+                          advancedMetrics.clientes.crescimentoNovosClientes > 0 ? "text-emerald-500" : "text-red-500"
+                        }`}>
+                          {advancedMetrics.clientes.crescimentoNovosClientes > 0 && "+"}
+                          {advancedMetrics.clientes.crescimentoNovosClientes.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Métricas Financeiras */}
+            <Card variant="glass" className="border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="pb-2">
+                <CardTitle gradient={true} className="text-lg">Financeiro</CardTitle>
+                <CardDescription>Performance financeira</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                      <span>Receita no mês</span>
+                      <span className="font-medium text-foreground">{formatCurrency(advancedMetrics.financeiro.receitaMesAtual)}</span>
+                    </div>
+                    <Progress value={Math.min(advancedMetrics.financeiro.receitaMesAtual / 100000 * 100, 100)} className="h-2 bg-muted/30"/>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                      <span>Ticket médio</span>
+                      <span className="font-medium text-foreground">{formatCurrency(advancedMetrics.financeiro.ticketMedio)}</span>
+                    </div>
+                    <Progress 
+                      value={Math.min(advancedMetrics.financeiro.ticketMedio / 1000 * 100, 100)} 
+                      className="h-2 bg-muted/30"
+                      indicatorClassName="bg-green-500"  
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-2 border-t border-border/30 mt-8">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Crescimento da receita</p>
+                      <div className="flex items-center space-x-1 text-sm">
+                        {advancedMetrics.financeiro.crescimentoReceita > 0 ? (
+                          <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className={`font-medium ${
+                          advancedMetrics.financeiro.crescimentoReceita > 0 ? "text-emerald-500" : "text-red-500"
+                        }`}>
+                          {advancedMetrics.financeiro.crescimentoReceita > 0 && "+"}
+                          {advancedMetrics.financeiro.crescimentoReceita.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+      
+      {/* Seção de Análise de Desempenho de Serviços */}
+      {servicePerformance.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-xl font-bold mb-4 gradient-text">Desempenho de Serviços</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Ranking de serviços por receita */}
+            <Card variant="glass" className="border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="pb-2">
+                <CardTitle gradient={true} className="text-lg">Top Serviços</CardTitle>
+                <CardDescription>Ranking por receita gerada</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {servicePerformance.slice(0, 5).map((service, index) => (
+                    <div key={service.id} className="p-3 bg-background/50 backdrop-blur-sm rounded-xl border border-border/30 hover:shadow-md transition-all">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center mr-2 text-sm font-medium">
+                            {index + 1}
+                          </div>
+                          <span className="font-medium">{service.name}</span>
+                        </div>
+                        <span className="text-sm font-bold">{formatCurrency(service.totalRevenue)}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex text-xs justify-between mb-1">
+                          <span className="text-muted-foreground">Taxa de conclusão</span>
+                          <span>{service.completionRate.toFixed(1)}%</span>
+                        </div>
+                        <Progress 
+                          value={service.completionRate} 
+                          className="h-1.5 bg-muted/30"
+                          indicatorClassName="bg-primary"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-xs mt-2">
+                        <span className="text-muted-foreground">{service.completedAppointments} concluídos</span>
+                        <span className="text-muted-foreground">Duração: {service.duration} min</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Gráfico de tendência */}
+            <Card variant="glass" className="border-0 overflow-hidden shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="pb-2">
+                <CardTitle gradient={true} className="text-lg">Tendência de Receita</CardTitle>
+                <CardDescription>Evolução dos serviços mais rentáveis</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {servicePerformance.length > 0 && (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart 
+                        data={servicePerformance[0].trend.map(item => ({
+                          month: item.month.split('-')[1], // Exibir apenas o mês
+                          receita: item.revenue,
+                          atendimentos: item.count
+                        }))}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="month" />
+                        <YAxis 
+                          yAxisId="left"
+                          orientation="left"
+                          tickFormatter={(value) => `R$${value}`}
+                        />
+                        <YAxis 
+                          yAxisId="right"
+                          orientation="right"
+                          tickFormatter={(value) => `${value}`}
+                        />
+                        <Tooltip 
+                          formatter={(value, name) => [
+                            name === 'receita' ? `R$${value}` : value,
+                            name === 'receita' ? 'Receita' : 'Atendimentos'
+                          ]}
+                          contentStyle={{ 
+                            borderRadius: '8px', 
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            backdropFilter: 'blur(8px)',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid rgba(0, 0, 0, 0.1)'
+                          }}
+                        />
+                        <Bar yAxisId="left" dataKey="receita" fill="url(#barGradient)" radius={[6, 6, 0, 0]}>
+                          <defs>
+                            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="hsl(var(--primary-start))" stopOpacity={0.8}/>
+                              <stop offset="100%" stopColor="hsl(var(--primary-end))" stopOpacity={0.8}/>
+                            </linearGradient>
+                          </defs>
+                        </Bar>
+                        <Bar yAxisId="right" dataKey="atendimentos" fill="rgba(0, 0, 0, 0.2)" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-primary/20 hover:bg-primary/10"
+                  onClick={() => setLocation("/services")}
+                >
+                  Ver todos os serviços
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      )}
       
       {/* Seção de Análise de Desempenho - Heatmap */}
       <div className="mt-6">
