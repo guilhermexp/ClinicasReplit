@@ -829,10 +829,47 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserDevices(userId: number): Promise<UserDevice[]> {
-    return await db
-      .select()
-      .from(userDevices)
-      .where(eq(userDevices.userId, userId));
+    try {
+      // Tentar obter os dispositivos com todas as colunas
+      const devices = await db
+        .select()
+        .from(userDevices)
+        .where(eq(userDevices.userId, userId));
+      
+      // Adicionar a propriedade isCurrent temporariamente se ela ainda não existir na tabela
+      return devices.map(device => ({
+        ...device,
+        isCurrent: false
+      }));
+    } catch (error) {
+      console.error("Erro ao buscar dispositivos do usuário:", error);
+      // Buscar apenas as colunas que sabemos que existem
+      const devices = await db
+        .select({
+          id: userDevices.id,
+          userId: userDevices.userId,
+          deviceName: userDevices.deviceName,
+          deviceType: userDevices.deviceType,
+          browser: userDevices.browser,
+          operatingSystem: userDevices.operatingSystem,
+          lastIp: userDevices.lastIp,
+          lastActive: userDevices.lastActive,
+          isActive: userDevices.isActive,
+          userAgent: userDevices.userAgent,
+          token: userDevices.token,
+          expiresAt: userDevices.expiresAt,
+          createdAt: userDevices.createdAt,
+          updatedAt: userDevices.updatedAt
+        })
+        .from(userDevices)
+        .where(eq(userDevices.userId, userId));
+      
+      // Adicionar a propriedade isCurrent temporariamente
+      return devices.map(device => ({
+        ...device,
+        isCurrent: false
+      }));
+    }
   }
   
   async createUserDevice(device: InsertUserDevice): Promise<UserDevice> {

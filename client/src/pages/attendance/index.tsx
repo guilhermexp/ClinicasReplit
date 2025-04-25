@@ -520,7 +520,7 @@ export default function AttendancePage() {
                 />
               </div>
               <div className={`overflow-y-auto max-h-36 bg-background border rounded-md mt-1 ${searchTerm ? 'block' : 'hidden'}`}>
-                {filteredEmployees.length > 0 ? (
+                {filteredEmployees && filteredEmployees.length > 0 ? (
                   filteredEmployees.map(employee => (
                     <div
                       key={employee.id}
