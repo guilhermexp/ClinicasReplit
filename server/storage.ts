@@ -96,6 +96,25 @@ export interface IStorage {
   updateCommission(id: number, commission: Partial<Commission>): Promise<Commission | undefined>;
   listCommissionsByClinic(clinicId: number): Promise<Commission[]>;
   listCommissionsByProfessional(professionalId: number): Promise<Commission[]>;
+  
+  // User device operations
+  getUserDevice(id: number): Promise<UserDevice | undefined>;
+  getUserDeviceByToken(token: string): Promise<UserDevice | undefined>;
+  getUserDevices(userId: number): Promise<UserDevice[]>;
+  createUserDevice(device: InsertUserDevice): Promise<UserDevice>;
+  updateUserDevice(id: number, device: Partial<UserDevice>): Promise<UserDevice | undefined>;
+  deleteUserDevice(id: number): Promise<boolean>;
+  revokeAllUserDevices(userId: number, exceptDeviceId?: number): Promise<boolean>;
+  
+  // Activity log operations
+  getActivityLog(id: number): Promise<ActivityLog | undefined>;
+  getUserActivityLogs(userId: number, limit?: number): Promise<ActivityLog[]>;
+  createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
+  
+  // Two-factor authentication operations
+  getUserTwoFactorAuth(userId: number): Promise<UserTwoFactorAuth | undefined>;
+  createUserTwoFactorAuth(twoFactorAuth: InsertUserTwoFactorAuth): Promise<UserTwoFactorAuth>;
+  updateUserTwoFactorAuth(userId: number, twoFactorAuth: Partial<UserTwoFactorAuth>): Promise<UserTwoFactorAuth | undefined>;
 }
 
 // Database storage implementation using Drizzle ORM
@@ -719,6 +738,139 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(commissions)
       .where(eq(commissions.professionalId, professionalId));
+  }
+  
+  // Implementação das operações de dispositivos de usuário
+  async getUserDevice(id: number): Promise<UserDevice | undefined> {
+    const [device] = await db
+      .select()
+      .from(userDevices)
+      .where(eq(userDevices.id, id));
+    return device;
+  }
+  
+  async getUserDeviceByToken(token: string): Promise<UserDevice | undefined> {
+    const [device] = await db
+      .select()
+      .from(userDevices)
+      .where(eq(userDevices.token, token));
+    return device;
+  }
+  
+  async getUserDevices(userId: number): Promise<UserDevice[]> {
+    return await db
+      .select()
+      .from(userDevices)
+      .where(eq(userDevices.userId, userId));
+  }
+  
+  async createUserDevice(device: InsertUserDevice): Promise<UserDevice> {
+    const [newDevice] = await db
+      .insert(userDevices)
+      .values({
+        ...device,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newDevice;
+  }
+  
+  async updateUserDevice(id: number, updates: Partial<UserDevice>): Promise<UserDevice | undefined> {
+    const [updatedDevice] = await db
+      .update(userDevices)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userDevices.id, id))
+      .returning();
+    return updatedDevice;
+  }
+  
+  async deleteUserDevice(id: number): Promise<boolean> {
+    const result = await db
+      .delete(userDevices)
+      .where(eq(userDevices.id, id));
+    return !!result;
+  }
+  
+  async revokeAllUserDevices(userId: number, exceptDeviceId?: number): Promise<boolean> {
+    try {
+      if (exceptDeviceId) {
+        await db
+          .update(userDevices)
+          .set({ isActive: false, updatedAt: new Date() })
+          .where(and(
+            eq(userDevices.userId, userId),
+            sql`id != ${exceptDeviceId}`
+          ));
+      } else {
+        await db
+          .update(userDevices)
+          .set({ isActive: false, updatedAt: new Date() })
+          .where(eq(userDevices.userId, userId));
+      }
+      return true;
+    } catch (error) {
+      console.error("Erro ao revogar todos os dispositivos:", error);
+      return false;
+    }
+  }
+  
+  // Implementação das operações de logs de atividade
+  async getActivityLog(id: number): Promise<ActivityLog | undefined> {
+    const [log] = await db
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.id, id));
+    return log;
+  }
+  
+  async getUserActivityLogs(userId: number, limit: number = 50): Promise<ActivityLog[]> {
+    return await db
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.userId, userId))
+      .orderBy(sql`${activityLogs.createdAt} DESC`)
+      .limit(limit);
+  }
+  
+  async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
+    const [newLog] = await db
+      .insert(activityLogs)
+      .values({
+        ...log,
+        createdAt: new Date()
+      })
+      .returning();
+    return newLog;
+  }
+  
+  // Implementação das operações de autenticação de dois fatores
+  async getUserTwoFactorAuth(userId: number): Promise<UserTwoFactorAuth | undefined> {
+    const [twoFA] = await db
+      .select()
+      .from(userTwoFactorAuth)
+      .where(eq(userTwoFactorAuth.userId, userId));
+    return twoFA;
+  }
+  
+  async createUserTwoFactorAuth(twoFactorAuth: InsertUserTwoFactorAuth): Promise<UserTwoFactorAuth> {
+    const [newTwoFA] = await db
+      .insert(userTwoFactorAuth)
+      .values({
+        ...twoFactorAuth,
+        updatedAt: new Date()
+      })
+      .returning();
+    return newTwoFA;
+  }
+  
+  async updateUserTwoFactorAuth(userId: number, updates: Partial<UserTwoFactorAuth>): Promise<UserTwoFactorAuth | undefined> {
+    const [updatedTwoFA] = await db
+      .update(userTwoFactorAuth)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userTwoFactorAuth.userId, userId))
+      .returning();
+    return updatedTwoFA;
   }
 }
 

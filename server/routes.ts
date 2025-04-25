@@ -19,6 +19,9 @@ import {
   insertLeadSchema,
   insertLeadInteractionSchema,
   insertLeadAppointmentSchema,
+  insertUserDeviceSchema,
+  insertActivityLogSchema,
+  insertUserTwoFactorAuthSchema,
   UserRole,
   ClinicRole,
   clinics,
@@ -28,7 +31,10 @@ import {
   leadAppointments,
   appointments,
   payments,
-  PaymentStatus
+  PaymentStatus,
+  userDevices,
+  activityLogs,
+  userTwoFactorAuth
 } from "@shared/schema";
 import { z } from "zod";
 import { paymentService } from "./payment-service";
@@ -1392,6 +1398,393 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Registrar as rotas de inventário
   registerInventoryRoutes(app, isAuthenticated);
+
+  // Rotas do módulo de segurança
+
+  // Rotas para gerenciamento de dispositivos conectados
+  app.get("/api/security/devices", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const devices = await storage.getUserDevices(userId);
+      res.json(devices);
+    } catch (error) {
+      console.error("Erro ao buscar dispositivos do usuário:", error);
+      res.status(500).json({ message: "Erro ao buscar dispositivos." });
+    }
+  });
+
+  app.post("/api/security/devices", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const result = insertUserDeviceSchema.safeParse({
+        ...req.body,
+        userId
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
+      }
+      
+      const device = await storage.createUserDevice(result.data);
+      res.status(201).json(device);
+    } catch (error) {
+      console.error("Erro ao criar dispositivo:", error);
+      res.status(500).json({ message: "Erro ao criar dispositivo." });
+    }
+  });
+
+  app.delete("/api/security/devices/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const deviceId = parseInt(req.params.id);
+      const device = await storage.getUserDevice(deviceId);
+      
+      if (!device || device.userId !== userId) {
+        return res.status(404).json({ message: "Dispositivo não encontrado ou não pertence ao usuário." });
+      }
+      
+      const success = await storage.deleteUserDevice(deviceId);
+      if (success) {
+        res.json({ message: "Dispositivo removido com sucesso." });
+      } else {
+        res.status(500).json({ message: "Erro ao remover dispositivo." });
+      }
+    } catch (error) {
+      console.error("Erro ao remover dispositivo:", error);
+      res.status(500).json({ message: "Erro ao remover dispositivo." });
+    }
+  });
+
+  app.post("/api/security/devices/revoke-all", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const { exceptCurrentDevice } = req.body;
+      const currentDeviceId = exceptCurrentDevice ? parseInt(req.body.currentDeviceId) : undefined;
+      
+      const success = await storage.revokeAllUserDevices(userId, currentDeviceId);
+      if (success) {
+        res.json({ message: "Todos os dispositivos foram revogados com sucesso." });
+      } else {
+        res.status(500).json({ message: "Erro ao revogar dispositivos." });
+      }
+    } catch (error) {
+      console.error("Erro ao revogar todos os dispositivos:", error);
+      res.status(500).json({ message: "Erro ao revogar dispositivos." });
+    }
+  });
+
+  // Rotas para logs de atividade
+  app.get("/api/security/activity-logs", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const logs = await storage.getUserActivityLogs(userId, limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Erro ao buscar logs de atividade:", error);
+      res.status(500).json({ message: "Erro ao buscar logs de atividade." });
+    }
+  });
+
+  app.post("/api/security/activity-logs", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const result = insertActivityLogSchema.safeParse({
+        ...req.body,
+        userId,
+        ipAddress: req.ip || req.socket.remoteAddress,
+        userAgent: req.headers['user-agent']
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
+      }
+      
+      const log = await storage.createActivityLog(result.data);
+      res.status(201).json(log);
+    } catch (error) {
+      console.error("Erro ao criar log de atividade:", error);
+      res.status(500).json({ message: "Erro ao criar log de atividade." });
+    }
+  });
+
+  // Rotas para autenticação de dois fatores (2FA)
+  app.get("/api/security/2fa", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const twoFA = await storage.getUserTwoFactorAuth(userId);
+      if (!twoFA) {
+        return res.status(404).json({ message: "Configuração 2FA não encontrada." });
+      }
+      
+      // Não enviar o secret para o cliente
+      const { appSecret, ...safeData } = twoFA;
+      res.json(safeData);
+    } catch (error) {
+      console.error("Erro ao buscar configuração 2FA:", error);
+      res.status(500).json({ message: "Erro ao buscar configuração 2FA." });
+    }
+  });
+
+  app.post("/api/security/2fa/setup", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      // Gerar um segredo para autenticação por app
+      const appSecret = crypto.randomBytes(20).toString('hex');
+      
+      // Gerar códigos de backup
+      const backupCodes = Array.from({ length: 10 }, () => 
+        crypto.randomBytes(4).toString('hex').toUpperCase()
+      );
+      
+      const result = insertUserTwoFactorAuthSchema.safeParse({
+        userId,
+        appEnabled: false,
+        appSecret,
+        smsEnabled: false,
+        phoneVerified: false,
+        emailEnabled: false,
+        emailVerified: false,
+        backupCodes
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
+      }
+      
+      // Verificar se já existe configuração 2FA para este usuário
+      const existingTwoFA = await storage.getUserTwoFactorAuth(userId);
+      
+      let twoFA;
+      if (existingTwoFA) {
+        // Atualizar configuração existente
+        twoFA = await storage.updateUserTwoFactorAuth(userId, {
+          appSecret,
+          backupCodes
+        });
+      } else {
+        // Criar nova configuração
+        twoFA = await storage.createUserTwoFactorAuth(result.data);
+      }
+      
+      if (!twoFA) {
+        return res.status(500).json({ message: "Erro ao configurar 2FA." });
+      }
+      
+      // Retornar apenas o necessário para setup
+      res.status(201).json({
+        appSecret,
+        backupCodes
+      });
+    } catch (error) {
+      console.error("Erro ao configurar 2FA:", error);
+      res.status(500).json({ message: "Erro ao configurar 2FA." });
+    }
+  });
+
+  app.post("/api/security/2fa/verify-app", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: "Código obrigatório." });
+      }
+      
+      const twoFA = await storage.getUserTwoFactorAuth(userId);
+      if (!twoFA || !twoFA.appSecret) {
+        return res.status(404).json({ message: "Configuração 2FA não encontrada." });
+      }
+      
+      // Em uma implementação real, você verificaria o código TOTP aqui
+      // Para este protótipo, vamos simular a verificação
+      const verified = code === "123456"; // Simulação
+      
+      if (verified) {
+        await storage.updateUserTwoFactorAuth(userId, {
+          appEnabled: true
+        });
+        
+        // Registrar atividade
+        await storage.createActivityLog({
+          userId,
+          activity: "Ativação de autenticação em dois fatores (app)",
+          entityType: "security",
+          ipAddress: req.ip || req.socket.remoteAddress,
+          userAgent: req.headers['user-agent']
+        });
+        
+        res.json({ success: true, message: "Verificação bem-sucedida. 2FA com app está ativado." });
+      } else {
+        res.status(400).json({ success: false, message: "Código inválido." });
+      }
+    } catch (error) {
+      console.error("Erro ao verificar código 2FA:", error);
+      res.status(500).json({ message: "Erro ao verificar código 2FA." });
+    }
+  });
+
+  app.post("/api/security/2fa/verify-email", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: "Código obrigatório." });
+      }
+      
+      // Em uma implementação real, você verificaria o código enviado por email
+      // Para este protótipo, vamos simular a verificação
+      const verified = code === "654321"; // Simulação
+      
+      if (verified) {
+        await storage.updateUserTwoFactorAuth(userId, {
+          emailEnabled: true,
+          emailVerified: true
+        });
+        
+        // Registrar atividade
+        await storage.createActivityLog({
+          userId,
+          activity: "Ativação de autenticação em dois fatores (email)",
+          entityType: "security",
+          ipAddress: req.ip || req.socket.remoteAddress,
+          userAgent: req.headers['user-agent']
+        });
+        
+        res.json({ success: true, message: "Verificação bem-sucedida. 2FA com email está ativado." });
+      } else {
+        res.status(400).json({ success: false, message: "Código inválido." });
+      }
+    } catch (error) {
+      console.error("Erro ao verificar código de email 2FA:", error);
+      res.status(500).json({ message: "Erro ao verificar código de email 2FA." });
+    }
+  });
+
+  app.post("/api/security/2fa/verify-sms", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: "Código obrigatório." });
+      }
+      
+      // Em uma implementação real, você verificaria o código enviado por SMS
+      // Para este protótipo, vamos simular a verificação
+      const verified = code === "987654"; // Simulação
+      
+      if (verified) {
+        await storage.updateUserTwoFactorAuth(userId, {
+          smsEnabled: true,
+          phoneVerified: true
+        });
+        
+        // Registrar atividade
+        await storage.createActivityLog({
+          userId,
+          activity: "Ativação de autenticação em dois fatores (SMS)",
+          entityType: "security",
+          ipAddress: req.ip || req.socket.remoteAddress,
+          userAgent: req.headers['user-agent']
+        });
+        
+        res.json({ success: true, message: "Verificação bem-sucedida. 2FA com SMS está ativado." });
+      } else {
+        res.status(400).json({ success: false, message: "Código inválido." });
+      }
+    } catch (error) {
+      console.error("Erro ao verificar código de SMS 2FA:", error);
+      res.status(500).json({ message: "Erro ao verificar código de SMS 2FA." });
+    }
+  });
+
+  app.post("/api/security/2fa/disable", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      const { method } = req.body;
+      if (!method || !["app", "sms", "email"].includes(method)) {
+        return res.status(400).json({ message: "Método inválido. Use 'app', 'sms' ou 'email'." });
+      }
+      
+      const twoFA = await storage.getUserTwoFactorAuth(userId);
+      if (!twoFA) {
+        return res.status(404).json({ message: "Configuração 2FA não encontrada." });
+      }
+      
+      const updates: Partial<UserTwoFactorAuth> = {};
+      
+      if (method === "app") {
+        updates.appEnabled = false;
+      } else if (method === "sms") {
+        updates.smsEnabled = false;
+      } else if (method === "email") {
+        updates.emailEnabled = false;
+      }
+      
+      await storage.updateUserTwoFactorAuth(userId, updates);
+      
+      // Registrar atividade
+      await storage.createActivityLog({
+        userId,
+        activity: `Desativação de autenticação em dois fatores (${method})`,
+        entityType: "security",
+        ipAddress: req.ip || req.socket.remoteAddress,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json({ message: `2FA por ${method} desativado com sucesso.` });
+    } catch (error) {
+      console.error("Erro ao desativar 2FA:", error);
+      res.status(500).json({ message: "Erro ao desativar 2FA." });
+    }
+  });
 
   // Create HTTP server
   const httpServer = createServer(app);
