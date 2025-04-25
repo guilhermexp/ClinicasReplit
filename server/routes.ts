@@ -347,11 +347,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Usuário da clínica não encontrado." });
       }
       
-      // Verificar se o usuário solicitante tem permissão para remover usuários da clínica
-      const requesterClinicUser = await storage.getClinicUserByUserAndClinic(req.user!.id, clinicUser.clinicId);
+      // Verificar se o usuário é SUPER_ADMIN (que tem todas as permissões)
+      const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
       
-      if (!requesterClinicUser || !['OWNER', 'MANAGER'].includes(requesterClinicUser.role)) {
-        return res.status(403).json({ message: "Você não tem permissão para remover usuários desta clínica." });
+      if (!isSuperAdmin) {
+        // Verificar se o usuário solicitante tem permissão para remover usuários da clínica
+        const requesterClinicUser = await storage.getClinicUserByUserAndClinic(req.user!.id, clinicUser.clinicId);
+        
+        if (!requesterClinicUser || !['OWNER', 'MANAGER'].includes(requesterClinicUser.role)) {
+          return res.status(403).json({ message: "Você não tem permissão para remover usuários desta clínica." });
+        }
       }
       
       // Não permitir a exclusão do próprio usuário OWNER
