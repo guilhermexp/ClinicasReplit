@@ -32,6 +32,7 @@ import { Calendar, Clock, Edit, Save, X, Trash, Upload, Download, LogOut } from 
 import { toast } from "@/hooks/use-toast";
 import { InventoryPanel } from "./inventory-panel";
 import { ProceduresPanel } from "./procedures-panel";
+import { EmployeesPanel } from "@/components/settings/employees-panel";
 
 export default function Settings() {
   const { user, selectedClinic, logout } = useAuth();
@@ -951,26 +952,7 @@ export default function Settings() {
             
             {/* Employees Settings */}
             <TabsContent value="employees">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Gerenciamento de Colaboradores</CardTitle>
-                  <CardDescription>
-                    Cadastre e gerencie informações dos colaboradores da clínica.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Conteúdo omitido para brevidade */}
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline">
-                    Cancelar
-                  </Button>
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar Alterações
-                  </Button>
-                </CardFooter>
-              </Card>
+              <EmployeesPanel />
             </TabsContent>
             
             {/* Billing Settings */}

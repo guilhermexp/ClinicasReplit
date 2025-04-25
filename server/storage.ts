@@ -59,7 +59,12 @@ export interface IStorage {
   // Professional operations
   getProfessional(id: number): Promise<Professional | undefined>;
   createProfessional(professional: InsertProfessional): Promise<Professional>;
-  listProfessionals(clinicId: number): Promise<Professional[]>;
+  updateProfessional(id: number, professional: Partial<Professional>): Promise<Professional>;
+  deleteProfessional(id: number): Promise<void>;
+  getProfessionalsByClinic(clinicId: number): Promise<Professional[]>;
+  getProfessionalByUserAndClinic(userId: number, clinicId: number): Promise<Professional | undefined>;
+  getUsersByClinic(clinicId: number): Promise<User[]>;
+  getClinicUserByUserAndClinic(userId: number, clinicId: number): Promise<ClinicUser | undefined>;
   
   // Service operations
   getService(id: number): Promise<Service | undefined>;
