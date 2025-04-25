@@ -10,23 +10,320 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Save, Package, Loader2 } from "lucide-react";
+import { Save, Package, Loader2, Plus, Edit, Trash2, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { InventoryProduct } from "@shared/schema";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+// Componente de adição/edição de produto
+function ProductFormDialog({ 
+  isOpen, 
+  onOpenChange, 
+  product = null, 
+  clinicId, 
+  onSuccess 
+}: { 
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  product?: InventoryProduct | null;
+  clinicId: number;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const isEditing = !!product;
+  
+  // Estado do formulário
+  const [name, setName] = useState(product?.name || "");
+  const [category, setCategory] = useState(product?.category || "");
+  const [quantity, setQuantity] = useState(product?.quantity?.toString() || "0");
+  const [price, setPrice] = useState(product?.price ? (product.price / 100).toString() : "");
+  const [lowStockThreshold, setLowStockThreshold] = useState(product?.lowStockThreshold?.toString() || "5");
+  const [description, setDescription] = useState(product?.description || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Mutação para adicionar ou atualizar produto
+  const inventoryMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const endpoint = isEditing 
+        ? `/api/inventory/${product.id}`
+        : "/api/inventory";
+        
+      const method = isEditing ? "PATCH" : "POST";
+      
+      const response = await apiRequest(method, endpoint, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: isEditing ? "Produto atualizado!" : "Produto adicionado!",
+        description: isEditing 
+          ? "O produto foi atualizado com sucesso."
+          : "O produto foi adicionado ao inventário.",
+        variant: "default",
+      });
+      
+      // Resetar o formulário
+      setName("");
+      setCategory("");
+      setQuantity("0");
+      setPrice("");
+      setLowStockThreshold("5");
+      setDescription("");
+      
+      // Fechar o modal
+      onOpenChange(false);
+      
+      // Atualizar a lista de produtos
+      onSuccess();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro!",
+        description: `Erro ao ${isEditing ? "atualizar" : "adicionar"} produto: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    }
+  });
+  
+  // Função para lidar com o envio do formulário
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setIsSubmitting(true);
+    
+    // Converter valores para o formato correto
+    const formattedData = {
+      name,
+      category,
+      quantity: parseInt(quantity) || 0,
+      price: price ? Math.round(parseFloat(price) * 100) : 0, // Converter para centavos
+      lowStockThreshold: parseInt(lowStockThreshold) || 5,
+      description,
+      clinicId
+    };
+    
+    inventoryMutation.mutate(formattedData);
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? "Editar Produto" : "Adicionar Produto"}</DialogTitle>
+          <DialogDescription>
+            {isEditing 
+              ? "Atualize as informações do produto no inventário." 
+              : "Adicione um novo produto ao inventário da clínica."}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome do Produto</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Insira o nome do produto"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="Injetáveis">Injetáveis</SelectItem>
+                    <SelectItem value="Preenchedores">Preenchedores</SelectItem>
+                    <SelectItem value="Cosméticos">Cosméticos</SelectItem>
+                    <SelectItem value="Equipamentos">Equipamentos</SelectItem>
+                    <SelectItem value="Descartáveis">Descartáveis</SelectItem>
+                    <SelectItem value="Medicamentos">Medicamentos</SelectItem>
+                    <SelectItem value="Outros">Outros</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantidade</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="0"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="price">Preço (R$)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="lowStockThreshold">
+                Limite para Estoque Baixo
+                <span className="text-xs text-gray-500 ml-1">
+                  (Aviso quando quantidade for menor ou igual)
+                </span>
+              </Label>
+              <Input
+                id="lowStockThreshold"
+                type="number"
+                min="1"
+                value={lowStockThreshold}
+                onChange={(e) => setLowStockThreshold(e.target.value)}
+                placeholder="5"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição (opcional)</Label>
+              <Input
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Descrição do produto"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isEditing ? "Atualizando..." : "Salvando..."}
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isEditing ? "Atualizar" : "Salvar"}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Componente para confirmação de exclusão
+function DeleteConfirmationDialog({
+  isOpen,
+  onOpenChange,
+  onConfirm,
+  productName,
+  isDeleting
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  productName: string;
+  isDeleting: boolean;
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Confirmar Exclusão</DialogTitle>
+          <DialogDescription>
+            Tem certeza que deseja excluir o produto "{productName}"? 
+            Esta ação não pode ser desfeita.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Excluindo...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function InventoryPanel() {
   const { selectedClinic } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   
+  // Estados para os modais
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<InventoryProduct | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   // Fetch inventory data
   const { 
     data: inventoryProducts = [], 
     isLoading,
-    error
+    error,
+    refetch
   } = useQuery<InventoryProduct[]>({
     queryKey: ["/api/clinics", selectedClinic?.id, "inventory"],
     queryFn: async () => {
@@ -38,6 +335,36 @@ export function InventoryPanel() {
       return res.json();
     },
     enabled: !!selectedClinic?.id
+  });
+  
+  // Mutation para excluir um produto
+  const deleteMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      const response = await apiRequest("DELETE", `/api/inventory/${productId}`);
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Produto excluído!",
+        description: "O produto foi excluído com sucesso.",
+        variant: "default",
+      });
+      
+      // Atualizar a lista de produtos
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro!",
+        description: `Erro ao excluir produto: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    }
   });
   return (
     <Card>
@@ -63,10 +390,13 @@ export function InventoryPanel() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
               Adicionar Produto
             </Button>
           </div>
@@ -139,12 +469,28 @@ export function InventoryPanel() {
                         {statusText}
                       </span>
                     </div>
-                    <div className="w-1/12 flex justify-end">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
+                    <div className="w-1/12 flex justify-end space-x-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-red-500 hover:text-red-700"
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -230,6 +576,7 @@ export function InventoryPanel() {
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline">
+          <FileText className="mr-2 h-4 w-4" />
           Relatório de Estoque
         </Button>
         <Button>
@@ -240,6 +587,44 @@ export function InventoryPanel() {
           Solicitar Compra
         </Button>
       </CardFooter>
+      
+      {/* Modais */}
+      {selectedClinic && (
+        <>
+          {/* Modal de Adição */}
+          <ProductFormDialog
+            isOpen={isAddDialogOpen}
+            onOpenChange={setIsAddDialogOpen}
+            clinicId={selectedClinic.id}
+            onSuccess={refetch}
+          />
+          
+          {/* Modal de Edição */}
+          {selectedProduct && (
+            <ProductFormDialog
+              isOpen={isEditDialogOpen}
+              onOpenChange={setIsEditDialogOpen}
+              product={selectedProduct}
+              clinicId={selectedClinic.id}
+              onSuccess={refetch}
+            />
+          )}
+          
+          {/* Modal de Confirmação de Exclusão */}
+          {selectedProduct && (
+            <DeleteConfirmationDialog
+              isOpen={isDeleteDialogOpen}
+              onOpenChange={setIsDeleteDialogOpen}
+              productName={selectedProduct.name}
+              isDeleting={isDeleting}
+              onConfirm={() => {
+                setIsDeleting(true);
+                deleteMutation.mutate(selectedProduct.id);
+              }}
+            />
+          )}
+        </>
+      )}
     </Card>
   );
 }
