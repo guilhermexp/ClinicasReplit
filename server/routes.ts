@@ -439,9 +439,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clinicId = parseInt(req.params.clinicId);
       const services = await storage.listServices(clinicId);
-            console.log("[DEBUG] Erro ao buscar serviços:", error);
       res.json(services);
     } catch (error) {
+      console.log("[DEBUG] Erro ao buscar serviços:", error);
       res.status(500).json({ message: "Erro ao buscar serviços." });
     }
   });
