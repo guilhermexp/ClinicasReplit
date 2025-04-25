@@ -479,13 +479,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Atualizar o serviço
-      const result = updateServiceSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
+      try {
+        const updatedService = await storage.updateService(serviceId, req.body);
+        res.json(updatedService);
+      } catch (error) {
+        return res.status(400).json({ message: "Dados inválidos para atualização." });
       }
-      
-      const updatedService = await storage.updateService(serviceId, result.data);
-      res.json(updatedService);
     } catch (error) {
       console.error("Error updating service:", error);
       res.status(500).json({ message: "Erro ao atualizar serviço." });

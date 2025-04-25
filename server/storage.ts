@@ -61,6 +61,8 @@ export interface IStorage {
   // Service operations
   getService(id: number): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
+  updateService(id: number, service: Partial<Service>): Promise<Service>;
+  deleteService(id: number): Promise<void>;
   listServices(clinicId: number): Promise<Service[]>;
   
   // Appointment operations
@@ -514,6 +516,21 @@ export class DatabaseStorage implements IStorage {
   async createService(service: InsertService): Promise<Service> {
     const [newService] = await db.insert(services).values(service).returning();
     return newService;
+  }
+  
+  async updateService(id: number, serviceData: Partial<Service>): Promise<Service> {
+    const [updatedService] = await db
+      .update(services)
+      .set({ ...serviceData, updatedAt: new Date() })
+      .where(eq(services.id, id))
+      .returning();
+    return updatedService;
+  }
+  
+  async deleteService(id: number): Promise<void> {
+    await db
+      .delete(services)
+      .where(eq(services.id, id));
   }
   
   async listServices(clinicId: number): Promise<Service[]> {
