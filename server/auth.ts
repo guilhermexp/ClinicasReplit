@@ -40,18 +40,17 @@ export function setupAuth(app: Express) {
   const isDevelopment = process.env.NODE_ENV === "development";
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sessionsecret",
-    resave: true,
-    saveUninitialized: true,
-    rolling: true, // Renova o cookie a cada requisição
+    resave: false,            // Evita salvar a sessão quando não alterada
+    saveUninitialized: false, // Não salvar sessões não inicializadas
+    rolling: true,            // Renova o cookie a cada requisição
     store: storage.sessionStore,
     cookie: {
-      secure: !isDevelopment, // Em development, não exigir HTTPS
+      secure: false,          // Não requer HTTPS para desenvolvimento e compatibilidade com Replit
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
-      httpOnly: true,
-      sameSite: isDevelopment ? 'none' : 'lax',
-      path: '/'
+      httpOnly: true,         // Só pode ser acessado pelo servidor
+      path: '/',              // Caminho base para o cookie
     },
-    name: 'sid' // Cookie name
+    name: 'connect.sid'       // Nome padrão do cookie para compatibilidade
   };
   
   console.log("Configuração da sessão:", {

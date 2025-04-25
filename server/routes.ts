@@ -92,8 +92,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return next(err);
         }
         
-        console.log("Sessão criada com sucesso. User ID:", user.id);
-        return res.json({ user: req.user });
+        console.log("Sessão criada com sucesso. User ID:", user.id, "Session ID:", req.sessionID);
+        
+        // Forçar salvamento da sessão no armazenamento para garantir persistência
+        req.session.save((err) => {
+          if (err) {
+            console.error("Erro ao salvar sessão:", err);
+          }
+          
+          // Adicionar informações de debug
+          console.log("Cookies sendo enviados:", {
+            'connect.sid': req.cookies['connect.sid'],
+            sessionID: req.sessionID,
+            isAuthenticated: req.isAuthenticated()
+          });
+          
+          return res.json({ user: req.user });
+        });
       });
     })(req, res, next);
   });
@@ -101,18 +116,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     // Verificar se o usuário está logado antes de tentar fazer logout
     if (!req.isAuthenticated()) {
+      console.log("Logout de usuário não autenticado");
       return res.status(200).json({ message: "Usuário já estava desconectado." });
     }
     
+    console.log("Realizando logout do usuário:", req.user?.email);
+    
     req.logout((err) => {
       if (err) {
+        console.error("Erro ao fazer logout:", err);
         return res.status(500).json({ message: "Erro ao fazer logout." });
       }
+      
       req.session.destroy((err) => {
         if (err) {
           console.error("Erro ao destruir sessão:", err);
         }
-        res.clearCookie('connect.sid');
+        
+        // Limpar cookie de sessão - observe que o nome deve corresponder ao configurado
+        res.clearCookie('connect.sid', {
+          path: '/',
+          httpOnly: true,
+          secure: false,
+          sameSite: 'lax'
+        });
+        
+        console.log("Logout realizado com sucesso");
         res.status(200).json({ message: "Logout realizado com sucesso." });
       });
     });
@@ -158,9 +187,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Login the user
       req.login(newUser, (err) => {
         if (err) {
+          console.error("Erro ao fazer login automático:", err);
           return res.status(500).json({ message: "Erro ao fazer login automático." });
         }
-        res.status(201).json({ user: newUser });
+        
+        console.log("Sessão criada após registro. User ID:", newUser.id, "Session ID:", req.sessionID);
+        
+        // Forçar salvamento da sessão no armazenamento para garantir persistência
+        req.session.save((err) => {
+          if (err) {
+            console.error("Erro ao salvar sessão após registro:", err);
+          }
+          
+          res.status(201).json({ user: newUser });
+        });
       });
     } catch (error) {
       console.error("Error creating user:", error);
