@@ -461,6 +461,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.patch("/api/services/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      
+      // Verificar se o serviço existe
+      const existingService = await storage.getService(serviceId);
+      if (!existingService) {
+        return res.status(404).json({ message: "Serviço não encontrado." });
+      }
+      
+      // Verificar se o usuário tem permissão para editar serviços da clínica
+      const user = req.user as any;
+      const clinicUser = await storage.getClinicUser(existingService.clinicId, user.id);
+      if (!clinicUser) {
+        return res.status(403).json({ message: "Você não tem permissão para editar este serviço." });
+      }
+      
+      // Atualizar o serviço
+      const result = updateServiceSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Dados inválidos.", errors: result.error.errors });
+      }
+      
+      const updatedService = await storage.updateService(serviceId, result.data);
+      res.json(updatedService);
+    } catch (error) {
+      console.error("Error updating service:", error);
+      res.status(500).json({ message: "Erro ao atualizar serviço." });
+    }
+  });
+  
+  app.delete("/api/services/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      
+      // Verificar se o serviço existe
+      const existingService = await storage.getService(serviceId);
+      if (!existingService) {
+        return res.status(404).json({ message: "Serviço não encontrado." });
+      }
+      
+      // Verificar se o usuário tem permissão para excluir serviços da clínica
+      const user = req.user as any;
+      const clinicUser = await storage.getClinicUser(existingService.clinicId, user.id);
+      if (!clinicUser) {
+        return res.status(403).json({ message: "Você não tem permissão para excluir este serviço." });
+      }
+      
+      // Excluir o serviço
+      await storage.deleteService(serviceId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      res.status(500).json({ message: "Erro ao excluir serviço." });
+    }
+  });
+  
   // Appointment routes
   app.get("/api/clinics/:clinicId/appointments", isAuthenticated, async (req: Request, res: Response) => {
     try {
