@@ -3,13 +3,23 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { roleDisplayNames } from "@/lib/auth-utils";
+import { usePermissions, UserRole } from "@/hooks/use-permissions";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, ShieldCheck, Save } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Loader2, 
+  ShieldCheck, 
+  Save, 
+  HelpCircle, 
+  AlertTriangle, 
+  RefreshCw 
+} from "lucide-react";
+import { PermissionCopy } from "@/components/permissions/permission-copy";
 
 interface Permission {
   id: number;
@@ -95,14 +105,38 @@ const permissionModules = [
       { id: "view", name: "Visualizar" },
       { id: "edit", name: "Editar" }
     ]
+  },
+  {
+    id: "crm",
+    name: "CRM",
+    description: "Gerenciamento de leads e oportunidades",
+    actions: [
+      { id: "view", name: "Visualizar" },
+      { id: "create", name: "Criar" },
+      { id: "edit", name: "Editar" },
+      { id: "delete", name: "Excluir" }
+    ]
+  },
+  {
+    id: "inventory",
+    name: "Estoque",
+    description: "Gerenciamento de produtos e estoque",
+    actions: [
+      { id: "view", name: "Visualizar" },
+      { id: "create", name: "Criar" },
+      { id: "edit", name: "Editar" },
+      { id: "delete", name: "Excluir" }
+    ]
   }
 ];
 
 export function UserPermissionsForm({ userId, clinicId, userRole }: UserPermissionsFormProps) {
   const { toast } = useToast();
+  const { defaultPermissions, isSuperUserOrOwner } = usePermissions();
   const [activeModuleTab, setActiveModuleTab] = useState("dashboard");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Buscar informações do usuário específico
   const { data: clinicUser, isLoading: isLoadingUser } = useQuery({
@@ -115,6 +149,13 @@ export function UserPermissionsForm({ userId, clinicId, userRole }: UserPermissi
     queryKey: ["/api/clinic-users", clinicUser?.id, "permissions"],
     enabled: !!clinicUser?.id,
   });
+
+  // Obter permissões padrão para o cargo do usuário
+  const roleDefaultPermissions = userRole ? 
+    (defaultPermissions[userRole as keyof typeof defaultPermissions] || []) : [];
+  
+  // Criar chaves para permissões padrão para comparação
+  const defaultPermissionKeys = roleDefaultPermissions.map(p => `${p.module}:${p.action}`);
 
   // Configurar permissões iniciais quando os dados forem carregados
   useEffect(() => {
@@ -169,6 +210,30 @@ export function UserPermissionsForm({ userId, clinicId, userRole }: UserPermissi
   // Verificar se uma permissão está selecionada
   const isPermissionSelected = (module: string, action: string) => {
     return selectedPermissions.includes(`${module}:${action}`);
+  };
+
+  // Verificar o tipo de permissão (padrão ou customizada)
+  const getPermissionType = (module: string, action: string) => {
+    const permissionKey = `${module}:${action}`;
+    const existingPermission = userPermissions.find(p => p.module === module && p.action === action);
+    
+    if (existingPermission) {
+      return "custom"; // Permissão explicitamente atribuída a este usuário
+    } else if (defaultPermissionKeys.includes(permissionKey) && isPermissionSelected(module, action)) {
+      return "default"; // Permissão padrão do cargo
+    }
+    
+    return "none"; // Não tem a permissão
+  };
+
+  // Restaurar permissões padrão para o cargo
+  const handleRestoreDefaults = () => {
+    setSelectedPermissions(defaultPermissionKeys);
+    
+    toast({
+      title: "Permissões padrão restauradas",
+      description: `As permissões foram restauradas para o padrão do cargo ${roleDisplayNames[userRole] || userRole}.`,
+    });
   };
 
   // Salvar todas as alterações de permissões
@@ -241,22 +306,149 @@ export function UserPermissionsForm({ userId, clinicId, userRole }: UserPermissi
   }
 
   return (
-    <Card className="mt-8">
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              Permissões do Usuário
-            </CardTitle>
-            <CardDescription>
-              Configurando permissões para {clinicUser.name} - {roleDisplayNames[userRole] || userRole}
-            </CardDescription>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Permissões do Usuário
+              </CardTitle>
+              <CardDescription>
+                Configurando permissões para {clinicUser.name} - {roleDisplayNames[userRole] || userRole}
+              </CardDescription>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowHelp(!showHelp)}
+              >
+                <HelpCircle className="mr-2 h-4 w-4" />
+                {showHelp ? "Ocultar Ajuda" : "Mostrar Ajuda"}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRestoreDefaults}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Restaurar Padrão
+              </Button>
+              <Button 
+                onClick={savePermissions} 
+                disabled={isSubmitting}
+                size="sm"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Permissões
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        
+        {showHelp && (
+          <div className="px-6 py-2 bg-muted/50 border-y">
+            <div className="text-sm space-y-2">
+              <p className="font-medium">Legenda das Permissões:</p>
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center">
+                  <Badge variant="outline" className="mr-2 bg-blue-50 hover:bg-blue-50">Padrão</Badge>
+                  <span>Permissão padrão do cargo</span>
+                </div>
+                <div className="flex items-center">
+                  <Badge variant="outline" className="mr-2 bg-green-50 text-green-700 hover:bg-green-50">Personalizada</Badge>
+                  <span>Permissão específica para este usuário</span>
+                </div>
+                <div className="flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                  <span>Alterações nas permissões serão salvas apenas ao clicar em "Salvar Permissões"</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <CardContent className="pt-6">
+          <Tabs value={activeModuleTab} onValueChange={setActiveModuleTab}>
+            <TabsList className="flex flex-wrap">
+              {permissionModules.map(module => (
+                <TabsTrigger key={module.id} value={module.id}>
+                  {module.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            {permissionModules.map(module => (
+              <TabsContent key={module.id} value={module.id} className="pt-6">
+                <div className="grid gap-6">
+                  <div>
+                    <h3 className="text-lg font-medium">{module.name}</h3>
+                    <p className="text-sm text-muted-foreground">{module.description}</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {module.actions.map(action => {
+                      const permissionType = getPermissionType(module.id, action.id);
+                      const isDisabled = isSuperUserOrOwner(userRole as UserRole); // Super Admins e Proprietários sempre têm todas as permissões
+                      
+                      return (
+                        <div key={action.id} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Switch 
+                              id={`${module.id}-${action.id}`}
+                              checked={isPermissionSelected(module.id, action.id) || isDisabled}
+                              onCheckedChange={(checked) => 
+                                handlePermissionChange(module.id, action.id, checked)
+                              }
+                              disabled={isDisabled}
+                            />
+                            <Label htmlFor={`${module.id}-${action.id}`} className={isDisabled ? "text-muted-foreground" : ""}>
+                              {action.name}
+                              {isDisabled && (
+                                <span className="ml-2 text-xs text-amber-600">(Sempre ativo para Super Admins e Proprietários)</span>
+                              )}
+                            </Label>
+                          </div>
+                          
+                          {!isDisabled && permissionType !== "none" && (
+                            <Badge 
+                              variant="outline" 
+                              className={permissionType === "default" ? 
+                                "bg-blue-50 hover:bg-blue-50" : 
+                                "bg-green-50 text-green-700 hover:bg-green-50"
+                              }
+                            >
+                              {permissionType === "default" ? "Padrão" : "Personalizada"}
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+        <CardFooter className="flex justify-between border-t pt-6">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+            As alterações só terão efeito após clicar em "Salvar Permissões"
           </div>
           <Button 
             onClick={savePermissions} 
             disabled={isSubmitting}
-            className="mt-2 sm:mt-0"
           >
             {isSubmitting ? (
               <>
@@ -270,65 +462,16 @@ export function UserPermissionsForm({ userId, clinicId, userRole }: UserPermissi
               </>
             )}
           </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeModuleTab} onValueChange={setActiveModuleTab}>
-          <TabsList className="flex flex-wrap">
-            {permissionModules.map(module => (
-              <TabsTrigger key={module.id} value={module.id}>
-                {module.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          
-          {permissionModules.map(module => (
-            <TabsContent key={module.id} value={module.id} className="pt-6">
-              <div className="grid gap-6">
-                <div>
-                  <h3 className="text-lg font-medium">{module.name}</h3>
-                  <p className="text-sm text-muted-foreground">{module.description}</p>
-                </div>
-                
-                <div className="space-y-4">
-                  {module.actions.map(action => (
-                    <div key={action.id} className="flex items-center space-x-2">
-                      <Switch 
-                        id={`${module.id}-${action.id}`}
-                        checked={isPermissionSelected(module.id, action.id)}
-                        onCheckedChange={(checked) => 
-                          handlePermissionChange(module.id, action.id, checked)
-                        }
-                      />
-                      <Label htmlFor={`${module.id}-${action.id}`}>
-                        {action.name}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
-      <CardFooter className="flex justify-end border-t pt-6">
-        <Button 
-          onClick={savePermissions} 
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Salvar Permissões
-            </>
-          )}
-        </Button>
-      </CardFooter>
-    </Card>
+        </CardFooter>
+      </Card>
+      
+      {/* Componente para copiar permissões de outro usuário */}
+      <PermissionCopy 
+        clinicId={clinicId}
+        targetUserId={userId}
+        targetUserRole={userRole}
+        targetClinicUserId={clinicUser.id}
+      />
+    </div>
   );
 }

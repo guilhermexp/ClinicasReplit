@@ -508,7 +508,7 @@ export default function Users() {
         <UserPermissionsForm 
           userId={selectedUserId} 
           clinicId={selectedClinic.id} 
-          userRole={selectedUserRole || ""}
+          userRole={selectedUserRole || "STAFF"}
         />
       )}
       

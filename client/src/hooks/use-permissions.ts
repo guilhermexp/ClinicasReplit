@@ -1,17 +1,44 @@
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "./use-auth";
+// Vamos alterar a extensão para .ts e remover JSX
+// Manteremos apenas o hook e as constantes para uso no sistema de permissões
 
-interface Permission {
-  id: number;
-  clinicUserId: number;
-  module: string;
-  action: string;
+// Tipo para os módulos e ações disponíveis no sistema 
+export type PermissionModule = 
+  | "dashboard" 
+  | "users" 
+  | "clients" 
+  | "appointments" 
+  | "financial" 
+  | "reports" 
+  | "settings"
+  | "crm"
+  | "inventory";
+
+export type PermissionAction = 
+  | "view" 
+  | "create" 
+  | "edit" 
+  | "delete" 
+  | "export";
+
+export interface Permission {
+  module: PermissionModule;
+  action: PermissionAction;
 }
 
-// Mapeamento de permissões padrão por tipo de usuário
-const defaultPermissions = {
+export type UserRole = 
+  | "SUPER_ADMIN" 
+  | "OWNER" 
+  | "MANAGER" 
+  | "PROFESSIONAL" 
+  | "RECEPTIONIST" 
+  | "FINANCIAL" 
+  | "MARKETING" 
+  | "STAFF";
+
+// Permissões padrão por cargo
+export const defaultPermissions: Record<UserRole, Permission[]> = {
   SUPER_ADMIN: [
-    // Administradores do sistema têm acesso total a tudo
+    // Super Admins têm acesso total a tudo no sistema
     { module: "dashboard", action: "view" },
     { module: "users", action: "view" },
     { module: "users", action: "create" },
@@ -32,10 +59,18 @@ const defaultPermissions = {
     { module: "reports", action: "view" },
     { module: "reports", action: "export" },
     { module: "settings", action: "view" },
-    { module: "settings", action: "edit" }
+    { module: "settings", action: "edit" },
+    { module: "crm", action: "view" },
+    { module: "crm", action: "create" },
+    { module: "crm", action: "edit" },
+    { module: "crm", action: "delete" },
+    { module: "inventory", action: "view" },
+    { module: "inventory", action: "create" },
+    { module: "inventory", action: "edit" },
+    { module: "inventory", action: "delete" }
   ],
   OWNER: [
-    // Proprietários têm acesso total a tudo
+    // Proprietários têm acesso total a tudo em suas clínicas
     { module: "dashboard", action: "view" },
     { module: "users", action: "view" },
     { module: "users", action: "create" },
@@ -56,7 +91,15 @@ const defaultPermissions = {
     { module: "reports", action: "view" },
     { module: "reports", action: "export" },
     { module: "settings", action: "view" },
-    { module: "settings", action: "edit" }
+    { module: "settings", action: "edit" },
+    { module: "crm", action: "view" },
+    { module: "crm", action: "create" },
+    { module: "crm", action: "edit" },
+    { module: "crm", action: "delete" },
+    { module: "inventory", action: "view" },
+    { module: "inventory", action: "create" },
+    { module: "inventory", action: "edit" },
+    { module: "inventory", action: "delete" }
   ],
   MANAGER: [
     // Gerentes têm quase todas as permissões, exceto algumas configurações sensíveis
@@ -78,7 +121,13 @@ const defaultPermissions = {
     { module: "financial", action: "edit" },
     { module: "reports", action: "view" },
     { module: "reports", action: "export" },
-    { module: "settings", action: "view" }
+    { module: "settings", action: "view" },
+    { module: "crm", action: "view" },
+    { module: "crm", action: "create" },
+    { module: "crm", action: "edit" },
+    { module: "inventory", action: "view" },
+    { module: "inventory", action: "create" },
+    { module: "inventory", action: "edit" }
   ],
   PROFESSIONAL: [
     // Profissionais têm acesso ao básico + consultas
@@ -117,7 +166,10 @@ const defaultPermissions = {
     { module: "dashboard", action: "view" },
     { module: "clients", action: "view" },
     { module: "reports", action: "view" },
-    { module: "reports", action: "export" }
+    { module: "reports", action: "export" },
+    { module: "crm", action: "view" },
+    { module: "crm", action: "create" },
+    { module: "crm", action: "edit" }
   ],
   STAFF: [
     // Funcionários comuns têm acesso mínimo
@@ -127,72 +179,34 @@ const defaultPermissions = {
   ]
 };
 
+// Helper para verificar se SUPER_ADMIN ou OWNER tem permissão
+export function isSuperUserOrOwner(userRole: UserRole | null): boolean {
+  return userRole === "SUPER_ADMIN" || userRole === "OWNER";
+}
+
+// Helper para verificar se um usuário tem uma permissão específica
+export function checkPermission(
+  userPermissions: Permission[], 
+  userRole: UserRole | null, 
+  module: PermissionModule, 
+  action: PermissionAction
+): boolean {
+  // Super admins e owners têm todas as permissões
+  if (isSuperUserOrOwner(userRole)) {
+    return true;
+  }
+
+  // Verificar se a permissão existe nas permissões do usuário
+  return userPermissions.some(
+    (p) => p.module === module && p.action === action
+  );
+}
+
+// Hook simples para usar permissões
 export function usePermissions() {
-  const { user, selectedClinic, activeClinicUser } = useAuth();
-
-  // Buscar as permissões do usuário para a clínica atual com cache otimizado
-  const { data: permissions = [] } = useQuery<Permission[]>({
-    queryKey: ["/api/clinic-users", activeClinicUser?.id, "permissions"],
-    enabled: !!activeClinicUser?.id,
-    staleTime: 10 * 60 * 1000, // 10 minutos - as permissões não mudam frequentemente
-    gcTime: 20 * 60 * 1000, // 20 minutos
-  });
-
-  // Verificar se um usuário tem uma permissão específica
-  const hasPermission = (module: string, action: string): boolean => {
-    // Se não há usuário logado ou clínica selecionada, não tem permissão para nada
-    if (!user || !selectedClinic || !activeClinicUser) {
-      return false;
-    }
-
-    // Super admins e proprietários têm permissão para tudo
-    if (user.role === "SUPER_ADMIN" || activeClinicUser.role === "OWNER") {
-      return true;
-    }
-
-    // Verificar nas permissões personalizadas do usuário
-    if (permissions.some(p => p.module === module && p.action === action)) {
-      return true;
-    }
-
-    // Verificar nas permissões padrão do cargo
-    if (activeClinicUser.role && defaultPermissions[activeClinicUser.role as keyof typeof defaultPermissions]) {
-      return defaultPermissions[activeClinicUser.role as keyof typeof defaultPermissions]
-        .some(p => p.module === module && p.action === action);
-    }
-
-    return false;
-  };
-
-  // Verificar se um usuário pode acessar um módulo (qualquer ação)
-  const canAccessModule = (module: string): boolean => {
-    // Se não há usuário logado ou clínica selecionada, não tem permissão para nada
-    if (!user || !selectedClinic || !activeClinicUser) {
-      return false;
-    }
-
-    // Super admins e proprietários têm permissão para tudo
-    if (user.role === "SUPER_ADMIN" || activeClinicUser.role === "OWNER") {
-      return true;
-    }
-
-    // Verificar nas permissões personalizadas do usuário
-    if (permissions.some(p => p.module === module)) {
-      return true;
-    }
-
-    // Verificar nas permissões padrão do cargo
-    if (activeClinicUser.role && defaultPermissions[activeClinicUser.role as keyof typeof defaultPermissions]) {
-      return defaultPermissions[activeClinicUser.role as keyof typeof defaultPermissions]
-        .some(p => p.module === module);
-    }
-
-    return false;
-  };
-
   return {
-    hasPermission,
-    canAccessModule,
-    permissions
+    defaultPermissions,
+    isSuperUserOrOwner,
+    checkPermission
   };
 }
