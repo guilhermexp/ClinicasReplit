@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, uniqueIndex, primaryKey, jsonb, date, decimal, real, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 import { leadSourceEnum, leadStatusEnum, interactionTypeEnum, appointmentStatusEnum } from "./crm";
 
 // User Role enum
@@ -480,7 +481,7 @@ export const inventoryCategories = pgTable("inventory_categories", {
   description: text("description"),
   color: text("color"),
   icon: text("icon"),
-  parentId: integer("parent_id").references(() => inventoryCategories.id),
+  parentId: integer("parent_id"),
   createdBy: integer("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -818,3 +819,53 @@ export type InsertUserTwoFactorAuth = z.infer<typeof insertUserTwoFactorAuthSche
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true, updatedAt: true, completedAt: true });
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
+
+// Definir relações entre tabelas de inventário
+export const inventoryCategoriesRelations = relations(inventoryCategories, ({ one, many }) => ({
+  clinic: one(clinics, {
+    fields: [inventoryCategories.clinicId],
+    references: [clinics.id],
+  }),
+  creator: one(users, {
+    fields: [inventoryCategories.createdBy],
+    references: [users.id],
+  }),
+  parent: one(inventoryCategories, {
+    fields: [inventoryCategories.parentId],
+    references: [inventoryCategories.id],
+    relationName: "parentCategory",
+  }),
+  children: many(inventoryCategories, { relationName: "parentCategory" }),
+  products: many(inventoryProducts),
+}));
+
+export const inventoryProductsRelations = relations(inventoryProducts, ({ one, many }) => ({
+  clinic: one(clinics, {
+    fields: [inventoryProducts.clinicId],
+    references: [clinics.id],
+  }),
+  creator: one(users, {
+    fields: [inventoryProducts.createdBy],
+    references: [users.id],
+  }),
+  category: one(inventoryCategories, {
+    fields: [inventoryProducts.categoryId],
+    references: [inventoryCategories.id],
+  }),
+  transactions: many(inventoryTransactions),
+}));
+
+export const inventoryTransactionsRelations = relations(inventoryTransactions, ({ one }) => ({
+  clinic: one(clinics, {
+    fields: [inventoryTransactions.clinicId],
+    references: [clinics.id],
+  }),
+  creator: one(users, {
+    fields: [inventoryTransactions.createdBy],
+    references: [users.id],
+  }),
+  product: one(inventoryProducts, {
+    fields: [inventoryTransactions.productId],
+    references: [inventoryProducts.id],
+  }),
+}));
