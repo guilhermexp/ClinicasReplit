@@ -230,8 +230,40 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
-    return newUser;
+    try {
+      // Uso de SQL direto devido a incompatibilidades de tipagem entre Drizzle e TypeScript
+      const result = await db.execute(
+        sql`INSERT INTO users (
+            name, email, password, role, is_active, 
+            phone, created_by, created_at, updated_at
+          ) VALUES (
+            ${user.name}, ${user.email}, ${user.password}, ${user.role || 'STAFF'}, 
+            ${user.isActive === undefined ? true : user.isActive}, 
+            ${user.phone || null}, ${user.createdBy || null}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+          ) RETURNING 
+            id, name, email, password, role, is_active AS "isActive",
+            last_login AS "lastLogin", created_by AS "createdBy",
+            created_at AS "createdAt", updated_at AS "updatedAt"
+        `
+      );
+      
+      if (result.rows.length === 0) {
+        throw new Error("Falha ao criar usuário: nenhum registro retornado");
+      }
+      
+      const newUser = result.rows[0] as any;
+      // Adicionar campos vazios para propriedades que estão no schema mas não no banco
+      newUser.preferences = {};
+      newUser.phone = newUser.phone || null;
+      newUser.profilePhoto = null;
+      newUser.stripeCustomerId = null;
+      newUser.stripeSubscriptionId = null;
+      
+      return newUser as User;
+    } catch (error) {
+      console.error("Erro ao criar usuário:", error);
+      throw error;
+    }
   }
   
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {

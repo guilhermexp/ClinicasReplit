@@ -11,25 +11,37 @@ const isBrowser = typeof window !== 'undefined';
  * Cria um persister para o localStorage que salva o estado das queries
  * entre sessões do navegador
  */
-export const localStoragePersister = isBrowser
-  ? createSyncStoragePersister({
-      storage: window.localStorage,
-      key: "CLINICAS_QUERY_CACHE", // chave única para o cache no localStorage
-      throttleTime: 1000, // tempo mínimo entre salvamentos para evitar sobrecarga
-      // Apenas persistir queries com meta.persist = true
-      serialize: data => {
-        return JSON.stringify({
-          timestamp: Date.now(),
-          buster: '1.0', // para invalidar o cache quando a versão muda
-          data
-        });
-      },
-      deserialize: cachedString => {
-        if (!cachedString) {
-          return {};
-        }
-        
+// Interface completa para o persister
+interface CustomPersister {
+  persistClient: (client: any) => Promise<void>;
+  restoreClient: () => Promise<any>;
+  removeClient: () => Promise<void>;
+}
+
+// Criar um persister customizado que implementa todas as interfaces necessárias
+export const localStoragePersister: CustomPersister = isBrowser
+  ? {
+      // Implementação baseada no createSyncStoragePersister
+      persistClient: async (client: any) => {
         try {
+          const serialized = JSON.stringify({
+            timestamp: Date.now(),
+            buster: '1.0', // para invalidar o cache quando a versão muda
+            data: client
+          });
+          window.localStorage.setItem("CLINICAS_QUERY_CACHE", serialized);
+        } catch (error) {
+          console.error("Erro ao persistir cliente no cache:", error);
+        }
+      },
+      
+      restoreClient: async () => {
+        try {
+          const cachedString = window.localStorage.getItem("CLINICAS_QUERY_CACHE");
+          if (!cachedString) {
+            return {};
+          }
+          
           const cache = JSON.parse(cachedString);
           
           // Verificar se o cache é da versão atual
@@ -48,9 +60,21 @@ export const localStoragePersister = isBrowser
           console.error("Erro ao deserializar cache:", e);
           return {};
         }
+      },
+      
+      removeClient: async () => {
+        try {
+          window.localStorage.removeItem("CLINICAS_QUERY_CACHE");
+        } catch (error) {
+          console.error("Erro ao remover cliente do cache:", error);
+        }
       }
-    })
-  : { persistClient: () => Promise.resolve(), restoreClient: () => Promise.resolve() };
+    }
+  : {
+      persistClient: async () => {},
+      restoreClient: async () => ({}),
+      removeClient: async () => {}
+    };
 
 /**
  * Função que remove dados expirados do cache persistido

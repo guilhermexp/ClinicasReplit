@@ -30,30 +30,57 @@ export const queryClient = new QueryClient({
 
 // Configuração da persistência do cache (executado no lado do cliente)
 if (typeof window !== 'undefined') {
-  // Inicializa a persistência do cache
-  persistQueryClient({
-    queryClient,
-    persister: localStoragePersister,
-    // Máximo de 24 horas para dados em cache
-    maxAge: 1000 * 60 * 60 * 24,
-    // Configurações adicionais para melhorar performance
-    dehydrateOptions: {
-      // Não incluir dados com dehydrated: false na meta 
-      shouldDehydrateQuery: (query: any) => {
-        // Não persistir queries que estão em loading (usando string direto para evitar erro de tipos)
-        if (String(query.state.status) === 'loading') return false;
-        
-        // Não persistir queries que têm persist=false no meta
-        const meta = (query.state.meta as Record<string, any>) || {};
-        if (meta.persist === false) return false;
-        
-        return true;
-      },
+  try {
+    // Verificar se o persister é um objeto completo com a interface exigida
+    const persister = typeof localStoragePersister !== 'function' && 
+                       'persistClient' in localStoragePersister && 
+                       'restoreClient' in localStoragePersister &&
+                       typeof localStoragePersister.persistClient === 'function' &&
+                       typeof localStoragePersister.restoreClient === 'function' 
+      ? {
+          ...localStoragePersister,
+          // Implementar a função removeClient se não existir
+          removeClient: async () => {
+            localStorage.removeItem("CLINICAS_QUERY_CACHE");
+            return Promise.resolve();
+          }
+        }
+      : localStoragePersister;
+    
+    // Inicializa a persistência do cache
+    persistQueryClient({
+      queryClient,
+      persister,
+      // Máximo de 24 horas para dados em cache
+      maxAge: 1000 * 60 * 60 * 24,
+      // Configurações adicionais para melhorar performance
+      dehydrateOptions: {
+        // Não incluir dados com dehydrated: false na meta 
+        shouldDehydrateQuery: (query: any) => {
+          // Não persistir queries que estão em loading (usando string direto para evitar erro de tipos)
+          if (String(query.state.status) === 'loading') return false;
+          
+          // Não persistir queries que têm persist=false no meta
+          const meta = (query.state.meta as Record<string, any>) || {};
+          if (meta.persist === false) return false;
+          
+          return true;
+        },
+      }
+    });
+    
+    // Remover queries expiradas após inicialização
+    removeExpiredPersistedQueries(queryClient);
+  } catch (error) {
+    console.error("Erro ao configurar persistência do cache:", error);
+    
+    // Em caso de erro, limpar o cache para evitar problemas
+    try {
+      localStorage.removeItem("CLINICAS_QUERY_CACHE");
+    } catch (e) {
+      // Ignorar erros ao tentar limpar o cache
     }
-  });
-  
-  // Remover queries expiradas após inicialização
-  removeExpiredPersistedQueries(queryClient);
+  }
 }
 
 export function invalidateQueries(
