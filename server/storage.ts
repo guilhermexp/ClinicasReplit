@@ -682,8 +682,29 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
-    const [newInvitation] = await db.insert(invitations).values(invitation).returning();
-    return newInvitation;
+    try {
+      const result = await db.execute(
+        sql`INSERT INTO invitations (email, clinic_id, role, token, permissions, invited_by, expires_at, created_at)
+            VALUES (
+              ${invitation.email}, 
+              ${invitation.clinicId}, 
+              ${invitation.role}, 
+              ${invitation.token}, 
+              ${invitation.permissions}, 
+              ${invitation.invitedBy}, 
+              ${invitation.expiresAt}, 
+              NOW()
+            )
+            RETURNING id, email, clinic_id AS "clinicId", role, token, permissions, invited_by AS "invitedBy", expires_at AS "expiresAt", created_at AS "createdAt"`
+      );
+      
+      if (result.rows.length === 0) throw new Error("Falha ao criar convite");
+      
+      return result.rows[0] as Invitation;
+    } catch (error) {
+      console.error("Erro ao criar convite:", error);
+      throw error;
+    }
   }
   
   async deleteInvitation(id: number): Promise<boolean> {
