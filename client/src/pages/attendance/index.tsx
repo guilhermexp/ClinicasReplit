@@ -113,6 +113,7 @@ export default function AttendancePage() {
   // Funcionários filtrados com base na pesquisa
   const filteredEmployees = useMemo(() => {
     if (!searchTerm) return employees;
+    if (!Array.isArray(employees)) return [];
     return employees.filter(employee => 
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (employee.role && employee.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -122,7 +123,7 @@ export default function AttendancePage() {
   
   // Selecionar o primeiro funcionário por padrão se não houver nenhum selecionado
   useEffect(() => {
-    if (employees.length > 0 && !selectedEmployee) {
+    if (Array.isArray(employees) && employees.length > 0 && !selectedEmployee) {
       setSelectedEmployee(String(employees[0].id));
     }
   }, [employees, selectedEmployee]);
@@ -295,8 +296,14 @@ export default function AttendancePage() {
       const link = document.createElement("a");
       link.href = url;
       
-      // Nome do arquivo
-      const employeeName = employees.find(e => e.id === Number(selectedEmployee))?.name || "colaborador";
+      // Nome do arquivo - verificando se employees existe e é um array antes de chamar find
+      let employeeName = "colaborador";
+      if (Array.isArray(employees)) {
+        const employee = employees.find(e => e.id === Number(selectedEmployee));
+        if (employee && employee.name) {
+          employeeName = employee.name;
+        }
+      }
       const fileName = viewMode === "daily"
         ? `ponto_${employeeName}_${selectedDate}.pdf`
         : `ponto_${employeeName}_${selectedMonth}.pdf`;
@@ -342,6 +349,8 @@ export default function AttendancePage() {
   
   // Obter o status do funcionário selecionado no dia atual
   const selectedEmployeeData = useMemo(() => {
+    // Verificar se employees existe e é um array antes de chamar find
+    if (!employees || !Array.isArray(employees)) return null;
     return employees.find(e => e.id === Number(selectedEmployee)) || null;
   }, [employees, selectedEmployee]);
   
@@ -555,7 +564,7 @@ export default function AttendancePage() {
                     <SelectValue placeholder="Selecione um colaborador" />
                   </SelectTrigger>
                   <SelectContent>
-                    {employees.map((employee) => (
+                    {Array.isArray(employees) && employees.map((employee) => (
                       <SelectItem key={employee.id} value={String(employee.id)}>
                         {employee.name}
                       </SelectItem>
