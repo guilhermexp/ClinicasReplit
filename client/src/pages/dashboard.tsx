@@ -793,22 +793,22 @@ export default function Dashboard() {
                     <div>
                       <p className="text-sm text-muted-foreground">Crescimento</p>
                       <div className="flex items-center space-x-1 text-sm">
-                        {advancedMetrics.agendamentos.crescimento > 0 ? (
+                        {(advancedMetrics?.agendamentos?.crescimento || 0) > 0 ? (
                           <TrendingUp className="h-4 w-4 text-emerald-500" />
                         ) : (
                           <TrendingDown className="h-4 w-4 text-red-500" />
                         )}
                         <span className={`font-medium ${
-                          advancedMetrics.agendamentos.crescimento > 0 ? "text-emerald-500" : "text-red-500"
+                          (advancedMetrics?.agendamentos?.crescimento || 0) > 0 ? "text-emerald-500" : "text-red-500"
                         }`}>
-                          {advancedMetrics.agendamentos.crescimento > 0 && "+"}
-                          {advancedMetrics.agendamentos.crescimento.toFixed(1)}%
+                          {(advancedMetrics?.agendamentos?.crescimento || 0) > 0 && "+"}
+                          {(advancedMetrics?.agendamentos?.crescimento || 0).toFixed(1)}%
                         </span>
                       </div>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Horário popular</p>
-                      <p className="font-medium">{advancedMetrics.agendamentos.horarioMaisPopular}h</p>
+                      <p className="font-medium">{advancedMetrics?.agendamentos?.horarioMaisPopular || 0}h</p>
                     </div>
                   </div>
                 </div>
@@ -826,18 +826,18 @@ export default function Dashboard() {
                   <div>
                     <div className="flex justify-between text-sm text-muted-foreground mb-1">
                       <span>Total de clientes</span>
-                      <span className="font-medium text-foreground">{advancedMetrics.clientes.total}</span>
+                      <span className="font-medium text-foreground">{advancedMetrics?.clientes?.total || 0}</span>
                     </div>
-                    <Progress value={Math.min(advancedMetrics.clientes.total / 500 * 100, 100)} className="h-2 bg-muted/30"/>
+                    <Progress value={Math.min(((advancedMetrics?.clientes?.total || 0) / 500) * 100, 100)} className="h-2 bg-muted/30"/>
                   </div>
                   
                   <div>
                     <div className="flex justify-between text-sm text-muted-foreground mb-1">
                       <span>Novos clientes no mês</span>
-                      <span className="font-medium text-foreground">{advancedMetrics.clientes.novosNoMes}</span>
+                      <span className="font-medium text-foreground">{advancedMetrics?.clientes?.novosNoMes || 0}</span>
                     </div>
                     <Progress 
-                      value={Math.min(advancedMetrics.clientes.novosNoMes / 50 * 100, 100)} 
+                      value={Math.min(((advancedMetrics?.clientes?.novosNoMes || 0) / 50) * 100, 100)} 
                       className="h-2 bg-muted/30 [--progress-foreground:theme(colors.blue.500)]"
                     />
                   </div>
@@ -846,16 +846,16 @@ export default function Dashboard() {
                     <div>
                       <p className="text-sm text-muted-foreground">Crescimento de novos clientes</p>
                       <div className="flex items-center space-x-1 text-sm">
-                        {advancedMetrics.clientes.crescimentoNovosClientes > 0 ? (
+                        {(advancedMetrics?.clientes?.crescimentoNovosClientes || 0) > 0 ? (
                           <TrendingUp className="h-4 w-4 text-emerald-500" />
                         ) : (
                           <TrendingDown className="h-4 w-4 text-red-500" />
                         )}
                         <span className={`font-medium ${
-                          advancedMetrics.clientes.crescimentoNovosClientes > 0 ? "text-emerald-500" : "text-red-500"
+                          (advancedMetrics?.clientes?.crescimentoNovosClientes || 0) > 0 ? "text-emerald-500" : "text-red-500"
                         }`}>
-                          {advancedMetrics.clientes.crescimentoNovosClientes > 0 && "+"}
-                          {advancedMetrics.clientes.crescimentoNovosClientes.toFixed(1)}%
+                          {(advancedMetrics?.clientes?.crescimentoNovosClientes || 0) > 0 && "+"}
+                          {(advancedMetrics?.clientes?.crescimentoNovosClientes || 0).toFixed(1)}%
                         </span>
                       </div>
                     </div>
@@ -875,18 +875,18 @@ export default function Dashboard() {
                   <div>
                     <div className="flex justify-between text-sm text-muted-foreground mb-1">
                       <span>Receita no mês</span>
-                      <span className="font-medium text-foreground">{formatCurrency(advancedMetrics.financeiro.receitaMesAtual)}</span>
+                      <span className="font-medium text-foreground">{formatCurrency(advancedMetrics?.financeiro?.receitaMesAtual || 0)}</span>
                     </div>
-                    <Progress value={Math.min(advancedMetrics.financeiro.receitaMesAtual / 100000 * 100, 100)} className="h-2 bg-muted/30"/>
+                    <Progress value={Math.min(((advancedMetrics?.financeiro?.receitaMesAtual || 0) / 100000) * 100, 100)} className="h-2 bg-muted/30"/>
                   </div>
                   
                   <div>
                     <div className="flex justify-between text-sm text-muted-foreground mb-1">
                       <span>Ticket médio</span>
-                      <span className="font-medium text-foreground">{formatCurrency(advancedMetrics.financeiro.ticketMedio)}</span>
+                      <span className="font-medium text-foreground">{formatCurrency(advancedMetrics?.financeiro?.ticketMedio || 0)}</span>
                     </div>
                     <Progress 
-                      value={Math.min(advancedMetrics.financeiro.ticketMedio / 1000 * 100, 100)} 
+                      value={Math.min(((advancedMetrics?.financeiro?.ticketMedio || 0) / 1000) * 100, 100)} 
                       className="h-2 bg-muted/30 [--progress-foreground:theme(colors.green.500)]"
                     />
                   </div>
@@ -895,16 +895,16 @@ export default function Dashboard() {
                     <div>
                       <p className="text-sm text-muted-foreground">Crescimento da receita</p>
                       <div className="flex items-center space-x-1 text-sm">
-                        {advancedMetrics.financeiro.crescimentoReceita > 0 ? (
+                        {(advancedMetrics?.financeiro?.crescimentoReceita || 0) > 0 ? (
                           <TrendingUp className="h-4 w-4 text-emerald-500" />
                         ) : (
                           <TrendingDown className="h-4 w-4 text-red-500" />
                         )}
                         <span className={`font-medium ${
-                          advancedMetrics.financeiro.crescimentoReceita > 0 ? "text-emerald-500" : "text-red-500"
+                          (advancedMetrics?.financeiro?.crescimentoReceita || 0) > 0 ? "text-emerald-500" : "text-red-500"
                         }`}>
-                          {advancedMetrics.financeiro.crescimentoReceita > 0 && "+"}
-                          {advancedMetrics.financeiro.crescimentoReceita.toFixed(1)}%
+                          {(advancedMetrics?.financeiro?.crescimentoReceita || 0) > 0 && "+"}
+                          {(advancedMetrics?.financeiro?.crescimentoReceita || 0).toFixed(1)}%
                         </span>
                       </div>
                     </div>
@@ -917,7 +917,7 @@ export default function Dashboard() {
       )}
       
       {/* Seção de Análise de Desempenho de Serviços */}
-      {servicePerformance.length > 0 && (
+      {servicePerformance?.length > 0 && (
         <div className="mt-6">
           <h2 className="text-xl font-bold mb-4 gradient-text">Desempenho de Serviços</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -967,7 +967,7 @@ export default function Dashboard() {
                 <CardDescription>Evolução dos serviços mais rentáveis</CardDescription>
               </CardHeader>
               <CardContent>
-                {servicePerformance.length > 0 && (
+                {servicePerformance?.length > 0 && (
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart 
