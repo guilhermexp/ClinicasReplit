@@ -73,7 +73,7 @@ const ConversaoVendas: React.FC<ConversaoVendasProps> = ({ clinicId }) => {
       <div className="space-y-1 mt-6">
         <div className="text-sm font-medium">Últimos 7 dias</div>
         <div className="flex items-end justify-between h-16 gap-1">
-          {data.weeklyRates.map((rate, index) => (
+          {data.weeklyRates.map((rate: number, index: number) => (
             <div
               key={index}
               className="bg-primary/80 hover:bg-primary transition-colors rounded-sm w-full"

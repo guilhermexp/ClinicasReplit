@@ -123,7 +123,7 @@ const AdicionarPagamentoDialog: React.FC<AdicionarPagamentoDialogProps> = ({
       toast({
         title: "Pagamento adicionado",
         description: "O pagamento foi registrado com sucesso.",
-        variant: "success"
+        variant: "default"
       });
       
       // Fechar o dialog e resetar o formulário
