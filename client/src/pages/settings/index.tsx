@@ -907,7 +907,7 @@ export default function Settings() {
                               <div>
                                 <p className="text-sm font-medium">{log.activity}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {log.ipLocation || 'Localização desconhecida'} · {log.userAgent ? (
+                                  {log.ipAddress || 'Localização desconhecida'} · {log.userAgent ? (
                                     log.userAgent.includes('Chrome') ? 'Navegador Chrome' :
                                     log.userAgent.includes('Firefox') ? 'Navegador Firefox' :
                                     log.userAgent.includes('Safari') ? 'Navegador Safari' :
