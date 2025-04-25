@@ -313,4 +313,84 @@ export function registerInventoryRoutes(app: Express, isAuthenticated: (req: Req
       }
     }
   );
+  
+  app.patch("/api/clinics/:clinicId/inventory/transactions/:id", 
+    isAuthenticated,
+    requirePermission("inventory", "update"),
+    async (req: Request, res: Response) => {
+      try {
+        const transactionId = parseInt(req.params.id);
+        const userId = req.user!.id;
+        
+        // Obter a transação atual
+        const currentTransaction = await storage.getInventoryTransaction(transactionId);
+        
+        if (!currentTransaction) {
+          return res.status(404).json({ message: "Transação não encontrada" });
+        }
+        
+        // Verificar se a quantidade está sendo alterada
+        if (req.body.quantity !== undefined && req.body.quantity !== currentTransaction.quantity) {
+          // Obter o produto atual
+          const productId = currentTransaction.productId;
+          const product = await storage.getInventoryProduct(productId);
+          
+          if (!product) {
+            return res.status(404).json({ message: "Produto não encontrado" });
+          }
+          
+          // Reverter o efeito da transação anterior
+          const quantityDifference = req.body.quantity - currentTransaction.quantity;
+          const newProductQuantity = product.quantity + quantityDifference;
+          
+          // Atualizar tanto a transação quanto o produto
+          const updatedTransaction = await storage.updateInventoryTransaction(transactionId, {
+            ...req.body,
+            previousQuantity: currentTransaction.previousQuantity,
+            newQuantity: currentTransaction.previousQuantity + req.body.quantity,
+            createdBy: userId
+          });
+          
+          await storage.updateInventoryProduct(productId, {
+            quantity: newProductQuantity,
+            createdBy: userId
+          });
+          
+          res.json(updatedTransaction);
+        } else {
+          // Se a quantidade não está sendo alterada, apenas atualizar a transação
+          const updatedTransaction = await storage.updateInventoryTransaction(transactionId, {
+            ...req.body,
+            createdBy: userId
+          });
+          
+          res.json(updatedTransaction);
+        }
+      } catch (error) {
+        console.error("Erro ao atualizar transação de inventário:", error);
+        res.status(500).json({ message: "Erro ao atualizar transação de inventário" });
+      }
+    }
+  );
+  
+  app.delete("/api/clinics/:clinicId/inventory/transactions/:id", 
+    isAuthenticated,
+    requirePermission("inventory", "delete"),
+    async (req: Request, res: Response) => {
+      try {
+        const transactionId = parseInt(req.params.id);
+        
+        const result = await storage.deleteInventoryTransaction(transactionId);
+        
+        if (!result) {
+          return res.status(404).json({ message: "Transação não encontrada ou não pode ser excluída" });
+        }
+        
+        res.status(204).send();
+      } catch (error) {
+        console.error("Erro ao excluir transação de inventário:", error);
+        res.status(500).json({ message: "Erro ao excluir transação de inventário" });
+      }
+    }
+  );
 }

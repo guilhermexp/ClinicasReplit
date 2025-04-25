@@ -1345,6 +1345,81 @@ export class DatabaseStorage implements IStorage {
     const [newTransaction] = await db.insert(inventoryTransactions).values(transaction).returning();
     return newTransaction;
   }
+  
+  async updateInventoryTransaction(id: number, updates: Partial<InventoryTransaction>): Promise<InventoryTransaction | undefined> {
+    try {
+      // Verificar se a transação existe
+      const [existingTransaction] = await db
+        .select()
+        .from(inventoryTransactions)
+        .where(eq(inventoryTransactions.id, id));
+      
+      if (!existingTransaction) {
+        return undefined;
+      }
+      
+      // Atualizar a transação
+      const [updatedTransaction] = await db
+        .update(inventoryTransactions)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(inventoryTransactions.id, id))
+        .returning();
+      
+      return updatedTransaction;
+    } catch (error) {
+      console.error("Erro ao atualizar transação de inventário:", error);
+      return undefined;
+    }
+  }
+  
+  async deleteInventoryTransaction(id: number): Promise<boolean> {
+    try {
+      // Verificar se a transação existe
+      const [transaction] = await db
+        .select()
+        .from(inventoryTransactions)
+        .where(eq(inventoryTransactions.id, id));
+      
+      if (!transaction) {
+        return false;
+      }
+      
+      // Obter o produto relacionado
+      const [product] = await db
+        .select()
+        .from(inventoryProducts)
+        .where(eq(inventoryProducts.id, transaction.productId));
+      
+      if (!product) {
+        return false;
+      }
+      
+      // Calcular nova quantidade do produto (reverter a transação)
+      const newQuantity = product.quantity - transaction.quantity;
+      
+      // Atualizar o estoque do produto
+      await db
+        .update(inventoryProducts)
+        .set({ 
+          quantity: newQuantity,
+          updatedAt: new Date()
+        })
+        .where(eq(inventoryProducts.id, transaction.productId));
+      
+      // Excluir a transação
+      const result = await db
+        .delete(inventoryTransactions)
+        .where(eq(inventoryTransactions.id, id));
+      
+      return result !== null && (result as any).rowCount > 0;
+    } catch (error) {
+      console.error("Erro ao excluir transação de inventário:", error);
+      return false;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
