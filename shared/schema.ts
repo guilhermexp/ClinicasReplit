@@ -417,6 +417,7 @@ export const userDevices = pgTable("user_devices", {
   lastIp: text("last_ip"),
   lastActive: timestamp("last_active").notNull().defaultNow(),
   isActive: boolean("is_active").notNull().default(true),
+  isCurrent: boolean("is_current").notNull().default(false),
   userAgent: text("user_agent"),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at"),
