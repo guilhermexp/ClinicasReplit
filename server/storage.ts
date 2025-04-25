@@ -14,11 +14,15 @@ import {
   ActivityLog, InsertActivityLog,
   UserTwoFactorAuth, InsertUserTwoFactorAuth,
   Task, InsertTask, TaskStatus,
+  InventoryCategory, InsertInventoryCategory,
+  InventoryProduct, InsertInventoryProduct, InventoryStatus,
+  InventoryTransaction, InsertInventoryTransaction, InventoryTransactionType,
   users, clinics, clinicUsers, permissions, clients, professionals, services, appointments, invitations,
-  payments, commissions, userDevices, activityLogs, userTwoFactorAuth, tasks
+  payments, commissions, userDevices, activityLogs, userTwoFactorAuth, tasks,
+  inventoryCategories, inventoryProducts, inventoryTransactions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import session from "express-session";
 import memorystore from "memorystore";
 
@@ -1118,6 +1122,228 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tasks.id, id));
     
     return result !== null && (result as any).rowCount > 0;
+  }
+  
+  // Inventory Category operations
+  async getInventoryCategory(id: number): Promise<InventoryCategory | undefined> {
+    const [category] = await db.select().from(inventoryCategories).where(eq(inventoryCategories.id, id));
+    return category;
+  }
+  
+  async getInventoryCategoriesByClinic(clinicId: number): Promise<InventoryCategory[]> {
+    return await db.select().from(inventoryCategories).where(eq(inventoryCategories.clinicId, clinicId));
+  }
+  
+  async createInventoryCategory(category: InsertInventoryCategory): Promise<InventoryCategory> {
+    const [newCategory] = await db.insert(inventoryCategories).values(category).returning();
+    return newCategory;
+  }
+  
+  async updateInventoryCategory(id: number, updates: Partial<InventoryCategory>): Promise<InventoryCategory | undefined> {
+    const [updatedCategory] = await db
+      .update(inventoryCategories)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(inventoryCategories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+  
+  async deleteInventoryCategory(id: number): Promise<boolean> {
+    try {
+      // Verificar se existem produtos associados à categoria
+      const productsWithCategory = await db
+        .select()
+        .from(inventoryProducts)
+        .where(eq(inventoryProducts.categoryId, id));
+      
+      if (productsWithCategory.length > 0) {
+        console.error("Não é possível excluir categoria com produtos associados");
+        return false;
+      }
+      
+      // Verificar se existem subcategorias
+      const subcategories = await db
+        .select()
+        .from(inventoryCategories)
+        .where(eq(inventoryCategories.parentId, id));
+      
+      if (subcategories.length > 0) {
+        console.error("Não é possível excluir categoria com subcategorias");
+        return false;
+      }
+      
+      const result = await db
+        .delete(inventoryCategories)
+        .where(eq(inventoryCategories.id, id));
+      
+      return result !== null && (result as any).rowCount > 0;
+    } catch (error) {
+      console.error("Erro ao excluir categoria de inventário:", error);
+      return false;
+    }
+  }
+  
+  // Inventory Product operations
+  async getInventoryProduct(id: number): Promise<InventoryProduct | undefined> {
+    const [product] = await db.select().from(inventoryProducts).where(eq(inventoryProducts.id, id));
+    return product;
+  }
+  
+  async getInventoryProductsByClinic(clinicId: number): Promise<InventoryProduct[]> {
+    return await db.select().from(inventoryProducts).where(eq(inventoryProducts.clinicId, clinicId));
+  }
+  
+  async getInventoryProductsByCategory(categoryId: number): Promise<InventoryProduct[]> {
+    return await db.select().from(inventoryProducts).where(eq(inventoryProducts.categoryId, categoryId));
+  }
+  
+  async createInventoryProduct(product: InsertInventoryProduct): Promise<InventoryProduct> {
+    const [newProduct] = await db.insert(inventoryProducts).values(product).returning();
+    
+    // Registrar transação de entrada inicial se quantidade > 0
+    if (newProduct.quantity > 0) {
+      await this.createInventoryTransaction({
+        clinicId: newProduct.clinicId,
+        productId: newProduct.id,
+        type: InventoryTransactionType.PURCHASE,
+        quantity: newProduct.quantity,
+        previousQuantity: 0,
+        newQuantity: newProduct.quantity,
+        date: new Date(),
+        notes: "Estoque inicial",
+        cost: product.costPrice ? product.costPrice * newProduct.quantity : 0,
+        createdBy: newProduct.createdBy
+      });
+    }
+    
+    return newProduct;
+  }
+  
+  async updateInventoryProduct(id: number, updates: Partial<InventoryProduct>): Promise<InventoryProduct | undefined> {
+    // Se a quantidade estiver sendo atualizada, registrar uma transação
+    if (updates.quantity !== undefined) {
+      const [currentProduct] = await db
+        .select()
+        .from(inventoryProducts)
+        .where(eq(inventoryProducts.id, id));
+      
+      if (currentProduct) {
+        const previousQuantity = currentProduct.quantity;
+        const newQuantity = updates.quantity;
+        const quantityDiff = newQuantity - previousQuantity;
+        
+        if (quantityDiff !== 0) {
+          // Determinar o tipo de transação com base na diferença de quantidade
+          const transactionType = quantityDiff > 0 
+            ? InventoryTransactionType.PURCHASE 
+            : InventoryTransactionType.ADJUSTMENT;
+          
+          await this.createInventoryTransaction({
+            clinicId: currentProduct.clinicId,
+            productId: currentProduct.id,
+            type: transactionType,
+            quantity: quantityDiff,
+            previousQuantity,
+            newQuantity,
+            date: new Date(),
+            notes: updates.notes || "Ajuste manual de estoque",
+            cost: currentProduct.costPrice ? Math.abs(quantityDiff) * currentProduct.costPrice : 0,
+            createdBy: updates.createdBy || currentProduct.createdBy
+          });
+        }
+      }
+    }
+    
+    // Atualizar a situação do estoque com base na quantidade e limiar
+    if (updates.quantity !== undefined || updates.lowStockThreshold !== undefined) {
+      const [currentProduct] = await db
+        .select()
+        .from(inventoryProducts)
+        .where(eq(inventoryProducts.id, id));
+      
+      if (currentProduct) {
+        const newQuantity = updates.quantity !== undefined ? updates.quantity : currentProduct.quantity;
+        const threshold = updates.lowStockThreshold !== undefined ? updates.lowStockThreshold : currentProduct.lowStockThreshold;
+        
+        let status = InventoryStatus.IN_STOCK;
+        if (newQuantity === 0) {
+          status = InventoryStatus.OUT_OF_STOCK;
+        } else if (threshold && newQuantity <= threshold) {
+          status = InventoryStatus.LOW_STOCK;
+        }
+        
+        updates.status = status;
+      }
+    }
+    
+    // Realizar a atualização do produto
+    const [updatedProduct] = await db
+      .update(inventoryProducts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(inventoryProducts.id, id))
+      .returning();
+    
+    return updatedProduct;
+  }
+  
+  async deleteInventoryProduct(id: number): Promise<boolean> {
+    try {
+      // Verificar se existem transações relacionadas ao produto
+      const transactions = await db
+        .select()
+        .from(inventoryTransactions)
+        .where(eq(inventoryTransactions.productId, id));
+      
+      if (transactions.length > 0) {
+        // Em vez de falhar, podemos marcar o produto como descontinuado
+        await db
+          .update(inventoryProducts)
+          .set({ 
+            status: InventoryStatus.DISCONTINUED, 
+            updatedAt: new Date() 
+          })
+          .where(eq(inventoryProducts.id, id));
+        
+        return true;
+      }
+      
+      // Se não houver transações, podemos excluir o produto
+      const result = await db
+        .delete(inventoryProducts)
+        .where(eq(inventoryProducts.id, id));
+      
+      return result !== null && (result as any).rowCount > 0;
+    } catch (error) {
+      console.error("Erro ao excluir produto de inventário:", error);
+      return false;
+    }
+  }
+  
+  // Inventory Transaction operations
+  async getInventoryTransaction(id: number): Promise<InventoryTransaction | undefined> {
+    const [transaction] = await db.select().from(inventoryTransactions).where(eq(inventoryTransactions.id, id));
+    return transaction;
+  }
+  
+  async getInventoryTransactionsByProduct(productId: number): Promise<InventoryTransaction[]> {
+    return await db
+      .select()
+      .from(inventoryTransactions)
+      .where(eq(inventoryTransactions.productId, productId))
+      .orderBy(desc(inventoryTransactions.date));
+  }
+  
+  async getInventoryTransactionsByClinic(clinicId: number): Promise<InventoryTransaction[]> {
+    return await db
+      .select()
+      .from(inventoryTransactions)
+      .where(eq(inventoryTransactions.clinicId, clinicId))
+      .orderBy(desc(inventoryTransactions.date));
+  }
+  
+  async createInventoryTransaction(transaction: InsertInventoryTransaction): Promise<InventoryTransaction> {
+    const [newTransaction] = await db.insert(inventoryTransactions).values(transaction).returning();
+    return newTransaction;
   }
 }
 

@@ -3,6 +3,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { permissions } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
+import { z } from "zod";
 
 // Middleware para verificar se o usuário tem permissão para um módulo e ação específicos
 export async function hasPermission(
@@ -114,4 +115,27 @@ export async function isClinicManager(req: Request, res: Response, next: NextFun
     console.error("Erro ao verificar gerente da clínica:", error);
     res.status(500).json({ message: "Erro ao verificar permissões" });
   }
+}
+
+// Middleware para validação de dados da requisição usando esquemas Zod
+export function validateRequest<T extends z.ZodTypeAny>(schema: T) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = schema.safeParse(req.body);
+      
+      if (!result.success) {
+        const errors = result.error.format();
+        return res.status(400).json({ 
+          message: "Dados inválidos na requisição",
+          errors
+        });
+      }
+      
+      // Corpo da requisição validado, continuar
+      next();
+    } catch (error) {
+      console.error("Erro ao validar requisição:", error);
+      res.status(500).json({ message: "Erro ao processar a requisição" });
+    }
+  };
 }
