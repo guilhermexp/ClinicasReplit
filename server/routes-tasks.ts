@@ -1,5 +1,5 @@
-import { Request, Response, Router } from "express";
-import { isAuthenticated, hasClinicAccess } from "./middleware";
+import { type Express, Request, Response } from "express";
+import { requirePermission } from "./middleware";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertTaskSchema, TaskStatus } from "@shared/schema";
@@ -15,9 +15,9 @@ const createTaskSchema = insertTaskSchema.extend({
 const updateTaskSchema = createTaskSchema.partial();
 
 // Definir as rotas para tarefas
-export function registerTaskRoutes(router: Router) {
+export function registerTaskRoutes(app: Express, isAuthenticated: Function) {
   // Obter todas as tarefas de uma clínica
-  router.get("/tasks/clinic/:clinicId", isAuthenticated, hasClinicAccess, async (req: Request, res: Response) => {
+  app.get("/api/clinics/:clinicId/tasks", isAuthenticated, requirePermission("tasks", "view"), async (req: Request, res: Response) => {
     try {
       const clinicId = parseInt(req.params.clinicId);
       if (isNaN(clinicId)) {
@@ -33,7 +33,7 @@ export function registerTaskRoutes(router: Router) {
   });
 
   // Obter tarefas por status
-  router.get("/tasks/clinic/:clinicId/status/:status", isAuthenticated, hasClinicAccess, async (req: Request, res: Response) => {
+  app.get("/api/clinics/:clinicId/tasks/status/:status", isAuthenticated, requirePermission("tasks", "view"), async (req: Request, res: Response) => {
     try {
       const clinicId = parseInt(req.params.clinicId);
       const status = req.params.status as TaskStatus;
@@ -56,7 +56,7 @@ export function registerTaskRoutes(router: Router) {
   });
 
   // Obter tarefas atribuídas a um usuário específico
-  router.get("/tasks/assignee/:userId", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/tasks/assignee/:userId", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = parseInt(req.params.userId);
       
@@ -78,7 +78,7 @@ export function registerTaskRoutes(router: Router) {
   });
 
   // Obter uma tarefa específica
-  router.get("/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const taskId = parseInt(req.params.id);
       
@@ -106,7 +106,7 @@ export function registerTaskRoutes(router: Router) {
   });
 
   // Criar uma nova tarefa
-  router.post("/tasks", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/clinics/:clinicId/tasks", isAuthenticated, requirePermission("tasks", "create"), async (req: Request, res: Response) => {
     try {
       // Validar dados de entrada
       const validationResult = createTaskSchema.safeParse(req.body);
@@ -138,7 +138,7 @@ export function registerTaskRoutes(router: Router) {
   });
 
   // Atualizar uma tarefa existente
-  router.put("/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.put("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const taskId = parseInt(req.params.id);
       
@@ -184,7 +184,7 @@ export function registerTaskRoutes(router: Router) {
   });
 
   // Excluir uma tarefa
-  router.delete("/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.delete("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const taskId = parseInt(req.params.id);
       

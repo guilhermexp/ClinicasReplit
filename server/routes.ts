@@ -1643,6 +1643,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registrar as rotas do módulo financeiro
   registerFinancialRoutes(app, isAuthenticated);
 
+  // Registrar as rotas do sistema de tarefas
+  registerTaskRoutes(app, isAuthenticated);
+
   // Rotas do módulo de segurança
 
   // Rotas para gerenciamento de dispositivos conectados
