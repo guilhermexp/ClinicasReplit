@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { usePermissions } from "@/hooks/use-permissions";
+import { usePermissionsContext2 } from "@/hooks/use-permissions-context";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -68,7 +68,7 @@ import MonthlyReportModal, { Employee, MonthlyReportData } from "@/components/at
 
 export default function AttendancePage() {
   const { selectedClinic } = useAuth();
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissionsContext2();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   

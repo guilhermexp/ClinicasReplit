@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { usePermissions } from "@/hooks/use-permissions";
+import { usePermissionsContext2 } from "@/hooks/use-permissions-context";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ import { Copy, Loader2, Mail, MoreHorizontal, Plus, Search, Trash2 } from "lucid
 
 export default function Users() {
   const { selectedClinic } = useAuth();
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissionsContext2();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);

@@ -14,7 +14,7 @@ import {
 import { roleDisplayNames, roleColors, statusColors, getInitials } from "@/lib/auth-utils";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/auth-utils";
-import { usePermissions } from "@/hooks/use-permissions";
+import { usePermissionsContext2 } from "@/hooks/use-permissions-context";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +41,7 @@ export function UserList({
   superAdmins = [],
   isLoadingSuperAdmins = false
 }: UserListProps) {
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissionsContext2();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [targetUserId, setTargetUserId] = useState<number | null>(null);
