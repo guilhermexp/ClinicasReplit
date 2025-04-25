@@ -1,9 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { usePermissions } from "@/hooks/use-permissions";
 import { getQueryFn } from "@/lib/queryClient";
-import { PermissionModule, PermissionAction } from "@/hooks/use-permissions-helper";
 
 /**
  * Componente que pré-carrega dados importantes para o dashboard
@@ -13,7 +11,6 @@ import { PermissionModule, PermissionAction } from "@/hooks/use-permissions-help
 export function MetricsPrefetcher() {
   const queryClient = useQueryClient();
   const { selectedClinic } = useAuth();
-  const permissions = usePermissions();
   
   // Prefetch de dados críticos do dashboard
   useEffect(() => {
@@ -31,7 +28,6 @@ export function MetricsPrefetcher() {
         {
           endpoint: `/api/dashboard/summary/${selectedClinic.id}`,
           priority: fetchPriority.high,
-          permission: { module: "dashboard" as PermissionModule, action: "view" as PermissionAction },
           staleTime: 5 * 60 * 1000, // 5 minutos
           cachePriority: 'high'
         },
@@ -40,14 +36,12 @@ export function MetricsPrefetcher() {
         {
           endpoint: `/api/appointments/upcoming/${selectedClinic.id}`,
           priority: fetchPriority.medium,
-          permission: { module: "appointments" as PermissionModule, action: "view" as PermissionAction },
           staleTime: 3 * 60 * 1000, // 3 minutos
           cachePriority: 'high'
         },
         {
           endpoint: `/api/clients/summary/${selectedClinic.id}`,
           priority: fetchPriority.medium,
-          permission: { module: "clients" as PermissionModule, action: "view" as PermissionAction },
           staleTime: 10 * 60 * 1000, // 10 minutos
           cachePriority: 'medium'
         },
@@ -56,66 +50,54 @@ export function MetricsPrefetcher() {
         {
           endpoint: `/api/professionals/summary/${selectedClinic.id}`,
           priority: fetchPriority.low,
-          permission: { module: "professionals" as PermissionModule, action: "view" as PermissionAction },
           staleTime: 15 * 60 * 1000, // 15 minutos
           cachePriority: 'medium'
         },
         {
           endpoint: `/api/inventory/summary/${selectedClinic.id}`,
           priority: fetchPriority.low,
-          permission: { module: "inventory" as PermissionModule, action: "view" as PermissionAction },
           staleTime: 20 * 60 * 1000, // 20 minutos
           cachePriority: 'low'
         },
         {
           endpoint: `/api/tasks/recent/${selectedClinic.id}`,
           priority: fetchPriority.low,
-          permission: { module: "tasks" as PermissionModule, action: "view" as PermissionAction },
           staleTime: 10 * 60 * 1000, // 10 minutos
           cachePriority: 'low'
         }
       ];
       
-      // Verificar se temos a função checkPermission disponível
-      if (typeof permissions.checkPermission !== 'function') {
-        console.warn('Função checkPermission não disponível', permissions);
-        return;
-      }
-      
       // Prefetch cada endpoint em ordem de prioridade
-      criticalEndpoints.forEach(({ endpoint, priority, permission, staleTime, cachePriority }) => {
+      criticalEndpoints.forEach(({ endpoint, priority, staleTime, cachePriority }) => {
         try {
-          // Só prefetch dados que o usuário tem permissão para ver
-          if (permissions.checkPermission(permission.module, permission.action)) {
-            // Aplicar delay para endpoints de menor prioridade para não sobrecarregar
-            setTimeout(() => {
-              try {
-                // Log para verificação durante o desenvolvimento
-                console.log(`Prefetching ${endpoint} com prioridade ${cachePriority}`);
-                
-                // Prefetch e armazenar no cache com metadados para persistência
-                queryClient.prefetchQuery({
-                  queryKey: [endpoint],
-                  staleTime: staleTime,
-                  gcTime: staleTime * 2, // Dobro do staleTime
-                  queryFn: getQueryFn({
-                    meta: {
-                      persist: true, // Marcar para persistência no localStorage
-                      priority: cachePriority as 'high' | 'medium' | 'low',
-                      cacheTime: staleTime, // Tempo de expiração do cache
-                    }
-                  }),
+          // Aplicar delay para endpoints de menor prioridade para não sobrecarregar
+          setTimeout(() => {
+            try {
+              // Log para verificação durante o desenvolvimento
+              console.log(`Prefetching ${endpoint} com prioridade ${cachePriority}`);
+              
+              // Prefetch e armazenar no cache com metadados para persistência
+              queryClient.prefetchQuery({
+                queryKey: [endpoint],
+                staleTime: staleTime,
+                gcTime: staleTime * 2, // Dobro do staleTime
+                queryFn: getQueryFn({
                   meta: {
                     persist: true, // Marcar para persistência no localStorage
                     priority: cachePriority as 'high' | 'medium' | 'low',
                     cacheTime: staleTime, // Tempo de expiração do cache
                   }
-                });
-              } catch (innerError) {
-                console.error(`Erro ao processar prefetch para ${endpoint}:`, innerError);
-              }
-            }, priority);
-          }
+                }),
+                meta: {
+                  persist: true, // Marcar para persistência no localStorage
+                  priority: cachePriority as 'high' | 'medium' | 'low',
+                  cacheTime: staleTime, // Tempo de expiração do cache
+                }
+              });
+            } catch (innerError) {
+              console.error(`Erro ao processar prefetch para ${endpoint}:`, innerError);
+            }
+          }, priority);
         } catch (permissionError) {
           console.error(`Erro ao verificar permissão para ${endpoint}:`, permissionError);
         }
@@ -130,7 +112,7 @@ export function MetricsPrefetcher() {
     } catch (error) {
       console.error("Erro no MetricsPrefetcher:", error);
     }
-  }, [selectedClinic?.id, queryClient, permissions]);
+  }, [selectedClinic?.id, queryClient]);
   
   // Este componente não renderiza nada visualmente
   return null;
