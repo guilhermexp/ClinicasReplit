@@ -36,6 +36,8 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Para o ambiente de desenvolvimento, usaremos configurações mais simples
+  const isDevelopment = process.env.NODE_ENV === "development";
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "sessionsecret",
     resave: true,
@@ -43,13 +45,24 @@ export function setupAuth(app: Express) {
     rolling: true, // Renova o cookie a cada requisição
     store: storage.sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: !isDevelopment, // Em development, não exigir HTTPS
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: isDevelopment ? 'none' : 'lax',
       path: '/'
-    }
+    },
+    name: 'sid' // Cookie name
   };
+  
+  console.log("Configuração da sessão:", {
+    ...sessionSettings,
+    secret: "***escondido***",
+    cookie: {
+      ...sessionSettings.cookie,
+      secure: sessionSettings.cookie?.secure,
+      sameSite: sessionSettings.cookie?.sameSite
+    }
+  });
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));

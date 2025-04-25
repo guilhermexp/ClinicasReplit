@@ -58,8 +58,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
   
   // Auth routes
-  app.post("/api/auth/login", passport.authenticate("local"), (req: Request, res: Response) => {
-    res.json({ user: req.user });
+  app.post("/api/auth/login", (req: Request, res: Response, next) => {
+    console.log("Tentativa de login:", req.body.email);
+    
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        console.error("Erro na autenticação:", err);
+        return next(err);
+      }
+      
+      if (!user) {
+        console.log("Autenticação falhou:", info);
+        return res.status(401).json({ message: "Email ou senha inválidos." });
+      }
+      
+      console.log("Usuário autenticado com sucesso:", user.email);
+      
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Erro ao fazer login:", err);
+          return next(err);
+        }
+        
+        console.log("Sessão criada com sucesso. User ID:", user.id);
+        return res.json({ user: req.user });
+      });
+    })(req, res, next);
   });
   
   app.post("/api/auth/logout", (req: Request, res: Response) => {
@@ -82,8 +106,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  app.get("/api/auth/me", isAuthenticated, (req: Request, res: Response) => {
-    res.json({ user: req.user });
+  app.get("/api/auth/me", (req: Request, res: Response) => {
+    console.log("Verificando usuário autenticado. Session ID:", req.sessionID);
+    console.log("Usuário autenticado?", req.isAuthenticated());
+    
+    if (req.isAuthenticated()) {
+      console.log("Usuário está autenticado:", req.user?.email);
+      return res.json({ user: req.user });
+    } else {
+      console.log("Usuário não está autenticado");
+      return res.status(401).json({ message: "Não autorizado. Faça login para continuar." });
+    }
   });
   
   app.post("/api/auth/register", async (req: Request, res: Response) => {

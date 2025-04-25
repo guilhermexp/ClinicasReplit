@@ -36,17 +36,37 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      console.log("Iniciando login na página de login...");
-      await login(email, password);
-      console.log("Login bem-sucedido na página de login");
-      // Após o login bem-sucedido, podemos adicionar um redirecionamento manual
-      // em caso de falha do Auth Provider
+      console.log("Iniciando login com método simples...");
+      
+      // Realizar login diretamente com fetch
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include"
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Erro ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Login bem-sucedido:", data);
+      
+      // Redirecionar diretamente para o dashboard
+      toast({
+        title: "Login bem-sucedido",
+        description: `Bem-vindo, ${data.user.name}!`,
+      });
+      
+      // Redirecionar após um curto atraso
       setTimeout(() => {
-        if (window.location.pathname === "/login") {
-          console.log("Redirecionamento manual para dashboard");
-          window.location.href = "/dashboard";
-        }
-      }, 1000);
+        window.location.href = "/dashboard";
+      }, 500);
+      
     } catch (error: any) {
       console.error("Erro durante login:", error);
       toast({
