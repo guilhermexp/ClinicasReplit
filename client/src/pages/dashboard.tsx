@@ -756,30 +756,36 @@ export default function Dashboard() {
                   <div>
                     <div className="flex justify-between text-sm text-muted-foreground mb-1">
                       <span>Agendamentos no mês</span>
-                      <span className="font-medium text-foreground">{advancedMetrics.agendamentos.mesAtual}</span>
+                      <span className="font-medium text-foreground">
+                        {advancedMetrics?.agendamentos?.mesAtual || 0}
+                      </span>
                     </div>
-                    <Progress value={Math.min(advancedMetrics.agendamentos.mesAtual / 100 * 100, 100)} className="h-2"/>
+                    <Progress value={Math.min(((advancedMetrics?.agendamentos?.mesAtual || 0) / 100) * 100, 100)} className="h-2"/>
                   </div>
                   
                   <div>
                     <div className="flex justify-between text-sm text-muted-foreground mb-1">
                       <span>Taxa de ocupação</span>
-                      <span className="font-medium text-foreground">{advancedMetrics.agendamentos.taxaOcupacao.toFixed(1)}%</span>
+                      <span className="font-medium text-foreground">
+                        {(advancedMetrics?.agendamentos?.taxaOcupacao || 0).toFixed(1)}%
+                      </span>
                     </div>
                     <Progress 
-                      value={advancedMetrics.agendamentos.taxaOcupacao} 
-                      className={`h-2 bg-muted/30 ${advancedMetrics.agendamentos.taxaOcupacao > 70 ? "[--progress-foreground:theme(colors.green.500)]" : "[--progress-foreground:theme(colors.amber.500)]"}`}
+                      value={advancedMetrics?.agendamentos?.taxaOcupacao || 0} 
+                      className={`h-2 bg-muted/30 ${(advancedMetrics?.agendamentos?.taxaOcupacao || 0) > 70 ? "[--progress-foreground:theme(colors.green.500)]" : "[--progress-foreground:theme(colors.amber.500)]"}`}
                     />
                   </div>
                   
                   <div>
                     <div className="flex justify-between text-sm text-muted-foreground mb-1">
                       <span>Taxa de cancelamento</span>
-                      <span className="font-medium text-foreground">{advancedMetrics.agendamentos.taxaCancelamento.toFixed(1)}%</span>
+                      <span className="font-medium text-foreground">
+                        {(advancedMetrics?.agendamentos?.taxaCancelamento || 0).toFixed(1)}%
+                      </span>
                     </div>
                     <Progress 
-                      value={advancedMetrics.agendamentos.taxaCancelamento} 
-                      className={`h-2 bg-muted/30 ${advancedMetrics.agendamentos.taxaCancelamento < 10 ? "[--progress-foreground:theme(colors.green.500)]" : "[--progress-foreground:theme(colors.red.500)]"}`}
+                      value={advancedMetrics?.agendamentos?.taxaCancelamento || 0} 
+                      className={`h-2 bg-muted/30 ${(advancedMetrics?.agendamentos?.taxaCancelamento || 0) < 10 ? "[--progress-foreground:theme(colors.green.500)]" : "[--progress-foreground:theme(colors.red.500)]"}`}
                     />
                   </div>
                   
