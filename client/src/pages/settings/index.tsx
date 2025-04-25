@@ -64,7 +64,7 @@ export default function Settings() {
   const [confirmingAction, setConfirmingAction] = useState(false);
   
   // Buscar dados da clínica
-  const { data: clinic, isLoading } = useQuery<Clinic>({
+  const { data: clinic, isLoading: isLoadingClinic } = useQuery<Clinic>({
     queryKey: ["/api/clinics", selectedClinic?.id],
     queryFn: async () => {
       if (!selectedClinic?.id) return null;
@@ -72,6 +72,60 @@ export default function Settings() {
       return res.json();
     },
     enabled: !!selectedClinic?.id
+  });
+  
+  // Buscar configurações de autenticação de dois fatores
+  const { data: twoFactorAuth, isLoading: isLoadingTwoFA } = useQuery<Partial<UserTwoFactorAuth>>({
+    queryKey: ["/api/security/2fa"],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", "/api/security/2fa");
+        return res.json();
+      } catch (error) {
+        // Se a configuração não for encontrada, podemos assumir que o usuário ainda não configurou 2FA
+        setAppAuth(false);
+        setSmsAuth(false);
+        setEmailAuth(false);
+        return null;
+      }
+    }
+  });
+  
+  // Efeito para atualizar os estados quando os dados de 2FA forem carregados
+  useEffect(() => {
+    if (twoFactorAuth) {
+      setAppAuth(twoFactorAuth.appEnabled || false);
+      setSmsAuth(twoFactorAuth.smsEnabled || false);
+      setEmailAuth(twoFactorAuth.emailEnabled || false);
+    }
+  }, [twoFactorAuth]);
+  
+  // Buscar dispositivos conectados
+  const { data: devices, isLoading: isLoadingDevices } = useQuery<UserDevice[]>({
+    queryKey: ["/api/security/devices"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/security/devices");
+      return res.json();
+    }
+  });
+  
+  // Efeito para identificar o dispositivo atual
+  useEffect(() => {
+    if (devices && devices.length > 0) {
+      const currentDevice = devices.find(d => d.isCurrent);
+      if (currentDevice) {
+        setCurrentDeviceId(currentDevice.id);
+      }
+    }
+  }, [devices]);
+  
+  // Buscar logs de atividade
+  const { data: activityLogs, isLoading: isLoadingLogs } = useQuery<ActivityLog[]>({
+    queryKey: ["/api/security/activity-logs"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/security/activity-logs");
+      return res.json();
+    }
   });
   
   // Preencher os dados da clínica quando disponíveis
@@ -225,6 +279,185 @@ export default function Settings() {
       currentPassword,
       newPassword
     });
+  };
+  
+  // Mutation para configurar autenticação de dois fatores
+  const setupTwoFAMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/security/2fa/setup");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setSetupMode(true);
+      setBackupCodes(data.backupCodes || []);
+      
+      // Gerar QR code para o app autenticador (em um cenário real, isso viria do backend)
+      const secret = data.appSecret;
+      const username = user?.email || "usuario";
+      const appName = "ClinicaSistema";
+      setQrCodeUrl(`https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth://totp/${appName}:${username}?secret=${secret}&issuer=${appName}`);
+      
+      toast({
+        title: "Configuração iniciada!",
+        description: "Siga as instruções para configurar a autenticação de dois fatores.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro!",
+        description: `Falha ao configurar 2FA: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation para verificar o código do app autenticador
+  const verifyAppCodeMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await apiRequest("POST", "/api/security/2fa/verify-app", { code });
+      return res.json();
+    },
+    onSuccess: () => {
+      setAppAuth(true);
+      setSetupMode(false);
+      setVerificationCode("");
+      
+      toast({
+        title: "Autenticação ativada!",
+        description: "A autenticação por aplicativo foi ativada com sucesso.",
+      });
+      
+      // Atualizar os dados da configuração 2FA
+      queryClient.invalidateQueries({ queryKey: ["/api/security/2fa"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro!",
+        description: `Falha ao verificar código: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation para atualizar configurações de 2FA
+  const updateTwoFAMutation = useMutation({
+    mutationFn: async (data: Partial<UserTwoFactorAuth>) => {
+      const res = await apiRequest("PATCH", "/api/security/2fa", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Configurações atualizadas!",
+        description: "As configurações de autenticação foram atualizadas com sucesso.",
+      });
+      
+      // Atualizar os dados da configuração 2FA
+      queryClient.invalidateQueries({ queryKey: ["/api/security/2fa"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro!",
+        description: `Falha ao atualizar configurações: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation para revogar um dispositivo
+  const revokeDeviceMutation = useMutation({
+    mutationFn: async (deviceId: number) => {
+      const res = await apiRequest("DELETE", `/api/security/devices/${deviceId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Dispositivo revogado!",
+        description: "O acesso do dispositivo foi revogado com sucesso.",
+      });
+      
+      // Atualizar a lista de dispositivos
+      queryClient.invalidateQueries({ queryKey: ["/api/security/devices"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro!",
+        description: `Falha ao revogar dispositivo: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Mutation para revogar todos os dispositivos
+  const revokeAllDevicesMutation = useMutation({
+    mutationFn: async (exceptCurrent: boolean) => {
+      const res = await apiRequest("POST", "/api/security/devices/revoke-all", {
+        exceptCurrentDevice: exceptCurrent,
+        currentDeviceId: currentDeviceId
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Dispositivos revogados!",
+        description: "Todos os dispositivos foram revogados com sucesso.",
+      });
+      
+      // Atualizar a lista de dispositivos
+      queryClient.invalidateQueries({ queryKey: ["/api/security/devices"] });
+      setConfirmingAction(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro!",
+        description: `Falha ao revogar dispositivos: ${error.message}`,
+        variant: "destructive",
+      });
+      setConfirmingAction(false);
+    }
+  });
+  
+  // Função para lidar com a alteração dos switches de 2FA
+  const handleAppAuthChange = (checked: boolean) => {
+    if (checked && twoFactorAuth && !twoFactorAuth.appEnabled) {
+      // Se estiver ativando, iniciar processo de configuração
+      setupTwoFAMutation.mutate();
+    } else if (!checked && twoFactorAuth && twoFactorAuth.appEnabled) {
+      // Se estiver desativando
+      updateTwoFAMutation.mutate({ appEnabled: false });
+    }
+  };
+  
+  const handleSmsAuthChange = (checked: boolean) => {
+    updateTwoFAMutation.mutate({ smsEnabled: checked });
+  };
+  
+  const handleEmailAuthChange = (checked: boolean) => {
+    updateTwoFAMutation.mutate({ emailEnabled: checked });
+  };
+  
+  // Função para verificar o código do app
+  const handleVerifyCode = () => {
+    if (!verificationCode) {
+      toast({
+        title: "Erro!",
+        description: "O código de verificação é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    verifyAppCodeMutation.mutate(verificationCode);
+  };
+  
+  // Função para revogar um dispositivo
+  const handleRevokeDevice = (deviceId: number) => {
+    revokeDeviceMutation.mutate(deviceId);
+  };
+  
+  // Função para revogar todos os dispositivos
+  const handleRevokeAllDevices = (exceptCurrent: boolean) => {
+    setConfirmingAction(true);
+    revokeAllDevicesMutation.mutate(exceptCurrent);
   };
   
   return (
@@ -451,48 +684,100 @@ export default function Settings() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <div className="text-sm font-medium">
-                          Autenticação por Aplicativo
+                    {setupMode ? (
+                      <div className="space-y-6">
+                        <div className="text-center space-y-4">
+                          <h3 className="text-lg font-medium">Configure o Autenticador</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Escaneie o código QR abaixo com seu aplicativo autenticador (Google Authenticator, Authy, etc.)
+                          </p>
+                          
+                          {qrCodeUrl && (
+                            <div className="flex justify-center py-4">
+                              <img src={qrCodeUrl} alt="QR Code para autenticação" className="h-48 w-48" />
+                            </div>
+                          )}
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="verification-code">Código de Verificação</Label>
+                            <Input
+                              id="verification-code"
+                              placeholder="Digite o código de 6 dígitos"
+                              value={verificationCode}
+                              onChange={(e) => setVerificationCode(e.target.value)}
+                              className="max-w-xs mx-auto"
+                            />
+                          </div>
+                          
+                          <Button onClick={handleVerifyCode} className="mt-4">
+                            Verificar e Ativar
+                          </Button>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Use um aplicativo autenticador como Google Authenticator ou Authy.
+                        
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-2">Códigos de Backup</h4>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Guarde estes códigos em um local seguro. Você pode usá-los para acessar sua conta caso perca o acesso ao seu dispositivo autenticador.
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {backupCodes.map((code, index) => (
+                              <div key={index} className="bg-secondary p-2 rounded text-center font-mono text-sm">
+                                {code}
+                              </div>
+                            ))}
+                          </div>
+                          <Button variant="outline" className="mt-4 w-full sm:w-auto">
+                            <Download className="mr-2 h-4 w-4" />
+                            Baixar Códigos de Backup
+                          </Button>
                         </div>
                       </div>
-                      <Switch 
-                        checked={appAuth}
-                        onCheckedChange={setAppAuth}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <div className="text-sm font-medium">
-                          Autenticação por SMS
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="text-sm font-medium">
+                              Autenticação por Aplicativo
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Use um aplicativo autenticador como Google Authenticator ou Authy.
+                            </div>
+                          </div>
+                          <Switch 
+                            checked={appAuth}
+                            onCheckedChange={handleAppAuthChange}
+                          />
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Receba códigos de verificação por mensagem de texto.
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="text-sm font-medium">
+                              Autenticação por SMS
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Receba códigos de verificação por mensagem de texto.
+                            </div>
+                          </div>
+                          <Switch 
+                            checked={smsAuth}
+                            onCheckedChange={handleSmsAuthChange}
+                          />
                         </div>
-                      </div>
-                      <Switch 
-                        checked={smsAuth}
-                        onCheckedChange={setSmsAuth}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <div className="text-sm font-medium">
-                          Autenticação por E-mail
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="text-sm font-medium">
+                              Autenticação por E-mail
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Receba códigos de verificação por e-mail.
+                            </div>
+                          </div>
+                          <Switch 
+                            checked={emailAuth}
+                            onCheckedChange={handleEmailAuthChange}
+                          />
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Receba códigos de verificação por e-mail.
-                        </div>
-                      </div>
-                      <Switch 
-                        checked={emailAuth}
-                        onCheckedChange={setEmailAuth}
-                      />
-                    </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -504,68 +789,99 @@ export default function Settings() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-primary"
-                          >
-                            <rect x="2" y="3" width="20" height="14" rx="2" />
-                            <line x1="8" x2="16" y1="21" y2="21" />
-                            <line x1="12" x2="12" y1="17" y2="21" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">MacBook Pro</p>
-                          <p className="text-xs text-muted-foreground">São Paulo, Brasil · Ativo agora</p>
-                        </div>
+                    {isLoadingDevices ? (
+                      <div className="flex justify-center py-8">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        <LogOut className="h-4 w-4" />
-                        <span className="sr-only">Encerrar sessão</span>
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-primary"
-                          >
-                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                            <line x1="12" x2="12.01" y1="18" y2="18" />
-                          </svg>
+                    ) : devices && devices.length > 0 ? (
+                      devices.map((device) => (
+                        <div key={device.id} className={`flex items-center justify-between p-2 border rounded-md ${device.id === currentDeviceId ? 'bg-muted/30' : ''}`}>
+                          <div className="flex items-center space-x-4">
+                            <div className="p-2 bg-primary/10 rounded-full">
+                              {device.deviceType.toLowerCase().includes('mobile') ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="text-primary"
+                                >
+                                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                                  <line x1="12" x2="12.01" y1="18" y2="18" />
+                                </svg>
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="text-primary"
+                                >
+                                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                                  <line x1="8" x2="16" y1="21" y2="21" />
+                                  <line x1="12" x2="12" y1="17" y2="21" />
+                                </svg>
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center">
+                                <p className="text-sm font-medium">{device.deviceName}</p>
+                                {device.id === currentDeviceId && (
+                                  <span className="ml-2 inline-flex items-center rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
+                                    Dispositivo atual
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {device.ipLocation || 'Localização desconhecida'} · {device.browser} · {device.operatingSystem}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Último acesso: {device.lastActiveAt ? format(new Date(device.lastActiveAt), 'dd/MM/yyyy, HH:mm', { locale: ptBR }) : 'Desconhecido'}
+                              </p>
+                            </div>
+                          </div>
+                          {device.id !== currentDeviceId && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleRevokeDevice(device.id)}
+                              disabled={revokeDeviceMutation.isPending}
+                            >
+                              <LogOut className="h-4 w-4" />
+                              <span className="sr-only">Encerrar sessão</span>
+                            </Button>
+                          )}
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">iPhone 13</p>
-                          <p className="text-xs text-muted-foreground">São Paulo, Brasil · Último acesso: Ontem</p>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>Nenhum dispositivo encontrado.</p>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        <LogOut className="h-4 w-4" />
-                        <span className="sr-only">Encerrar sessão</span>
-                      </Button>
-                    </div>
+                    )}
                   </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" className="ml-auto">
+                  <CardFooter className="flex gap-2 justify-end">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleRevokeAllDevices(true)}
+                      disabled={confirmingAction || !devices || devices.length <= 1}
+                    >
+                      Encerrar Outras Sessões
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleRevokeAllDevices(false)}
+                      disabled={confirmingAction || !devices || devices.length === 0}
+                    >
                       Encerrar Todas as Sessões
                     </Button>
                   </CardFooter>
@@ -579,35 +895,39 @@ export default function Settings() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                      <div className="border-b pb-2">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-medium">Login bem-sucedido</p>
-                            <p className="text-xs text-muted-foreground">São Paulo, Brasil · Navegador Chrome</p>
-                          </div>
-                          <span className="text-xs text-muted-foreground">Hoje, 14:23</span>
-                        </div>
+                    {isLoadingLogs ? (
+                      <div className="flex justify-center py-8">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                       </div>
-                      <div className="border-b pb-2">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-medium">Alteração de senha</p>
-                            <p className="text-xs text-muted-foreground">São Paulo, Brasil · Navegador Safari</p>
+                    ) : activityLogs && activityLogs.length > 0 ? (
+                      <div className="space-y-4">
+                        {activityLogs.map((log) => (
+                          <div key={log.id} className="border-b pb-2">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-sm font-medium">{log.activity}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {log.ipLocation || 'Localização desconhecida'} · {log.userAgent ? (
+                                    log.userAgent.includes('Chrome') ? 'Navegador Chrome' :
+                                    log.userAgent.includes('Firefox') ? 'Navegador Firefox' :
+                                    log.userAgent.includes('Safari') ? 'Navegador Safari' :
+                                    log.userAgent.includes('Edge') ? 'Navegador Edge' :
+                                    'Navegador desconhecido'
+                                  ) : 'Dispositivo desconhecido'}
+                                </p>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {log.createdAt ? format(new Date(log.createdAt), 'dd/MM/yyyy, HH:mm', { locale: ptBR }) : 'Data desconhecida'}
+                              </span>
+                            </div>
                           </div>
-                          <span className="text-xs text-muted-foreground">10/04/2025, 08:15</span>
-                        </div>
+                        ))}
                       </div>
-                      <div className="border-b pb-2">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-medium">Atualização de perfil</p>
-                            <p className="text-xs text-muted-foreground">São Paulo, Brasil · Navegador Firefox</p>
-                          </div>
-                          <span className="text-xs text-muted-foreground">05/04/2025, 16:42</span>
-                        </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>Nenhum registro de atividade encontrado.</p>
                       </div>
-                    </div>
+                    )}
                   </CardContent>
                   <CardFooter>
                     <Button variant="outline" className="ml-auto">
