@@ -36,7 +36,8 @@ import {
   PaymentStatus,
   userDevices,
   activityLogs,
-  userTwoFactorAuth
+  userTwoFactorAuth,
+  users
 } from "@shared/schema";
 import { z } from "zod";
 import { paymentService } from "./payment-service";
@@ -1317,30 +1318,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Função auxiliar para verificar acesso à clínica
   async function hasClinicAccess(userId: number, clinicId: number): Promise<boolean> {
     try {
-      // Verifica se o usuário é SUPER_ADMIN
-      const user = await db
-        .select({ role: users.role })
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1);
+      // Primeiro verifica se o usuário existe
+      const userResult = await storage.getUser(userId);
+      if (!userResult) {
+        return false;
+      }
       
-      if (user.length > 0 && user[0].role === UserRole.SUPER_ADMIN) {
+      // Verifica se o usuário é SUPER_ADMIN
+      if (userResult.role === UserRole.SUPER_ADMIN) {
         return true;
       }
       
       // Verifica se o usuário está associado à clínica
-      const clinicUser = await db
-        .select()
-        .from(clinicUsers)
-        .where(
-          and(
-            eq(clinicUsers.userId, userId),
-            eq(clinicUsers.clinicId, clinicId)
-          )
-        )
-        .limit(1);
+      const clinicUser = await storage.getClinicUser(clinicId, userId);
       
-      return clinicUser.length > 0;
+      return !!clinicUser;
     } catch (error) {
       console.error("Erro ao verificar acesso à clínica:", error);
       return false;
