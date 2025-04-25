@@ -8,7 +8,7 @@ import {
   defaultPermissions, 
   checkPermission, 
   isSuperUserOrOwner 
-} from "@/hooks/use-permissions";
+} from "@/hooks/use-permissions-helper";
 
 // Definição do contexto
 type PermissionsContextType = {

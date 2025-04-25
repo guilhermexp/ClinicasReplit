@@ -1,6 +1,9 @@
 import { useContext } from "react";
 import { PermissionsContext } from "@/providers/permission-provider";
 
+// Re-exportar tipos e funções do helper para manter compatibilidade
+export * from './use-permissions-helper';
+
 /**
  * Hook para acessar o contexto de permissões
  * 

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getQueryFn } from "@/lib/queryClient";
+import { PermissionModule, PermissionAction } from "@/hooks/use-permissions-helper";
 
 /**
  * Componente que pré-carrega dados importantes para o dashboard
@@ -12,7 +13,7 @@ import { getQueryFn } from "@/lib/queryClient";
 export function MetricsPrefetcher() {
   const queryClient = useQueryClient();
   const { selectedClinic } = useAuth();
-  const { checkPermission } = usePermissions();
+  const permissions = usePermissions();
   
   // Prefetch de dados críticos do dashboard
   useEffect(() => {
@@ -29,7 +30,7 @@ export function MetricsPrefetcher() {
       {
         endpoint: `/api/dashboard/summary/${selectedClinic.id}`,
         priority: fetchPriority.high,
-        permission: { module: "dashboard", action: "view" },
+        permission: { module: "dashboard" as PermissionModule, action: "view" as PermissionAction },
         staleTime: 5 * 60 * 1000, // 5 minutos
         cachePriority: 'high'
       },
@@ -38,14 +39,14 @@ export function MetricsPrefetcher() {
       {
         endpoint: `/api/appointments/upcoming/${selectedClinic.id}`,
         priority: fetchPriority.medium,
-        permission: { module: "appointments", action: "view" },
+        permission: { module: "appointments" as PermissionModule, action: "view" as PermissionAction },
         staleTime: 3 * 60 * 1000, // 3 minutos
         cachePriority: 'high'
       },
       {
         endpoint: `/api/clients/summary/${selectedClinic.id}`,
         priority: fetchPriority.medium,
-        permission: { module: "clients", action: "view" },
+        permission: { module: "clients" as PermissionModule, action: "view" as PermissionAction },
         staleTime: 10 * 60 * 1000, // 10 minutos
         cachePriority: 'medium'
       },
@@ -54,21 +55,21 @@ export function MetricsPrefetcher() {
       {
         endpoint: `/api/professionals/summary/${selectedClinic.id}`,
         priority: fetchPriority.low,
-        permission: { module: "professionals", action: "view" },
+        permission: { module: "professionals" as PermissionModule, action: "view" as PermissionAction },
         staleTime: 15 * 60 * 1000, // 15 minutos
         cachePriority: 'medium'
       },
       {
         endpoint: `/api/inventory/summary/${selectedClinic.id}`,
         priority: fetchPriority.low,
-        permission: { module: "inventory", action: "view" },
+        permission: { module: "inventory" as PermissionModule, action: "view" as PermissionAction },
         staleTime: 20 * 60 * 1000, // 20 minutos
         cachePriority: 'low'
       },
       {
         endpoint: `/api/tasks/recent/${selectedClinic.id}`,
         priority: fetchPriority.low,
-        permission: { module: "tasks", action: "view" },
+        permission: { module: "tasks" as PermissionModule, action: "view" as PermissionAction },
         staleTime: 10 * 60 * 1000, // 10 minutos
         cachePriority: 'low'
       }
@@ -77,7 +78,7 @@ export function MetricsPrefetcher() {
     // Prefetch cada endpoint em ordem de prioridade
     criticalEndpoints.forEach(({ endpoint, priority, permission, staleTime, cachePriority }) => {
       // Só prefetch dados que o usuário tem permissão para ver
-      if (checkPermission(permission.module, permission.action)) {
+      if (permissions.checkPermission(permission.module, permission.action)) {
         // Aplicar delay para endpoints de menor prioridade para não sobrecarregar
         setTimeout(() => {
           // Log para verificação durante o desenvolvimento
@@ -111,7 +112,7 @@ export function MetricsPrefetcher() {
     
     return () => clearTimeout(timeout);
     
-  }, [selectedClinic?.id, queryClient, checkPermission]);
+  }, [selectedClinic?.id, queryClient, permissions]);
   
   // Este componente não renderiza nada visualmente
   return null;
