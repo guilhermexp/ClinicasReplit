@@ -45,6 +45,16 @@ export default function Settings() {
   const [clinicWebsite, setClinicWebsite] = useState("");
   const [clinicLogo, setClinicLogo] = useState("");
   
+  // Dados de segurança
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [appAuth, setAppAuth] = useState(false);
+  const [smsAuth, setSmsAuth] = useState(false);
+  const [emailAuth, setEmailAuth] = useState(false);
+  
   // Buscar dados da clínica
   const { data: clinic, isLoading } = useQuery<Clinic>({
     queryKey: ["/api/clinics", selectedClinic?.id],
@@ -109,6 +119,104 @@ export default function Settings() {
     };
     
     updateClinicMutation.mutate(clinicData);
+  };
+  
+  // Mutation para alterar a senha do usuário
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const res = await apiRequest("POST", "/api/auth/change-password", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Senha Alterada!",
+        description: "Sua senha foi alterada com sucesso.",
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro!",
+        description: `Falha ao alterar senha: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setChangingPassword(false);
+    }
+  });
+  
+  // Função para calcular a força da senha
+  const calculatePasswordStrength = (password: string): number => {
+    if (!password) return 0;
+    
+    let strength = 0;
+    
+    // Comprimento mínimo
+    if (password.length >= 8) strength += 20;
+    if (password.length >= 12) strength += 10;
+    
+    // Complexidade
+    if (/[A-Z]/.test(password)) strength += 20; // Letras maiúsculas
+    if (/[a-z]/.test(password)) strength += 10; // Letras minúsculas
+    if (/[0-9]/.test(password)) strength += 20; // Números
+    if (/[^A-Za-z0-9]/.test(password)) strength += 20; // Caracteres especiais
+    
+    return Math.min(strength, 100);
+  };
+  
+  // Função para atualizar a força da senha em tempo real
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const password = e.target.value;
+    setNewPassword(password);
+    setPasswordStrength(calculatePasswordStrength(password));
+  };
+  
+  // Função para alterar a senha
+  const handleChangePassword = () => {
+    // Validações
+    if (!currentPassword) {
+      toast({
+        title: "Erro!",
+        description: "A senha atual é obrigatória.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!newPassword) {
+      toast({
+        title: "Erro!",
+        description: "A nova senha é obrigatória.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro!",
+        description: "As senhas não coincidem.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (passwordStrength < 50) {
+      toast({
+        title: "Atenção!",
+        description: "Sua senha é fraca. Recomendamos uma senha mais forte.",
+      });
+      return;
+    }
+    
+    setChangingPassword(true);
+    changePasswordMutation.mutate({
+      currentPassword,
+      newPassword
+    });
   };
   
   return (
@@ -261,26 +369,246 @@ export default function Settings() {
             
             {/* Security Settings */}
             <TabsContent value="security">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Segurança</CardTitle>
-                  <CardDescription>
-                    Gerencie as configurações de segurança da sua conta.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Conteúdo omitido para brevidade */}
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline">
-                    Cancelar
-                  </Button>
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar Alterações
-                  </Button>
-                </CardFooter>
-              </Card>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Alteração de Senha</CardTitle>
+                    <CardDescription>
+                      Atualize sua senha para manter sua conta segura.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="current-password">Senha Atual</Label>
+                        <Input 
+                          type="password" 
+                          id="current-password" 
+                          placeholder="Digite sua senha atual"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">Nova Senha</Label>
+                        <Input 
+                          type="password" 
+                          id="new-password" 
+                          placeholder="Digite a nova senha"
+                          value={newPassword}
+                          onChange={handlePasswordChange}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                        <Input 
+                          type="password" 
+                          id="confirm-password" 
+                          placeholder="Confirme a nova senha"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium">Força da Senha</div>
+                      <Progress value={passwordStrength} className="h-2 w-full" />
+                      <p className="text-xs text-muted-foreground">
+                        Para uma senha forte, inclua letras maiúsculas, minúsculas, números e símbolos.
+                      </p>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button onClick={handleChangePassword} disabled={changingPassword} className="ml-auto">
+                      {changingPassword ? (
+                        <>
+                          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-background border-t-foreground" />
+                          Alterando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Alterar Senha
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Autenticação de Dois Fatores</CardTitle>
+                    <CardDescription>
+                      Adicione uma camada extra de segurança à sua conta.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-medium">
+                          Autenticação por Aplicativo
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Use um aplicativo autenticador como Google Authenticator ou Authy.
+                        </div>
+                      </div>
+                      <Switch 
+                        checked={appAuth}
+                        onCheckedChange={setAppAuth}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-medium">
+                          Autenticação por SMS
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Receba códigos de verificação por mensagem de texto.
+                        </div>
+                      </div>
+                      <Switch 
+                        checked={smsAuth}
+                        onCheckedChange={setSmsAuth}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-medium">
+                          Autenticação por E-mail
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Receba códigos de verificação por e-mail.
+                        </div>
+                      </div>
+                      <Switch 
+                        checked={emailAuth}
+                        onCheckedChange={setEmailAuth}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dispositivos Conectados</CardTitle>
+                    <CardDescription>
+                      Gerencie dispositivos que possuem acesso à sua conta.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-primary"
+                          >
+                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                            <line x1="8" x2="16" y1="21" y2="21" />
+                            <line x1="12" x2="12" y1="17" y2="21" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">MacBook Pro</p>
+                          <p className="text-xs text-muted-foreground">São Paulo, Brasil · Ativo agora</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        <LogOut className="h-4 w-4" />
+                        <span className="sr-only">Encerrar sessão</span>
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded-md">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-primary"
+                          >
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                            <line x1="12" x2="12.01" y1="18" y2="18" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">iPhone 13</p>
+                          <p className="text-xs text-muted-foreground">São Paulo, Brasil · Último acesso: Ontem</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        <LogOut className="h-4 w-4" />
+                        <span className="sr-only">Encerrar sessão</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="ml-auto">
+                      Encerrar Todas as Sessões
+                    </Button>
+                  </CardFooter>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Registros de Atividade</CardTitle>
+                    <CardDescription>
+                      Monitore as atividades recentes da sua conta para maior segurança.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="border-b pb-2">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-medium">Login bem-sucedido</p>
+                            <p className="text-xs text-muted-foreground">São Paulo, Brasil · Navegador Chrome</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground">Hoje, 14:23</span>
+                        </div>
+                      </div>
+                      <div className="border-b pb-2">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-medium">Alteração de senha</p>
+                            <p className="text-xs text-muted-foreground">São Paulo, Brasil · Navegador Safari</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground">10/04/2025, 08:15</span>
+                        </div>
+                      </div>
+                      <div className="border-b pb-2">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-medium">Atualização de perfil</p>
+                            <p className="text-xs text-muted-foreground">São Paulo, Brasil · Navegador Firefox</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground">05/04/2025, 16:42</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="ml-auto">
+                      <Download className="mr-2 h-4 w-4" />
+                      Baixar Histórico Completo
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
             </TabsContent>
             
             {/* Procedures Settings */}
