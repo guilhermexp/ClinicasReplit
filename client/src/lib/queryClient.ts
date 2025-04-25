@@ -1,4 +1,14 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+
+// Configuração do persistidor de cache usando localStorage
+export const localStoragePersister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'CLINIC_REACT_QUERY_CACHE',
+  throttleTime: 1000, // Tempo de espera antes de salvar no localStorage (ms)
+  serialize: (data) => JSON.stringify(data),
+  deserialize: (data) => JSON.parse(data),
+});
 
 // Helpers para gerenciar o redirecionamento em caso de 401
 let isRedirectingToLogin = false;
