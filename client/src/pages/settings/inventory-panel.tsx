@@ -56,7 +56,12 @@ export function InventoryPanel() {
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35" />
               </svg>
-              <Input className="w-full pl-9" placeholder="Buscar produto..." />
+              <Input 
+                className="w-full pl-9" 
+                placeholder="Buscar produto..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
             <Button variant="outline" size="sm" className="flex items-center gap-1">
               <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -92,9 +97,25 @@ export function InventoryPanel() {
               <p>Nenhum produto encontrado no estoque.</p>
               <p className="text-sm">Clique em "Adicionar Produto" para começar.</p>
             </div>
+          ) : inventoryProducts.filter(product => 
+              searchQuery === "" || 
+              product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
+            ).length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              <Package className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+              <p>Nenhum produto encontrado para "{searchQuery}".</p>
+              <p className="text-sm">Tente outro termo de busca.</p>
+            </div>
           ) : (
             <div className="divide-y">
-              {inventoryProducts.map(product => {
+              {inventoryProducts
+                .filter(product => 
+                  searchQuery === "" || 
+                  product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
+                )
+                .map(product => {
                 // Determine status display
                 let statusColor = "bg-green-100 text-green-800"; // Default: normal
                 let statusText = "Normal";
@@ -112,7 +133,7 @@ export function InventoryPanel() {
                     <div className="w-1/3 font-medium">{product.name}</div>
                     <div className="w-1/6">{product.category || "N/A"}</div>
                     <div className="w-1/6">{product.quantity}</div>
-                    <div className="w-1/6">{product.unit || "UN"}</div>
+                    <div className="w-1/6">UN</div>
                     <div className="w-1/6">
                       <span className={`inline-flex items-center rounded-full ${statusColor} px-2.5 py-0.5 text-xs font-medium`}>
                         {statusText}
@@ -141,7 +162,13 @@ export function InventoryPanel() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Produtos cadastrados</p>
-                  <h4 className="text-2xl font-bold">35</h4>
+                  <h4 className="text-2xl font-bold">
+                    {isLoading ? (
+                      <span className="inline-block w-8 h-6 bg-gray-200 rounded animate-pulse"></span>
+                    ) : (
+                      inventoryProducts.length
+                    )}
+                  </h4>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -158,7 +185,13 @@ export function InventoryPanel() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Produtos com estoque baixo</p>
-                  <h4 className="text-2xl font-bold">5</h4>
+                  <h4 className="text-2xl font-bold">
+                    {isLoading ? (
+                      <span className="inline-block w-8 h-6 bg-gray-200 rounded animate-pulse"></span>
+                    ) : (
+                      inventoryProducts.filter(p => p.status === "low_stock").length
+                    )}
+                  </h4>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
                   <svg className="h-5 w-5 text-yellow-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -175,7 +208,13 @@ export function InventoryPanel() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Produtos esgotados</p>
-                  <h4 className="text-2xl font-bold">8</h4>
+                  <h4 className="text-2xl font-bold">
+                    {isLoading ? (
+                      <span className="inline-block w-8 h-6 bg-gray-200 rounded animate-pulse"></span>
+                    ) : (
+                      inventoryProducts.filter(p => p.status === "out_of_stock").length
+                    )}
+                  </h4>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
                   <svg className="h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
