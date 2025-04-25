@@ -929,30 +929,30 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {servicePerformance.slice(0, 5).map((service, index) => (
+                  {servicePerformance?.slice(0, 5).map((service, index) => (
                     <div key={service.id} className="p-3 bg-background/50 backdrop-blur-sm rounded-xl border border-border/30 hover:shadow-md transition-all">
                       <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center">
                           <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center mr-2 text-sm font-medium">
                             {index + 1}
                           </div>
-                          <span className="font-medium">{service.name}</span>
+                          <span className="font-medium">{service?.name || 'Serviço'}</span>
                         </div>
-                        <span className="text-sm font-bold">{formatCurrency(service.totalRevenue)}</span>
+                        <span className="text-sm font-bold">{formatCurrency(service?.totalRevenue || 0)}</span>
                       </div>
                       <div className="space-y-1">
                         <div className="flex text-xs justify-between mb-1">
                           <span className="text-muted-foreground">Taxa de conclusão</span>
-                          <span>{service.completionRate.toFixed(1)}%</span>
+                          <span>{(service?.completionRate || 0).toFixed(1)}%</span>
                         </div>
                         <Progress 
-                          value={service.completionRate} 
+                          value={service?.completionRate || 0} 
                           className="h-1.5 bg-muted/30 [--progress-foreground:hsl(var(--primary))]"
                         />
                       </div>
                       <div className="flex justify-between items-center text-xs mt-2">
-                        <span className="text-muted-foreground">{service.completedAppointments} concluídos</span>
-                        <span className="text-muted-foreground">Duração: {service.duration} min</span>
+                        <span className="text-muted-foreground">{service?.completedAppointments || 0} concluídos</span>
+                        <span className="text-muted-foreground">Duração: {service?.duration || 0} min</span>
                       </div>
                     </div>
                   ))}
@@ -971,11 +971,11 @@ export default function Dashboard() {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart 
-                        data={servicePerformance[0].trend.map(item => ({
-                          month: item.month.split('-')[1], // Exibir apenas o mês
-                          receita: item.revenue,
-                          atendimentos: item.count
-                        }))}
+                        data={servicePerformance?.[0]?.trend?.map(item => ({
+                          month: item?.month?.split('-')?.[1] || 'N/A', // Exibir apenas o mês
+                          receita: item?.revenue || 0,
+                          atendimentos: item?.count || 0
+                        })) || []}
                       >
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                         <XAxis dataKey="month" />
