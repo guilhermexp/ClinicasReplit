@@ -204,6 +204,8 @@ export function checkPermission(
 
 // Hook simples para usar permissões
 export function usePermissions() {
+  // Essa é apenas a exportação da implementação das funções do sistema de permissões
+  // Para componentes, agora devemos usar o hook usePermissionsContext do PermissionProvider
   return {
     defaultPermissions,
     isSuperUserOrOwner,
