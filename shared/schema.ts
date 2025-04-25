@@ -620,6 +620,27 @@ export const userTwoFactorAuth = pgTable("user_two_factor_auth", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Tasks table - para gerenciamento de tarefas do sistema
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().references(() => clinics.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").$type<TaskStatus>().notNull().default(TaskStatus.TODO),
+  priority: text("priority").$type<TaskPriority>().notNull().default(TaskPriority.MEDIUM),
+  assignedTo: integer("assigned_to").references(() => users.id),
+  dueDate: timestamp("due_date"),
+  category: text("category"),
+  tags: text("tags").array(),
+  attachments: jsonb("attachments"),
+  progress: integer("progress").default(0), // 0-100%
+  parentTaskId: integer("parent_task_id"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, lastLogin: true, createdAt: true, updatedAt: true });
 export const insertClinicSchema = createInsertSchema(clinics).omit({ id: true, createdAt: true, updatedAt: true });
@@ -735,3 +756,8 @@ export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export const insertUserTwoFactorAuthSchema = createInsertSchema(userTwoFactorAuth).omit({ id: true, updatedAt: true });
 export type UserTwoFactorAuth = typeof userTwoFactorAuth.$inferSelect;
 export type InsertUserTwoFactorAuth = z.infer<typeof insertUserTwoFactorAuthSchema>;
+
+// Schema para tarefas
+export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true, updatedAt: true, completedAt: true });
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = z.infer<typeof insertTaskSchema>;
