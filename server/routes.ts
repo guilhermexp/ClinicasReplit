@@ -442,6 +442,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para buscar as permissões do usuário logado
+  app.get("/api/me/permissions", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        // Se o usuário não estiver autenticado, retorna um array vazio
+        // Isso é importante para o funcionamento do PermissionsProvider no cliente
+        return res.json([]);
+      }
+      
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Usuário não autenticado." });
+      }
+      
+      // Buscar todas as relações clinicUser do usuário
+      const clinicUsers = await storage.listClinicUsers(undefined, userId);
+      
+      if (clinicUsers.length === 0) {
+        return res.json([]);
+      }
+      
+      // Buscar todas as permissões de todas as relações clinicUser do usuário
+      const permissions = [];
+      
+      for (const clinicUser of clinicUsers) {
+        const userPermissions = await storage.getPermissions(clinicUser.id);
+        permissions.push(...userPermissions);
+      }
+      
+      // Remover duplicatas (caso o usuário tenha a mesma permissão em múltiplas clínicas)
+      const uniquePermissions = permissions.filter((permission, index, self) =>
+        index === self.findIndex((p) => 
+          p.module === permission.module && p.action === permission.action
+        )
+      );
+      
+      res.json(uniquePermissions);
+    } catch (error) {
+      console.error("Erro ao buscar permissões do usuário:", error);
+      res.status(500).json({ message: "Erro ao buscar permissões do usuário." });
+    }
+  });
+  
   // Client routes
   app.get("/api/clinics/:clinicId/clients", isAuthenticated, async (req: Request, res: Response) => {
     try {
