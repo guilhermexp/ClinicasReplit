@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ClinicUser } from "@shared/schema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Mail, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
+import { MoreHorizontal, Mail, ShieldAlert, ShieldCheck, Trash2, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,8 @@ import { formatDate } from "@/lib/auth-utils";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 interface UserListProps {
   users: any[];
@@ -40,9 +42,51 @@ export function UserList({
   isLoadingSuperAdmins = false
 }: UserListProps) {
   const { hasPermission } = usePermissions();
+  const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [targetUserId, setTargetUserId] = useState<number | null>(null);
   const [targetUserName, setTargetUserName] = useState<string>("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Função para excluir um usuário da clínica
+  const deleteUser = async (clinicUserId: number) => {
+    if (!clinicUserId) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/clinic-users/${clinicUserId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao excluir usuário');
+      }
+      
+      // Atualizar o cache do React Query após a exclusão bem-sucedida
+      toast({
+        title: "Usuário removido",
+        description: `${targetUserName} foi removido da clínica com sucesso.`,
+        variant: "default",
+      });
+      
+      // Invalidar as queries relevantes para atualizar a lista de usuários
+      queryClient.invalidateQueries({ queryKey: ['/api/clinics'] });
+      
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover usuário",
+        description: error.message || "Ocorreu um erro ao tentar remover o usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
 
   // Filtragem para usuários regulares da clínica
   const filteredUsers = users.filter((user) => {
@@ -272,15 +316,26 @@ export function UserList({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteDialog(false)} 
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
             <Button 
               variant="destructive"
-              onClick={() => {
-                // Implementar a lógica de exclusão
-                setShowDeleteDialog(false);
-              }}
+              onClick={() => deleteUser(targetUserId!)}
+              disabled={isDeleting}
             >
-              Remover
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Removendo...
+                </>
+              ) : (
+                "Remover"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
